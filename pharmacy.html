@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E7C66">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dr. Corner">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Dr. Corner — المخزن والمبيعات</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg:#EEF4F3; --card:#FFFFFF; --ink:#102A2E; --muted:#587074; --line:#D3E0DE;
+  --green:#0E7C66; --green-soft:#DDF0EA; --red:#C62A2F; --red-soft:#FBE6E6; --amber:#A8650A; --amber-soft:#FFF0D4;
+  --label:#102A2E; --shadow:0 1px 0 rgba(16,42,46,.08);
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1617; --card:#132224; --ink:#E4EFEE; --muted:#90A8AA; --line:#24393B;
+  --green:#3CC2A0; --green-soft:#16302B; --red:#F0575C; --red-soft:#3A1B1C; --amber:#F0B04A; --amber-soft:#3A2B12; --label:#E4EFEE; --shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#0C1617; --card:#132224; --ink:#E4EFEE; --muted:#90A8AA; --line:#24393B;
+  --green:#3CC2A0; --green-soft:#16302B; --red:#F0575C; --red-soft:#3A1B1C; --amber:#F0B04A; --amber-soft:#3A2B12; --label:#E4EFEE; --shadow:none;}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Alexandria","Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif;font-size:15px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 96px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;max-width:760px;margin:0 auto;padding:10px 16px 8px}
+.brand h1{margin:0;font-size:18px;font-weight:800;flex:1;min-width:0}
+.brand h1 small{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:400}
+.brand h1 small i{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+.brand h1 small.off i{background:var(--red)}
+.bell{position:relative;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:19px}
+.bell .pill{position:absolute;top:-6px;inset-inline-end:-6px}
+.tabs{display:flex;gap:4px;max-width:760px;margin:0 auto;padding:0 12px 8px;overflow-x:auto;scrollbar-width:none}
+.tabs button{flex:1 0 auto;border:0;background:transparent;padding:8px 9px;font-size:14px;border-radius:10px;font-weight:500;color:var(--muted);white-space:nowrap}
+.tabs button[aria-current="page"]{background:var(--ink);color:var(--bg)}
+.pill{display:inline-block;min-width:20px;padding:0 6px;margin-inline-start:4px;border-radius:10px;background:var(--red);color:#fff;font-size:12px;line-height:20px;text-align:center}
+.pill.amber{background:var(--amber)}
+.searchbar{display:flex;flex-wrap:wrap;gap:6px;max-width:760px;margin:0 auto;padding:0 16px 10px}
+.searchbar input{flex:1 1 150px;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card);flex:1 1 auto;min-height:40px}
+.seg button{flex:1;border:0;background:transparent;padding:0 8px;font-size:12.5px;font-weight:500;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--green);color:#fff}
+
+.alertbar{display:block;width:100%;border:0;background:var(--red);color:#fff;font-weight:700;padding:8px 16px;text-align:center;font-size:14px}
+.notice{margin:16px 0;padding:12px 14px;border-radius:12px;background:var(--red-soft);font-size:14px}
+.hint{color:var(--muted);font-size:13px;margin:12px 2px}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+h2.view{font-size:17px;margin:16px 2px 10px;font-weight:700}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;font-weight:500}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.icon{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:17px;line-height:1;flex:none}
+
+.group{margin:16px 0 0}
+.group h3{margin:0 2px 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.rows{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);min-height:56px}
+.row:first-child{border-top:0}
+.row.out{background:var(--red-soft)}
+.row.low{background:var(--amber-soft)}
+.row.slim{min-height:46px;padding:8px 10px}
+.ti{flex:none;font-size:18px}
+.kit{flex:1;min-width:0}
+.kit b{display:block;font-weight:500;font-size:15px;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted)}
+.meta .ok{color:var(--green);font-weight:700}
+.meta .rd{color:var(--red);font-weight:700}
+.linkbtn{border:0;background:none;padding:0;text-align:start;font:inherit;color:inherit;width:100%}
+.step{display:flex;align-items:center;gap:8px;flex:none}
+.qty{min-width:34px;text-align:center;font-weight:800;font-size:20px;direction:ltr}
+.qty.zero{color:var(--red)}
+.qty.lowq{color:var(--amber)}
+.sell{border:0;background:var(--green);color:#fff;border-radius:10px;padding:9px 14px;font-weight:700}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.grow{flex:1;font-size:13px;color:var(--muted)}
+
+/* batch label: date | qty — like a pharmacy shelf sticker */
+.bts{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.bt{display:inline-flex;align-items:stretch;border:1.5px solid var(--label);border-radius:6px;overflow:hidden;font-size:12px;font-weight:700;direction:ltr;background:var(--card);padding:0;line-height:1.7}
+.bt i{font-style:normal;background:var(--label);color:var(--card);padding:0 6px;font-weight:500}
+.bt>span,.bt{padding-inline-end:0}
+.bt::after{content:attr(data-n);padding:0 7px}
+.bt.soon{border-color:var(--amber)} .bt.soon i{background:var(--amber)}
+.bt.now,.bt.dead{border-color:var(--red)} .bt.now i,.bt.dead i{background:var(--red);color:#fff}
+.bt.dead{text-decoration:line-through}
+.bt.none{border-color:var(--red)} .bt.none i{background:var(--red);color:#fff}
+button.bt{cursor:pointer}
+button.bt.sel{outline:3px solid var(--green);outline-offset:1px}
+
+.summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:14px 2px 4px}
+.summary strong{font-size:32px;font-weight:800;color:var(--green)}
+.summary span{color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:4px 12px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.info{cursor:default;background:var(--bg)}
+.dayhead{display:flex;align-items:center;gap:6px;margin:14px 0 0;flex-wrap:wrap}
+.dayhead input,.range input{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+.dayhead .dn{font-weight:700}
+.range{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.range label{font-size:12px;color:var(--muted)}
+.range input{width:100%}
+.sale .money{font-weight:800;flex:none}
+.log time,.sale time{font-size:12px;color:var(--muted);flex:none;min-width:52px}
+.tag{font-size:12px;padding:2px 8px;border-radius:8px;font-weight:700;flex:none;background:var(--line);color:var(--muted)}
+.tag.sale,.tag.alert,.tag.out{background:var(--red-soft);color:var(--red)}
+.tag.in,.tag.add{background:var(--green-soft);color:var(--green)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(8,22,24,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{width:100%;max-width:560px;max-height:90vh;overflow:auto;background:var(--card);border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet h4{margin:0 0 10px;font-size:17px}
+.sheet label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+.sheet label.check{display:flex;gap:8px;align-items:center;color:var(--ink)}
+.sheet .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sheet .actions .btn{flex:1}
+.sheet input:not([type=checkbox]),.sheet select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+.sheet textarea{width:100%;min-height:180px;border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:13px;background:var(--bg);color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stepper{display:flex;gap:6px}
+.stepper input{text-align:center;font-weight:800}
+.stepper.big .icon{width:52px;height:48px;font-size:22px}.stepper.big input{font-size:22px}
+.ex{display:flex;gap:6px}
+.ex select{flex:1}
+.brow{display:flex;gap:6px;align-items:center;margin-top:6px}
+.brow .ex{flex:2}
+.brow .bq{flex:1;min-width:60px}
+.tot{margin-top:12px;font-size:15px}
+.tot b{font-size:22px;color:var(--green)}
+.warn{background:var(--amber-soft);color:var(--ink);padding:8px 10px;border-radius:10px;font-size:13px}
+.facts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.facts span{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px 10px;font-size:13px}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;max-width:90%;text-align:center}
+@media (prefers-reduced-motion: no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+
+/* ---------- chat ---------- */
+.fab{position:fixed;left:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:12;width:60px;height:60px;border-radius:50%;border:0;background:var(--green);color:#fff;font-size:27px;box-shadow:0 6px 18px rgba(14,124,102,.35)}
+.fab .pill{position:absolute;top:-4px;right:-4px;border:2px solid var(--bg);line-height:18px}
+.fab.wiggle{animation:wig .6s ease}
+@keyframes wig{0%,100%{transform:none}20%{transform:rotate(-14deg) scale(1.08)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(4deg)}}
+.chat{position:fixed;inset:0;z-index:15;display:flex;flex-direction:column;background-color:var(--chatbg);
+  background-image:radial-gradient(circle at 1px 1px,var(--chatdot) 1.3px,transparent 1.6px);background-size:22px 22px}
+:root{--chatbg:#E3F1EC;--chatdot:#C6E0D7}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--chatbg:#0F1D1C;--chatdot:#1C302E}}
+:root[data-theme="dark"]{--chatbg:#0F1D1C;--chatdot:#1C302E}
+@media (min-width:700px){.chat{inset:auto;left:20px;bottom:20px;width:400px;height:min(660px,86vh);border-radius:22px;overflow:hidden;box-shadow:0 18px 50px rgba(8,30,28,.28);border:1px solid var(--line)}}
+.chead{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:var(--card);border-bottom:1px solid var(--line)}
+@media (min-width:700px){.chead{padding-top:10px}}
+.ctitle{flex:1;min-width:0;line-height:1.3}
+.ctitle b{display:block;font-size:16px}
+.ctitle small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctitle small.typing{color:var(--green);font-weight:700}
+.cav{display:flex;flex-direction:row-reverse}
+.cav .av{width:28px;height:28px;font-size:12px;border:2px solid var(--card);margin-inline-start:-8px;position:relative}
+.cav .av::after{content:"";position:absolute;bottom:-1px;left:-1px;width:9px;height:9px;border-radius:50%;background:#2BC48A;border:2px solid var(--card)}
+.av{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}
+.cbody{flex:1;overflow-y:auto;padding:12px 12px 6px;overscroll-behavior:contain}
+.cday{display:table;margin:12px auto 8px;background:var(--card);color:var(--muted);font-size:12px;padding:3px 12px;border-radius:12px;box-shadow:var(--shadow)}
+.msg{display:flex;align-items:flex-end;gap:7px;margin-top:2px}
+.msg.first{margin-top:10px}
+.msg.me{justify-content:flex-end}
+.msg .avs{width:32px;flex:none}
+.bub{position:relative;max-width:78%;padding:7px 11px 5px;border-radius:18px;background:var(--card);box-shadow:0 1px 1.5px rgba(16,42,46,.12);border:0;text-align:start;font:inherit;color:inherit;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.first:not(.me) .bub{border-start-start-radius:5px}
+.msg.me .bub{background:var(--green);color:#fff}
+.msg.me.first .bub{border-start-end-radius:5px}
+.bub .who{display:block;font-size:12px;font-weight:700;margin-bottom:1px}
+.bub time{display:block;font-size:10px;opacity:.65;text-align:end;margin-top:1px;line-height:1.2}
+.bub.big{background:none!important;box-shadow:none;font-size:40px;line-height:1.15;padding:0 2px;color:inherit!important}
+.bub.big time{color:var(--muted);font-size:10px}
+.reacts{display:flex;gap:4px;flex-wrap:wrap;margin-top:-4px;position:relative;z-index:1}
+.msg.me+.reacts,.reacts.me{justify-content:flex-end}
+.reacts:not(.me){padding-inline-start:39px}
+.reacts button{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:0 7px;font-size:13px;line-height:22px}
+.reacts button.mine{border-color:var(--green);background:var(--green-soft)}
+.typingdots{display:inline-flex;gap:3px;margin:8px 0 2px;padding:9px 12px;background:var(--card);border-radius:16px}
+.typingdots i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:td 1.1s infinite}
+.typingdots i:nth-child(2){animation-delay:.15s}.typingdots i:nth-child(3){animation-delay:.3s}
+@keyframes td{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.cquick{display:flex;gap:6px;overflow-x:auto;padding:6px 12px;scrollbar-width:none}
+.cquick button{flex:none;border:1px solid var(--line);background:var(--card);border-radius:16px;padding:4px 11px;font-size:14px}
+.cbar{display:flex;gap:8px;align-items:flex-end;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+@media (min-width:700px){.cbar{padding-bottom:10px}}
+.cbar textarea{flex:1;resize:none;max-height:120px;min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:22px;background:var(--bg);color:var(--ink);font:inherit;line-height:1.45}
+.csend{flex:none;width:46px;height:46px;border-radius:50%;border:0;background:var(--green);color:#fff;font-size:20px}
+.csend span{display:inline-block;transform:scaleX(-1)}
+.cempty{text-align:center;color:var(--muted);margin-top:30vh;font-size:14px}
+.cempty b{display:block;font-size:42px}
+.rpick{display:flex;justify-content:space-between;gap:6px;margin:4px 0 6px}
+.rpick button{flex:1;font-size:26px;border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:6px 0}
+@media (prefers-reduced-motion: no-preference){.msg.new{animation:pop .28s cubic-bezier(.2,1.4,.4,1)}@keyframes pop{from{transform:scale(.8) translateY(8px);opacity:0}to{transform:none;opacity:1}}}
+
+/* ---------- voice ---------- */
+.micfab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:12;width:60px;height:60px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:26px;box-shadow:0 6px 18px rgba(16,42,46,.3)}
+.vbox{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 10px}
+.vmic{position:relative;width:96px;height:96px;border-radius:50%;border:0;background:var(--green);color:#fff;font-size:40px}
+.vmic.on::before,.vmic.on::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--green);animation:ring 1.6s ease-out infinite}
+.vmic.on::after{animation-delay:.8s}
+@keyframes ring{from{transform:scale(1);opacity:.7}to{transform:scale(1.7);opacity:0}}
+.vst{margin:0;color:var(--muted);font-size:14px;text-align:center}
+.sheet textarea.vtx{min-height:70px;font-size:16px}
+.vex{font-size:13px;color:var(--muted);margin-top:8px}
+.vex summary{cursor:pointer;font-weight:700}
+.vex ul{margin:6px 0 0;padding-inline-start:18px}
+.heard{background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:6px 10px;font-size:13px;color:var(--muted);margin:0 0 6px}
+.vline{display:flex;gap:6px;align-items:center;margin-top:8px}
+.vline select{flex:3}
+.vline input{flex:1;min-width:56px;text-align:center;font-weight:800}
+.icon.mic.on,.cmic.on{background:var(--red);color:#fff;border-color:var(--red)}
+.cmic{flex:none;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:19px}
+.vrow{display:flex;gap:6px;align-items:flex-start}
+.vrow textarea{flex:1}
+
+/* ---------- notes ---------- */
+.bell[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-top:6px}
+.sticky{position:relative;background:var(--nc);color:#2A2A22;padding:14px 12px 10px;border-radius:3px 3px 14px 3px;box-shadow:0 8px 14px -8px rgba(0,0,0,.35),0 1px 1px rgba(0,0,0,.08);transform:rotate(-1deg);display:flex;flex-direction:column;min-height:130px}
+.sticky:nth-child(even){transform:rotate(1.1deg)}
+.sticky::before{content:"📌";position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:18px}
+.sticky p{margin:4px 0 8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;flex:1}
+.sticky .rem{align-self:flex-start;font-size:12px;font-weight:700;background:rgba(255,255,255,.6);border-radius:8px;padding:1px 8px;margin-bottom:6px}
+.sticky .rem.due{background:#C62A2F;color:#fff}
+.sticky footer{display:flex;align-items:center;gap:6px;font-size:11px;color:#5a5a4c}
+.sticky footer span{flex:1}
+.sticky footer button{border:0;background:rgba(255,255,255,.65);border-radius:8px;width:32px;height:30px;font-size:15px;color:#2A2A22}
+.sticky.done{opacity:.55;transform:none}
+.sticky.done p{text-decoration:line-through}
+.sticky.new{animation:drop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes drop{from{transform:translateY(-16px) rotate(-6deg);opacity:0}}
+.ntx{min-height:110px!important;font-size:16px!important}
+.remind{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:25;width:min(94vw,440px);background:#FFF1A8;color:#2A2A22;border-radius:16px;padding:14px;box-shadow:0 14px 40px rgba(0,0,0,.3)}
+.remind b{display:block;font-size:13px;margin-bottom:4px}
+.remind p{margin:0 0 10px;font-size:16px;white-space:pre-wrap}
+.remind .actions{display:flex;gap:6px}
+.remind .btn{flex:1;background:#fff;color:#2A2A22;border-color:rgba(0,0,0,.1)}
+.remind .btn.primary{background:#0E7C66;color:#fff}
+@media (prefers-reduced-motion: no-preference){.remind{animation:up .25s ease-out}}
+
+.astep{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;background:var(--bg)}
+.astep>b{display:block;margin-bottom:4px}
+.astep .ok{color:var(--green);font-weight:700;margin:4px 0}
+.astep .actions{margin-top:8px}
+a.btn{text-decoration:none;text-align:center;color:inherit}
+a.btn.primary{color:#fff}
+.ltr{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px}
+
+#print{display:none}
+@media print{
+  body>*:not(#print){display:none!important}
+  body{background:#fff;color:#000}
+  #print{display:block;font-size:12px;color:#000}
+  #print h1{font-size:18px;margin:0 0 4px}
+  #print p{margin:0 0 10px;color:#333}
+  #print table{width:100%;border-collapse:collapse}
+  #print th,#print td{border:1px solid #999;padding:5px 6px;text-align:right;vertical-align:top}
+  #print th{background:#E6EFEE}
+  #print tfoot td{font-weight:800;background:#F4F4F4}
+  #print tr{break-inside:avoid}
+  #print .pf{margin-top:10px;font-size:10px;color:#666}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Dr. Corner<small id="status">صيدلية وكوزماتكس</small></h1>
+    <button class="bell" id="notesBtn" aria-label="النوتس" hidden>📝<span class="pill amber" id="notespill" hidden></span></button>
+    <button class="bell" id="bell" aria-label="التنبيهات" hidden>🔔<span class="pill" id="bellpill" hidden></span></button>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="searchbar" id="searchbar" hidden>
+    <input id="q" type="search" placeholder="دوّر بالاسم… (بنادول، bioderma، صن بلوك)" autocomplete="off">
+    <div class="seg" id="seg"></div>
+  </div>
+</header>
+<button class="alertbar" id="alertbar" hidden></button>
+<main class="wrap" id="app"><p class="hint">جاري التحميل…</p></main>
+<button class="fab" id="fab" aria-label="شات الفريق" hidden>💬<span class="pill" id="fabpill" hidden></span></button>
+<section class="chat" id="chat" role="dialog" aria-label="شات الفريق" hidden>
+  <div class="chead"><div class="ctitle"><b>💬 شات الفريق</b><small id="cSub"></small></div><div class="cav" id="cAv"></div><button class="icon" id="cClose" aria-label="قفل الشات">✕</button></div>
+  <div class="cbody" id="cBody"></div>
+  <div class="cquick" id="cQuick"></div>
+  <div class="cbar"><button class="cmic" id="cMic" aria-label="اكتب بصوتك">🎙️</button><textarea id="cIn" rows="1" placeholder="اكتب رسالة…" aria-label="الرسالة"></textarea><button class="csend" id="cSend" aria-label="ابعت"><span>➤</span></button></div>
+</section>
+<button class="micfab" id="micfab" aria-label="سجّل بصوتك" hidden>🎙️</button>
+<div class="remind" id="remind" hidden></div>
+<div id="modal"></div>
+<div id="print"></div>
+
+<script>
+/* ============ إعداد Firebase (نفس مشروع Mafia Shop — مسار منفصل) ============ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD3_9I5o13GLIJMrlVfTJ8HDp2V2pJgtn8",
+  authDomain: "mafia-shop-d1fad.firebaseapp.com",
+  projectId: "mafia-shop-d1fad",
+  storageBucket: "mafia-shop-d1fad.firebasestorage.app",
+  messagingSenderId: "488960191408",
+  appId: "1:488960191408:web:6a275bfa28b8ddb1328475"
+};
+const SHOP_ID = 'drcorner-pharmacy-7c41';
+const SHOP_NAME = 'Dr. Corner';
+/* =========================================================================== */
+(function(){
+const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
+const ACT={note:'نوت',sale:'بيع',undo:'إلغاء بيع',in:'توريد',out:'شيل',fix:'تعديل جرد',add:'صنف جديد',edit:'تعديل',del:'حذف',alert:'عاجل',ord:'اتطلب',done:'اتحل'};
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const pad=n=>String(n).padStart(2,'0');
+const dayKey=(d=new Date())=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>dayKey();
+const DEV=LS.get('drc.dev')||('d'+Math.random().toString(36).slice(2,10));LS.set('drc.dev',DEV);
+const S={notes:[],items:[],sales:[],dayCache:{},events:[],alerts:[],cfg:{cur:'ج.م'},type:LS.get('drc.type')||'all',view:'items',q:'',
+  me:LS.get('drc.me')||'',day:today(),expPreset:'m3',expFrom:'',expTo:'',shortMode:'all',ready:false,offline:false,error:''};
+const $=id=>document.getElementById(id);
+const $app=$('app'),$tabs=$('tabs'),$modal=$('modal'),$q=$('q'),$sb=$('searchbar'),$st=$('status'),$seg=$('seg'),$bell=$('bell'),$bp=$('bellpill'),$ab=$('alertbar'),$pr=$('print');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toEn=s=>String(s??'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٫]/g,'.');
+const int=s=>parseInt(toEn(s),10)||0;
+const flt=s=>parseFloat(toEn(s))||0;
+const fmtDay=k=>{const [y,m,d]=k.split('-');return `${+d}/${+m}/${y}`};
+const DAYS=['الأحد','الاتنين','التلات','الأربع','الخميس','الجمعة','السبت'];
+const dayName=k=>DAYS[new Date(k+'T12:00:00').getDay()];
+function fmtTime(t,withDay){const d=new Date(t);const h=d.getHours();const s=`${h%12||12}:${pad(d.getMinutes())}${h<12?'ص':'م'}`;return withDay&&dayKey(d)!==today()?`${d.getDate()}/${d.getMonth()+1} ${s}`:s}
+const num=n=>(Math.round((+n||0)*100)/100).toLocaleString('en-US');
+const money=n=>`${num(n)} ${S.cfg.cur||'ج.م'}`;
+function toast(msg){document.querySelectorAll('.toast').forEach(t=>t.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800)}
+
+/* ---------- expiry batches: key e202703 = 03/2027, x = بدون تاريخ ---------- */
+const bk=(y,m)=>m&&y?`e${y}${pad(m)}`:'x';
+const bkParse=k=>{const r=/^e(\d{4})(\d{2})$/.exec(k||'');return r?{y:+r[1],m:+r[2]}:null};
+const bkIdx=k=>{const p=bkParse(k);return p?p.y*12+p.m-1:1e9};
+const nowIdx=()=>{const d=new Date();return d.getFullYear()*12+d.getMonth()};
+const bkLabel=k=>{const p=bkParse(k);return p?`${pad(p.m)}/${p.y}`:'بدون تاريخ'};
+const bkShort=k=>{const p=bkParse(k);return p?`${pad(p.m)}/${String(p.y).slice(2)}`:'—'};
+function expCls(k){const i=bkIdx(k),n=nowIdx();if(i>=1e9)return '';if(i<n)return 'dead';if(i===n)return 'now';if(i<=n+3)return 'soon';return ''}
+const EXPW={dead:'منتهي',now:'بينتهي الشهر ده',soon:'قرب ينتهي','':''};
+function parseExp(s){s=toEn(s).trim();if(!s)return 'x';let r=/^(\d{4})\s*[\/\-.]\s*(\d{1,2})/.exec(s);if(r)return bk(+r[1],+r[2]);r=/(\d{1,2})\s*[\/\-.]\s*(\d{2,4})/.exec(s);if(r){let y=+r[2];if(y<100)y+=2000;const m=+r[1];if(m>=1&&m<=12)return bk(y,m)}return null}
+
+/* ---------- items ---------- */
+const bats=p=>Object.entries(p.b||{}).filter(([,v])=>v>0).sort((a,b)=>bkIdx(a[0])-bkIdx(b[0]));
+const qty=p=>bats(p).reduce((a,[,v])=>a+v,0);
+const good=p=>bats(p).filter(([k])=>expCls(k)!=='dead').reduce((a,[,v])=>a+v,0);
+const deadQ=p=>qty(p)-good(p);
+const minOf=p=>p.min==null||p.min===''?2:+p.min;
+const isShort=p=>good(p)<=minOf(p);
+const tOf=p=>p.type==='med'?'med':'cos';
+const typeOk=t=>S.type==='all'||t===S.type;
+const norm=s=>toEn(s).toLowerCase().replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s+/g,' ').trim();
+const matchQ=text=>{if(!S.q)return true;const h=norm(text);return norm(S.q).split(' ').every(w=>h.includes(w))};
+const hay=p=>[p.name,p.alias,p.grp,TYPES[tOf(p)].name].join(' ');
+const mItem=p=>typeOk(tOf(p))&&matchQ(hay(p));
+const byName=(a,b)=>String(a.name).localeCompare(String(b.name),'ar');
+const findByName=n=>S.items.find(x=>norm(x.name)===norm(n));
+function tags(p){const bl=bats(p);if(!bl.length)return `<div class="bts"><span class="bt none" data-n="0"><i>خلصان</i></span></div>`;return `<div class="bts">${bl.map(([k,v])=>`<span class="bt ${expCls(k)}" data-n="${v}"><i>${bkShort(k)}</i></span>`).join('')}</div>`}
+const openAlerts=()=>S.alerts.filter(a=>!a.done);
+
+/* ---------- sales ---------- */
+const WIN=62*864e5;const winStart=Date.now()-WIN;const winDay=dayKey(new Date(winStart));
+function salesOf(day){if(day>=winDay)return S.sales.filter(s=>s.day===day);if(S.dayCache[day])return S.dayCache[day];fetchDay(day);return null}
+async function fetchDay(day){if(S.dayCache['_'+day])return;S.dayCache['_'+day]=1;try{const q=await col('sales').where('day','==',day).get();S.dayCache[day]=q.docs.map(d=>({sid:d.id,...d.data()})).sort((a,b)=>b.t-a.t)}catch(e){S.dayCache[day]=[];toast('مقدرتش أجيب مبيعات اليوم ده')}if(S.view==='sales')render()}
+const sum=(l,f='total')=>l.reduce((a,s)=>a+(+s[f]||0),0);
+
+/* ---------- top ---------- */
+function renderTop(){
+  const show=S.ready;
+  const sc=S.items.filter(p=>typeOk(tOf(p))&&isShort(p)).length;
+  const n=nowIdx();let ec=0;S.items.forEach(p=>{if(typeOk(tOf(p)))bats(p).forEach(([k])=>{if(bkIdx(k)<=n)ec++})});
+  const tabs=[['items','الأصناف'],['sales','المبيعات'],['short','النواقص'+(sc?`<span class="pill">${sc}</span>`:'')],['exp','الإكسباير'+(ec?`<span class="pill amber">${ec}</span>`:'')],['log','السجل']];
+  $tabs.innerHTML=show?tabs.map(([k,l])=>`<button data-tab="${k}" ${S.view===k?'aria-current="page"':''}>${l}</button>`).join(''):'';
+  $sb.hidden=!show;
+  $seg.innerHTML=[['all','الكل'],['med','💊 أدوية'],['cos','🧴 كوزماتكس']].map(([k,l])=>`<button data-type="${k}" aria-pressed="${S.type===k}">${l}</button>`).join('');
+  $st.className=S.offline?'off':'';$st.innerHTML=show?`<i></i>${S.offline?'مش متصل — هيتزامن لما النت يرجع':'متزامن مع الكل'}`:'صيدلية وكوزماتكس';
+  $bell.hidden=$('notesBtn').hidden=$mic.hidden=!show;$fab.hidden=!show||C.open;
+  const on=S.notes.filter(n=>!n.done).length;$('notespill').hidden=!on;$('notespill').textContent=on;$('notesBtn').setAttribute('aria-pressed',S.view==='notes');
+  const oa=openAlerts();$bp.hidden=!oa.length;$bp.textContent=oa.length;
+  $ab.hidden=!show||!oa.length;
+  if(oa.length)$ab.textContent=`🔔 ${oa.length} ناقص عاجل: ${oa.slice(0,3).map(a=>a.name).join('، ')}${oa.length>3?'…':''}`;
+  document.title=(oa.length?`(${oa.length}) `:'')+'Dr. Corner — المخزن والمبيعات';
+}
+function render(){
+  renderTop();
+  if(S.error){$app.innerHTML=`<div class="notice">${S.error}</div>`;return}
+  if(!S.ready){$app.innerHTML='<p class="hint">جاري التحميل…</p>';return}
+  ({items:vItems,sales:vSales,short:vShort,exp:vExp,log:vLog,notes:vNotes}[S.view]||vItems)();
+}
+
+/* ---------- views ---------- */
+function rowItem(p){
+  const q=good(p),sh=isShort(p),dq=deadQ(p);
+  return `<div class="row ${q===0?'out':sh?'low':''}"><span class="ti">${TYPES[tOf(p)].icon}</span><div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta">${p.price?`<span>${money(p.price)}</span>`:''}${dq?`<span class="rd">+${dq} منتهي</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.ordered?'<span class="ok">✓ اتطلب</span>':''}</div>${tags(p)}</div><div class="step"><span class="qty ${q===0?'zero':sh?'lowq':''}">${q}</span><button class="sell" data-act="sell" data-id="${p.id}">بيع</button></div></div>`;
+}
+function grouped(list,keyFn,rowFn){
+  const g={};list.forEach(p=>{const k=keyFn(p);(g[k]=g[k]||[]).push(p)});
+  return Object.keys(g).sort((a,b)=>a.localeCompare(b,'ar')).map(k=>`<section class="group"><h3>${esc(k)} (${g[k].length})</h3><div class="rows">${g[k].map(rowFn).join('')}</div></section>`).join('');
+}
+function vItems(){
+  const list=S.items.filter(mItem).sort(byName);
+  let h=`<div class="toolbar"><button class="btn primary" data-act="add">+ صنف جديد</button><button class="btn" data-act="restock">استلام بضاعة</button><button class="btn" data-act="bulk">إضافة بالجملة</button></div>`;
+  if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>ابدأ بـ «صنف جديد»، أو «إضافة بالجملة» لو عندك لستة جاهزة من إكسل.</div>`;
+  else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
+  else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
+  else h+=`<p class="hint">${list.length} صنف — دوس على اسم الصنف للتفاصيل والتعديل.</p>`+grouped(list,p=>p.grp||TYPES[tOf(p)].name,rowItem);
+  $app.innerHTML=h;
+}
+function aggSales(list){const m={};list.forEach(s=>{const key=s.id||s.name;const a=m[key]=m[key]||{name:s.name,type:s.type||'cos',qty:0,d:{},short:0,last:null};a.qty+=+s.qty||0;a.short+=+s.short||0;for(const k in (s.alloc||{}))a.d[k]=(a.d[k]||0)+s.alloc[k];if(!a.last||s.t>a.last.t)a.last=s});return Object.values(m).sort(byName)}
+const dChips=d=>Object.entries(d).sort((a,b)=>bkIdx(a[0])-bkIdx(b[0])).map(([k,v])=>`<span class="bt ${expCls(k)}" data-n="${v}"><i>${bkShort(k)}</i></span>`).join('');
+const dText=d=>Object.entries(d).filter(([k])=>k!=='x').sort((a,b)=>bkIdx(a[0])-bkIdx(b[0])).map(([k,v])=>`${bkLabel(k)}×${v}`).join('، ');
+function vSales(){
+  const d=S.day,isT=d===today(),raw=salesOf(d);
+  let h=`<div class="dayhead"><button class="btn sm" data-act="day-prev">اليوم اللي قبله</button><input type="date" id="dayIn" value="${d}" max="${today()}"><button class="btn sm" data-act="day-next" ${isT?'disabled':''}>اللي بعده</button></div><p class="hint" style="margin-top:6px">${isT?'النهارده':dayName(d)} ${fmtDay(d)}</p>`;
+  if(raw===null){$app.innerHTML=h+'<p class="hint">جاري تحميل اليوم ده…</p>';return}
+  const agg=aggSales(raw.filter(s=>typeOk(s.type||'cos')&&matchQ(s.name)));
+  if(agg.length){
+    h+=`<div class="toolbar"><button class="btn" data-act="rep-sales" data-k="copy">نسخ</button><button class="btn" data-act="rep-sales" data-k="pdf">PDF</button><button class="btn" data-act="rep-sales" data-k="wa">واتساب</button></div>`;
+    h+=`<div class="rows">${agg.map(a=>`<div class="row"><span class="ti">${TYPES[a.type].icon}</span><div class="kit"><b>${esc(a.name)}</b>${Object.keys(a.d).length?`<div class="bts">${dChips(a.d)}</div>`:''}${a.short?`<div class="meta"><span class="rd">${a.short} مكانوش متسجلين في المخزن</span></div>`:''}</div><span class="qty">${a.qty}</span><button class="icon" data-act="undo-sale" data-sid="${a.last.sid}" aria-label="تراجع عن آخر تسجيل">↶</button></div>`).join('')}</div>
+    <p class="hint">↶ بيلغي آخر تسجيل للصنف ده ويرجّع الكمية للمخزن على نفس التاريخ.</p>`;
+  }else h+=`<div class="empty">${S.q?'مفيش مبيعات بالاسم ده':'مفيش مبيعات في اليوم ده'}</div>`;
+  $app.innerHTML=h;
+}
+function shortList(){
+  let l=S.items.filter(p=>mItem(p)&&isShort(p));
+  if(S.shortMode==='out')l=l.filter(p=>!good(p));
+  if(S.shortMode==='low')l=l.filter(p=>good(p)>0);
+  if(S.shortMode==='todo')l=l.filter(p=>!p.ordered);
+  return l.sort((a,b)=>(good(a)?1:0)-(good(b)?1:0)||good(a)-good(b)||byName(a,b));
+}
+function rowShort(p){
+  const q=good(p);
+  return `<div class="row ${q?'low':'out'}"><span class="ti">${TYPES[tOf(p)].icon}</span><div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta"><span class="${q?'':'rd'}">${q?`موجود ${q} — الحد ${minOf(p)}`:'خلصان خالص'}${deadQ(p)?` (+${deadQ(p)} منتهي)`:''}</span>${p.ordered?`<span class="ok">✓ اتطلب (${esc(p.ordered.by)} ${fmtTime(p.ordered.t,1)})</span>`:''}</div>${qty(p)?tags(p):''}<div class="acts"><button class="btn sm primary" data-act="restock" data-id="${p.id}">اتورد</button><button class="btn sm" data-act="ordered" data-id="${p.id}">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn sm" data-act="urgent" data-id="${p.id}">🔔 عاجل</button></div></div><span class="qty ${q?'lowq':'zero'}">${q}</span></div>`;
+}
+function vShort(){
+  const list=shortList(),all=S.items.filter(p=>mItem(p)&&isShort(p));
+  const out=all.filter(p=>!good(p)).length;
+  let h=`<div class="summary"><strong style="color:var(--red)">${all.length}</strong><span>صنف ناقص — منهم ${out} خلصان خالص</span></div>`;
+  h+=`<div class="chips">${[['all','الكل'],['out','خلصان'],['low','قرب يخلص'],['todo','لسه متطلبش']].map(([k,l])=>`<button class="chip" data-act="smode" data-k="${k}" aria-pressed="${S.shortMode===k}">${l}</button>`).join('')}</div>`;
+  if(list.length){
+    h+=`<div class="toolbar"><button class="btn" data-act="rep-short" data-k="copy">نسخ</button><button class="btn" data-act="rep-short" data-k="pdf">PDF</button><button class="btn" data-act="rep-short" data-k="wa">واتساب</button>${out?`<button class="btn danger" data-act="alert-out">🔔 نبّه الكل بالخلصان</button>`:''}</div>`;
+    h+=S.type==='all'?grouped(list,p=>TYPES[tOf(p)].icon+' '+TYPES[tOf(p)].name,rowShort):`<div class="rows">${list.map(rowShort).join('')}</div>`;
+    h+=`<p class="hint">الصنف بيبقى ناقص لما الموجود يوصل للحد الأدنى بتاعه (بتغيره من «تعديل» الصنف).</p>`;
+  }else h+=`<div class="empty">${S.items.length?'مفيش نواقص هنا 👌':'لسه مفيش أصناف'}</div>`;
+  $app.innerHTML=h;
+}
+const mStart=i=>dayKey(new Date(Math.floor(i/12),i%12,1));
+const mEnd=i=>dayKey(new Date(Math.floor(i/12),i%12+1,0));
+const PRE={dead:['منتهي',()=>['',mEnd(nowIdx()-1)]],now:['الشهر ده',()=>[mStart(nowIdx()),mEnd(nowIdx())]],m3:['لحد 3 شهور',()=>['',mEnd(nowIdx()+3)]],m6:['لحد 6 شهور',()=>['',mEnd(nowIdx()+6)]],y1:['لحد سنة',()=>['',mEnd(nowIdx()+12)]]};
+function expRange(){if(S.expPreset&&PRE[S.expPreset]){const [f,t]=PRE[S.expPreset][1]();S.expFrom=f;S.expTo=t}const di=s=>{const [y,m]=s.split('-');return +y*12+(+m)-1};return [S.expFrom?di(S.expFrom):-1e9,S.expTo?di(S.expTo):1e9]}
+function expList(){const [a,b]=expRange();const out=[];S.items.filter(mItem).forEach(p=>bats(p).forEach(([k,v])=>{const i=bkIdx(k);if(i<1e9&&i>=a&&i<=b)out.push({p,k,v,i})}));return out.sort((x,y)=>x.i-y.i||byName(x.p,y.p))}
+function vExp(){
+  const list=expList();
+  let h=`<div class="chips">${Object.entries(PRE).map(([k,[l]])=>`<button class="chip" data-act="epre" data-k="${k}" aria-pressed="${S.expPreset===k}">${l}</button>`).join('')}</div>
+  <div class="range"><div><label for="expFrom">من تاريخ</label><input type="date" id="expFrom" value="${S.expFrom}"></div><div><label for="expTo">لحد تاريخ</label><input type="date" id="expTo" value="${S.expTo}"></div></div>`;
+  const pcs=list.reduce((a,x)=>a+x.v,0),val=list.reduce((a,x)=>a+x.v*(+x.p.price||0),0);
+  h+=`<div class="summary"><strong style="color:var(--amber)">${pcs}</strong><span>قطعة في ${list.length} تشغيلة${val?` — قيمتهم ${money(val)}`:''}</span></div>`;
+  if(list.length){
+    h+=`<div class="toolbar"><button class="btn" data-act="rep-exp" data-k="copy">نسخ</button><button class="btn" data-act="rep-exp" data-k="pdf">PDF</button><button class="btn" data-act="rep-exp" data-k="wa">واتساب</button></div>`;
+    const g={};list.forEach(x=>{(g[x.k]=g[x.k]||[]).push(x)});
+    h+=Object.keys(g).sort((a,b)=>bkIdx(a)-bkIdx(b)).map(k=>`<section class="group"><h3>${bkLabel(k)}${EXPW[expCls(k)]?' — '+EXPW[expCls(k)]:''}</h3><div class="rows">${g[k].map(x=>`<div class="row slim"><span class="ti">${TYPES[tOf(x.p)].icon}</span><div class="kit"><button class="linkbtn" data-act="open" data-id="${x.p.id}"><b>${esc(x.p.name)}</b></button><div class="meta">${x.p.price?`<span>${money(x.p.price)}</span>`:''}<span>الإجمالي في المخزن ${qty(x.p)}</span></div></div><span class="bt ${expCls(k)}" data-n="${x.v}"><i>${bkShort(k)}</i></span><button class="btn sm" data-act="out" data-id="${x.p.id}" data-k="${k}">شيل</button></div>`).join('')}</div></section>`).join('');
+  }else h+=`<div class="empty">مفيش إكسباير في الفترة دي 👌</div>`;
+  $app.innerHTML=h;
+}
+function vLog(){
+  const list=S.events.filter(e=>matchQ(e.name+' '+(e.by||'')+' '+(ACT[e.a]||'')));
+  const ppl=[...new Set(S.events.slice(0,200).map(e=>e.by).filter(Boolean))];
+  let h=`<div class="toolbar"><button class="btn" data-act="name">اسمي: ${esc(S.me||'—')}</button><button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="export">نسخة احتياطية</button><button class="btn" data-act="import">رفع نسخة</button></div>`;
+  if(ppl.length)h+=`<p class="hint">اللي بيستخدموا الموقع: ${ppl.map(esc).join('، ')}</p>`;
+  h+=list.length?`<div class="rows log">${list.slice(0,300).map(e=>`<div class="row slim"><time>${fmtTime(e.t,1)}</time><span class="tag ${e.a}">${ACT[e.a]||e.a}</span><div class="kit"><b>${esc(e.name)}${e.n!==''&&e.n!=null?` × ${esc(e.n)}`:''}</b><div class="meta">${e.by?`<span>👤 ${esc(e.by)}</span>`:''}${e.note?`<span>${esc(e.note)}</span>`:''}</div></div></div>`).join('')}</div>`:`<div class="empty">مفيش حركات لسه</div>`;
+  $app.innerHTML=h;
+}
+
+/* ---------- reports: copy / pdf / whatsapp ---------- */
+function repShort(){
+  const list=shortList();let t=`نواقص ${SHOP_NAME} — ${fmtDay(today())}\n`;const rows=[];
+  ['med','cos'].forEach(ty=>{const l=list.filter(p=>tOf(p)===ty);if(!l.length)return;t+=`\n${TYPES[ty].icon} ${TYPES[ty].name}:\n`;
+    l.forEach(p=>{const q=good(p),bl=bats(p),d=bl.map(([k,v])=>`${bkLabel(k)}×${v}`).join('، ');t+=`- ${p.name} — ${q?`موجود ${q}`:'خلصان'}${d?` (${d})`:''}${p.ordered?' ✓اتطلب':''}\n`;rows.push([rows.length+1,p.name,TYPES[ty].name,q,d||'—',minOf(p),p.ordered?'اتطلب':''])})});
+  return {title:'النواقص',sub:`${fmtDay(today())} — ${list.length} صنف`,text:t.trim(),head:['#','الصنف','النوع','الموجود','التواريخ والعدد','الحد','ملاحظة'],rows};
+}
+function repSales(){
+  const d=S.day,agg=aggSales((salesOf(d)||[]).filter(s=>typeOk(s.type||'cos')&&matchQ(s.name)));
+  let t=`مبيعات ${SHOP_NAME} — ${dayName(d)} ${fmtDay(d)}\n\n`;
+  agg.forEach(a=>{const x=dText(a.d);t+=`- ${a.name} × ${a.qty}${x?` (${x})`:''}\n`});
+  return {title:'المبيعات',sub:`${dayName(d)} ${fmtDay(d)}`,text:t.trim(),head:['#','الصنف','النوع','العدد','التواريخ'],
+    rows:agg.map((a,i)=>[i+1,a.name,TYPES[a.type].name,a.qty,dText(a.d)||'—'])};
+}
+function repExp(){
+  const list=expList();const r=`${S.expFrom?fmtDay(S.expFrom):'الأول'} لحد ${S.expTo?fmtDay(S.expTo):'الآخر'}`;
+  let t=`إكسباير ${SHOP_NAME} — من ${r}\n`;let last='';
+  list.forEach(x=>{if(x.k!==last){last=x.k;t+=`\n📅 ${bkLabel(x.k)}${EXPW[expCls(x.k)]?' — '+EXPW[expCls(x.k)]:''}:\n`}t+=`- ${x.p.name} × ${x.v}\n`});
+  return {title:'الإكسباير',sub:`من ${r} — ${list.reduce((a,x)=>a+x.v,0)} قطعة`,text:t.trim(),head:['الإكسباير','الصنف','النوع','العدد','السعر','الحالة'],
+    rows:list.map(x=>[bkLabel(x.k),x.p.name,TYPES[tOf(x.p)].name,x.v,x.p.price?num(x.p.price):'—',EXPW[expCls(x.k)]||''])};
+}
+function doReport(r,k){
+  if(k==='wa')return wa(r.text);
+  if(k==='copy')return textSheet(r.title,r.text);
+  $pr.innerHTML=`<h1>${esc(SHOP_NAME)} — ${esc(r.title)}</h1><p>${esc(r.sub)}</p><table><thead><tr>${r.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row=>`<tr>${row.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>${r.foot?`<tfoot><tr>${r.foot.map(c=>`<td>${esc(c)}</td>`).join('')}</tr></tfoot>`:''}</table><p class="pf">اتطبع ${fmtDay(today())} ${fmtTime(Date.now())} — ${esc(S.me)}</p>`;
+  const old=document.title;document.title=`${SHOP_NAME} ${r.title} ${today()}`;
+  setTimeout(()=>{window.print();setTimeout(()=>{document.title=old},800)},60);
+  toast('اختار «حفظ كـ PDF» من شاشة الطباعة');
+}
+function wa(text){window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank')}
+async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch(e){const ta=document.querySelector('#copyText');if(ta){ta.focus();ta.select();try{return document.execCommand('copy')}catch(_){}}return false}}
+function textSheet(title,text){
+  openSheet(`<h4>${esc(title)}</h4><textarea id="copyText" readonly>${esc(text)}</textarea><div class="actions"><button class="btn" data-cancel>قفل</button>${navigator.share?'<button class="btn" data-m="share">مشاركة</button>':''}<button class="btn" data-m="wa">واتساب</button><button class="btn primary" data-m="copy">نسخ</button></div>`,
+  async m=>{if(m==='copy')toast(await copyText(text)?'اتنسخ':'علّم على النص وانسخه يدوي');if(m==='wa')wa(text);if(m==='share')navigator.share({text}).catch(()=>{})});
+}
+
+/* ---------- sheets ---------- */
+function openSheet(html,onClick,dismissable=true){
+  $modal.innerHTML=`<div class="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const scrim=$modal.firstChild;
+  scrim.addEventListener('click',e=>{if((dismissable&&e.target===scrim)||e.target.closest('[data-cancel]')){closeSheet();return}const b=e.target.closest('[data-m]');if(b&&onClick)onClick(b.dataset.m,scrim,b)});
+  const f=scrim.querySelector('input:not([type=number]):not([type=checkbox]),textarea:not([readonly])');if(f)setTimeout(()=>f.focus(),60);
+  return scrim;
+}
+function closeSheet(){try{curRec&&curRec.abort()}catch(e){}$modal.innerHTML=''}
+const Y0=new Date().getFullYear();
+function expSel(k,def){const p=bkParse(k);const yy=p?p.y:Y0+1;let ys='';for(let y=Y0-3;y<=Y0+8;y++)ys+=`<option ${y===yy?'selected':''}>${y}</option>`;
+  return `<div class="ex"><select data-x="m" aria-label="شهر الإكسباير"><option value="">${def||'بدون تاريخ'}</option>${[...Array(12)].map((_,i)=>`<option value="${i+1}" ${p&&p.m===i+1?'selected':''}>${pad(i+1)}</option>`).join('')}</select><select data-x="y" aria-label="سنة الإكسباير">${ys}</select></div>`}
+const readExp=el=>{const m=+el.querySelector('[data-x=m]').value,y=+el.querySelector('[data-x=y]').value;return m?bk(y,m):'x'};
+function askName(force,then){
+  openSheet(`<h4>اسمك إيه؟</h4><p class="hint" style="margin-top:0">بيظهر في الشات وجنب التوريد والتعديلات (المبيعات بتتسجل من غير اسم).</p><input id="fMe" value="${esc(S.me)}" placeholder="مثلاً: ريمون" maxlength="20"><div class="actions">${force?'':'<button class="btn" data-cancel>إلغاء</button>'}<button class="btn primary" data-m="ok">حفظ</button></div>`,
+  (m,r)=>{const v=r.querySelector('#fMe').value.trim();if(!v){toast('اكتب اسمك');return}S.me=v;LS.set('drc.me',v);closeSheet();render();if(then)then()},!force);
+}
+function itemSheet(p){
+  const bl=bats(p);
+  openSheet(`<h4>${TYPES[tOf(p)].icon} ${esc(p.name)}</h4><div class="facts"><span>صالح للبيع <b>${good(p)}</b></span>${deadQ(p)?`<span>منتهي <b>${deadQ(p)}</b></span>`:''}<span>الحد الأدنى <b>${minOf(p)}</b></span>${p.price?`<span>${money(p.price)}</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.alias?`<span>${esc(p.alias)}</span>`:''}${p.critical?'<span>⭐ صنف مهم</span>':''}</div>
+  <label>التواريخ اللي في المخزن</label><div class="rows">${bl.length?bl.map(([k,v])=>`<div class="row slim"><span class="bt ${expCls(k)}" data-n="${v}"><i>${bkLabel(k)}</i></span><span class="grow">${EXPW[expCls(k)]}</span><button class="btn sm" data-m="out:${k}">شيل</button></div>`).join(''):'<div class="empty">مفيش حاجة في المخزن</div>'}</div>
+  <div class="actions"><button class="btn primary" data-m="sell">بيع</button><button class="btn" data-m="in">استلام</button><button class="btn" data-m="edit">تعديل</button></div>
+  <div class="actions"><button class="btn" data-m="urgent">🔔 عاجل للكل</button><button class="btn" data-m="ord">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn danger" data-m="del">حذف</button></div>`,
+  m=>{const x=S.items.find(i=>i.id===p.id);if(!x){closeSheet();return}
+    if(m==='sell')sellSheet(x);else if(m==='in')restockSheet(x);else if(m==='edit')itemForm(x);else if(m==='urgent'){closeSheet();urgent(x)}
+    else if(m==='ord'){closeSheet();toggleOrdered(x)}else if(m==='del')delSheet(x);else if(m.startsWith('out:'))outSheet(x,m.slice(4))});
+}
+function sellSheet(p){
+  const bl=bats(p),n0=nowIdx();const def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];let start=def;
+  const r=openSheet(`<h4>بيع — ${esc(p.name)}</h4>
+    ${bl.length>1?`<label>هيتخصم من أنهي تاريخ الأول؟</label><div class="chips">${bl.map(([k,v])=>`<button class="bt ${expCls(k)} ${k===def?'sel':''}" data-m="pk:${k}" data-n="${v}"><i>${bkShort(k)}</i></button>`).join('')}</div>`:''}
+    ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
+    <label for="fN">العدد</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fN" type="number" inputmode="numeric" value="1" min="1"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">تأكيد البيع</button></div>`,
+  (m,root,b)=>{const n=root.querySelector('#fN');
+    if(m==='inc')n.value=int(n.value)+1;else if(m==='dec')n.value=Math.max(1,int(n.value)-1);
+    else if(m.startsWith('pk:')){start=m.slice(3);root.querySelectorAll('button.bt').forEach(x=>x.classList.toggle('sel',x===b));root.querySelector('#dw').hidden=expCls(start)!=='dead'}
+    else if(m==='ok'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);return}});
+}
+function restockSheet(p,pre={}){
+  const pick=!p,isMed=p?tOf(p)==='med':!!(pre.name&&findByName(pre.name)&&tOf(findByName(pre.name))==='med');
+  openSheet(`<h4>استلام بضاعة${p?' — '+esc(p.name):''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}
+    ${pick?`<label for="fItem">الصنف</label><input id="fItem" list="ilist" value="${esc(pre.name||'')}" placeholder="اكتب اسم الصنف واختاره"><datalist id="ilist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`:`<p class="hint" style="margin:0">عندك دلوقتي ${qty(p)}</p>${tags(p)}`}
+    <div class="two"><div><label for="fQ">العدد اللي وصل</label><input id="fQ" type="number" inputmode="numeric" value="${pre.q||''}" placeholder="0"></div><div><label>الإكسباير (شهر / سنة)</label><div id="fE">${expSel(pre.k||'',isMed?'الشهر':null)}</div></div></div>
+    <label for="fPr">سعر البيع الجديد (لو اتغير)</label><input id="fPr" type="number" inputmode="decimal" placeholder="${p&&p.price?p.price:'اختياري'}">
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">إضافة للمخزن</button></div>`,
+  (m,r)=>{if(m!=='ok')return;const it=p||findByName(r.querySelector('#fItem').value);if(!it){toast('الصنف ده مش موجود — ضيفه من «صنف جديد» الأول');return}
+    const q=int(r.querySelector('#fQ').value);if(q<1){toast('اكتب العدد اللي وصل');return}
+    const k=readExp(r.querySelector('#fE'));if(k==='x'&&tOf(it)==='med'){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
+    closeSheet();restock(it,q,k,flt(r.querySelector('#fPr').value))});
+}
+function itemForm(p,preset){
+  const grps=[...new Set(S.items.map(x=>x.grp).filter(Boolean))].sort();
+  const t=p?tOf(p):(preset&&preset.type)||(S.type==='all'?'med':S.type);
+  const brow=(k,v)=>`<div class="brow">${expSel(k)}<input class="bq" type="number" inputmode="numeric" value="${v??''}" placeholder="العدد"><button class="icon" data-m="rm" aria-label="شيل السطر">✕</button></div>`;
+  const bl=p?bats(p):[];
+  openSheet(`<h4>${p?'تعديل صنف':'صنف جديد'}</h4>${preset&&preset.heard?`<p class="heard">🎙️ «${esc(preset.heard)}»</p>`:''}
+    <label for="fName">اسم الصنف</label><input id="fName" value="${esc(p?.name||preset?.name||'')}" placeholder="مثلاً: Panadol Extra 24 tab">
+    <div class="two"><div><label for="fType">النوع</label><select id="fType"><option value="med" ${t==='med'?'selected':''}>💊 دوا</option><option value="cos" ${t==='cos'?'selected':''}>🧴 كوزماتكس</option></select></div>
+    <div><label for="fGrp">القسم / الشركة</label><input id="fGrp" list="glist" value="${esc(p?.grp||'')}" placeholder="مثلاً: صن بلوك"><datalist id="glist">${grps.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div></div>
+    <label for="fAl">اسم تاني للبحث (إنجليزي / عربي)</label><input id="fAl" value="${esc(p?.alias||'')}" placeholder="مثلاً: بنادول اكسترا">
+    <div class="two"><div><label for="fPr">سعر البيع</label><input id="fPr" type="number" inputmode="decimal" value="${p?.price??''}" placeholder="0"></div>
+    <div><label for="fMin">الحد الأدنى (ينزل نواقص)</label><input id="fMin" type="number" inputmode="numeric" value="${p?minOf(p):2}"></div></div>
+    <label class="check"><input type="checkbox" id="fCr" ${p?.critical?'checked':''}> صنف مهم — نبّه الكل أول ما يوصل للحد الأدنى</label>
+    <label>الكمية حسب تاريخ الإكسباير ${p?'(تعديل الجرد)':''}</label><div id="fB">${bl.length?bl.map(([k,v])=>brow(k,v)).join(''):brow(preset&&preset.k||'',preset&&preset.q||'')}</div>
+    <button class="btn sm" data-m="addrow" style="margin-top:8px">+ تاريخ تاني</button>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="save">${p?'حفظ التعديل':'إضافة'}</button></div>`,
+  (m,r,b)=>{
+    if(m==='addrow'){r.querySelector('#fB').insertAdjacentHTML('beforeend',brow('',''));return}
+    if(m==='rm'){b.closest('.brow').remove();return}
+    if(m!=='save')return;
+    const name=r.querySelector('#fName').value.trim();if(!name){toast('اكتب اسم الصنف');return}
+    const dup=findByName(name);if(dup&&(!p||dup.id!==p.id)){toast('في صنف بنفس الاسم ده');return}
+    const type=r.querySelector('#fType').value,bm={};let noDate=false;
+    r.querySelectorAll('.brow').forEach(row=>{const q=int(row.querySelector('.bq').value);if(q<=0)return;const k=readExp(row);if(k==='x'&&type==='med')noDate=true;bm[k]=(bm[k]||0)+q});
+    if(noDate){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
+    const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked};
+    closeSheet();saveItem(p,data,bm);
+  });
+}
+function bulkSheet(){
+  openSheet(`<h4>إضافة بالجملة</h4><label for="fT">النوع</label><select id="fT"><option value="med">💊 أدوية</option><option value="cos">🧴 كوزماتكس</option></select>
+    <p class="hint">كل صنف في سطر: <b>الاسم | العدد | الإكسباير | السعر</b><br>الإكسباير زي 03/2027، والسعر اختياري. ممكن تنسخ 4 عواميد من إكسل على طول. لو الصنف موجود قبل كده، الكمية هتتضاف عليه.</p>
+    <textarea id="fBk" placeholder="Panadol Extra | 5 | 03/2027 | 85&#10;Bioderma Photoderm 50+ | 3 | 11/2027 | 950"></textarea>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">إضافة</button></div>`,
+  (m,r)=>{if(m!=='ok')return;const type=r.querySelector('#fT').value;const lines=r.querySelector('#fBk').value.split('\n').map(l=>l.trim()).filter(Boolean);
+    const rows=[],bad=[];
+    lines.forEach((l,i)=>{let parts=l.split(/\t|\||؛|;|،/);if(parts.length<2)parts=l.split(',');parts=parts.map(x=>x.trim());
+      const name=parts[0],q=int(parts[1]),k=parseExp(parts[2]||''),pr=flt(parts[3]||'');
+      if(!name||k===null||(type==='med'&&k==='x'&&q>0))bad.push(i+1);else rows.push({name,q,k,pr})});
+    if(bad.length){toast(`راجع السطور دي (الاسم أو الإكسباير): ${bad.slice(0,8).join('، ')}`);return}
+    if(!rows.length){toast('مفيش سطور');return}
+    closeSheet();bulkAdd(type,rows)});
+}
+function outSheet(p,k){
+  const have=(p.b||{})[k]||0;
+  openSheet(`<h4>شيل من المخزن — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">تاريخ ${bkLabel(k)} — موجود ${have}</p>
+    <label for="fQ">العدد</label><input id="fQ" type="number" inputmode="numeric" value="${have}">
+    <label for="fR">السبب</label><select id="fR"><option>مرتجع للمورد</option><option>منتهي الصلاحية</option><option>تالف</option><option>تصحيح جرد</option></select>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn danger" data-m="ok">شيل</button></div>`,
+  (m,r)=>{if(m!=='ok')return;const q=Math.min(have,int(r.querySelector('#fQ').value));if(q<1){toast('اكتب العدد');return}closeSheet();removeBatch(p,k,q,r.querySelector('#fR').value)});
+}
+function delSheet(p){
+  openSheet(`<h4>حذف «${esc(p.name)}»؟</h4><p class="hint" style="margin-top:0">الصنف هيتمسح من عند الكل، والمبيعات القديمة بتاعته هتفضل في السجل.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn danger" data-m="ok">امسح</button></div>`,
+  ()=>{closeSheet();const b=fs.batch();b.delete(ref('items/'+p.id));evt(b,'del',p.name,qty(p));commit(b,'اتمسح')});
+}
+function settingsSheet(){
+  openSheet(`<h4>الإعدادات</h4><label for="fCur">العملة اللي بتظهر جنب الأسعار</label><input id="fCur" value="${esc(S.cfg.cur)}" placeholder="ج.م أو €">
+    <label class="check"><input type="checkbox" id="fPc" ${S.cfg.pushChat!==false?'checked':''}> ابعت رسايل الشات كإشعار للموبايلات</label>
+    <p class="hint">الإعدادات دي بتتغير عند الكل.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">حفظ</button></div>`,
+  (m,r)=>{const c=r.querySelector('#fCur').value.trim()||'ج.م';const pc=r.querySelector('#fPc').checked;closeSheet();run(ref('settings/app').set({cur:c,pushChat:pc},{merge:true}),'اتحفظ')});
+}
+function alertsSheet(){
+  const oa=openAlerts(),done=S.alerts.filter(a=>a.done).slice(0,10);
+  const canN='Notification' in window,perm=canN?Notification.permission:'';
+  const row=a=>`<div class="row slim"><div class="kit"><b>${TYPES[a.type||'cos'].icon} ${esc(a.name)}</b><div class="meta"><span class="${a.done?'':'rd'}">${a.qty?`فاضل ${a.qty}`:'خلصان'}${a.msg?' — '+esc(a.msg):''}</span><span>👤 ${esc(a.by)} ${fmtTime(a.t,1)}</span>${a.done?`<span class="ok">✓ ${esc(a.doneBy||'')}</span>`:''}</div></div>${a.done?'':`<button class="btn sm primary" data-m="done:${a.aid}">اتحل ✓</button>`}</div>`;
+  openSheet(`<h4>🔔 النواقص العاجلة</h4>
+    ${canN&&perm!=='granted'?'<button class="btn" data-m="perm" style="width:100%">فعّل الإشعارات على الجهاز ده</button>':''}
+    <p class="hint">التنبيه بيوصل للكل على طول — وعلى الموبايلات حتى وهي مقفولة لو مشتركين في قناة الإشعارات.</p><button class="btn" data-m="app" style="width:100%;margin-bottom:10px">📲 إشعارات والموبايل مقفول</button>
+    ${oa.length?`<div class="rows">${oa.map(row).join('')}</div>`:'<div class="empty">مفيش نواقص عاجلة دلوقتي 👌</div>'}
+    ${done.length?`<label>اتحلت قريب</label><div class="rows">${done.map(row).join('')}</div>`:''}
+    <div class="actions"><button class="btn" data-cancel>قفل</button>${oa.length?'<button class="btn primary" data-m="wa">ابعت على الواتساب</button>':''}</div>`,
+  m=>{if(m==='app')return appSheet();if(m==='perm')askPerm();if(m==='wa')wa(`🔔 نواقص عاجلة — ${SHOP_NAME}\n`+oa.map(a=>`- ${a.name} (${a.qty?'فاضل '+a.qty:'خلصان'})`).join('\n'));
+    if(m.startsWith('done:')){const a=S.alerts.find(x=>x.aid===m.slice(5));if(a){const b=fs.batch();b.update(ref('alerts/'+a.aid),{done:true,doneBy:S.me,doneT:Date.now()});evt(b,'done',a.name,'');commit(b);closeSheet()}}});
+}
+
+/* ---------- Firebase writes ---------- */
+let fs=null;
+const FV=()=>firebase.firestore.FieldValue;
+const ref=p=>fs.doc(`shops/${SHOP_ID}/${p}`);
+const col=p=>fs.collection(`shops/${SHOP_ID}/${p}`);
+function run(promise,okMsg){if(okMsg)toast(okMsg);promise.catch(e=>{console.error(e);toast(e&&e.code==='permission-denied'?'Firebase رافض الحفظ — راجع القواعد (Rules)':'محصلش حفظ — جرب تاني')})}
+const commit=(b,msg)=>run(b.commit(),msg);
+const me=()=>S.me||'بدون اسم';
+function evt(b,a,name,n,note,anon){b.set(col('events').doc(),{t:Date.now(),by:anon?'':me(),a,name:name||'',n:n??'',note:note||''})}
+function newAlert(b,p,q,auto,msg,silent){if(openAlerts().some(a=>a.id===p.id))return false;b.set(col('alerts').doc(),{t:Date.now(),by:auto?'تلقائي':me(),dev:DEV,id:p.id,name:p.name,type:tOf(p),qty:q,auto:!!auto,msg:msg||'',done:false});evt(b,'alert',p.name,q,msg);if(!silent)push('🔔 ناقص عاجل — '+SHOP_NAME,`${p.name} — ${q?'فاضل '+q:'خلص'}${msg&&msg!=='عاجل'?' ('+msg+')':''}${auto?'':' — '+me()}`,{prio:5,tags:['rotating_light']});return true}
+function doSell(p,n,start,quiet){
+  const bl=bats(p);if(!start)start=(bl.find(([k])=>bkIdx(k)>=nowIdx())||[])[0];let order=bl.map(x=>x[0]);if(start&&order.includes(start))order=[start,...order.filter(k=>k!==start)];
+  let rem=n;const alloc={},upd={};
+  for(const k of order){if(!rem)break;const have=(p.b||{})[k]||0,take=Math.min(have,rem);if(!take)continue;alloc[k]=take;rem-=take;upd[k]=take===have?FV().delete():FV().increment(-take)}
+  const before=good(p),after=before-Object.entries(alloc).filter(([k])=>expCls(k)!=='dead').reduce((a,[,v])=>a+v,0);
+  const b=fs.batch();
+  if(Object.keys(upd).length)b.set(ref('items/'+p.id),{b:upd},{merge:true});
+  b.set(col('sales').doc(),{t:Date.now(),day:today(),id:p.id,name:p.name,type:tOf(p),qty:n,alloc,short:rem});
+  evt(b,'sale',p.name,n,Object.keys(alloc).filter(k=>k!=='x').map(bkLabel).join('، '),1);
+  let al=false;
+  if(after===0&&before>0)al=newAlert(b,p,0,true,'خلص من المخزن');
+  else if(p.critical&&after<=minOf(p)&&before>minOf(p))al=newAlert(b,p,after,true,'وصل للحد الأدنى');
+  commit(b);
+  if(!quiet)toast(`${p.name} × ${n} اتسجل${al?' — واتبعت تنبيه للكل':''}`);return al;
+}
+function undoSale(s){
+  openSheet(`<h4>إلغاء آخر تسجيل؟</h4><p class="hint" style="margin-top:0">${esc(s.name)} × ${s.qty}${dText(s.alloc||{})?` (${dText(s.alloc)})`:''} — الكمية هترجع للمخزن على نفس التاريخ.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">أيوه ألغيها</button></div>`,
+  ()=>{closeSheet();const b=fs.batch();const it=S.items.find(x=>x.id===s.id);const inc={};
+    for(const k in (s.alloc||{}))inc[k]=FV().increment(s.alloc[k]);
+    if(it&&Object.keys(inc).length)b.set(ref('items/'+it.id),{b:inc},{merge:true});
+    b.delete(ref('sales/'+s.sid));evt(b,'undo',s.name,s.qty,'',1);
+    delete S.dayCache[s.day];delete S.dayCache['_'+s.day];commit(b,'اتلغى والكمية رجعت');});
+}
+function resolveAlerts(b,p){openAlerts().filter(a=>a.id===p.id).forEach(a=>b.update(ref('alerts/'+a.aid),{done:true,doneBy:me(),doneT:Date.now()}))}
+function restock(p,q,k,price){
+  const b=fs.batch();const d={b:{[k]:FV().increment(q)},ordered:FV().delete()};if(price>0)d.price=price;
+  b.set(ref('items/'+p.id),d,{merge:true});resolveAlerts(b,p);evt(b,'in',p.name,q,bkLabel(k));commit(b,`اتضاف ${q} — ${p.name}`);
+}
+function removeBatch(p,k,q,why){
+  const have=(p.b||{})[k]||0;const b=fs.batch();
+  b.set(ref('items/'+p.id),{b:{[k]:q>=have?FV().delete():FV().increment(-q)}},{merge:true});
+  evt(b,'out',p.name,q,`${why} — ${bkLabel(k)}`);commit(b,`اتشال ${q} من ${p.name}`);
+}
+function saveItem(p,data,bm){
+  const b=fs.batch();
+  if(p){const diff=Object.values(bm).reduce((a,v)=>a+v,0)-qty(p);b.update(ref('items/'+p.id),{...data,b:bm});evt(b,diff?'fix':'edit',data.name,diff?(diff>0?'+'+diff:diff):'');if(Object.values(bm).reduce((a,v)=>a+v,0)>minOf({min:data.min}))resolveAlerts(b,p);commit(b,'اتعدل');}
+  else{b.set(col('items').doc(),{...data,b:bm,created:Date.now(),by:me()});evt(b,'add',data.name,Object.values(bm).reduce((a,v)=>a+v,0));commit(b,'الصنف اتضاف')}
+}
+async function bulkAdd(type,rows){
+  let b=fs.batch(),n=0,added=0,upd=0;const seen={};const flush=async()=>{if(n){await b.commit();b=fs.batch();n=0}};
+  try{for(const r of rows){const key=norm(r.name);const ex=findByName(r.name);
+      if(ex||seen[key]){const id=ex?ex.id:seen[key];const d={};if(r.q>0)d.b={[r.k]:FV().increment(r.q)};if(r.pr)d.price=r.pr;if(Object.keys(d).length){b.set(ref('items/'+id),d,{merge:true});n++;upd++}}
+      else{const dref=col('items').doc();seen[key]=dref.id;b.set(dref,{name:r.name,type,grp:'',alias:'',price:r.pr,min:2,critical:false,b:r.q>0?{[r.k]:r.q}:{},created:Date.now(),by:me()});n++;added++}
+      if(n>=400)await flush()}
+    b.set(col('events').doc(),{t:Date.now(),by:me(),a:'add',name:`إضافة بالجملة: ${added} جديد، ${upd} اتحدث`,n:'',note:''});n++;await flush();
+    toast(`تمام — ${added} صنف جديد، و${upd} اتضافلهم كمية`);
+  }catch(e){console.error(e);toast('حصلت مشكلة في الحفظ — جرب تاني')}
+}
+function toggleOrdered(p){const b=fs.batch();b.update(ref('items/'+p.id),{ordered:p.ordered?FV().delete():{by:me(),t:Date.now()}});if(!p.ordered)evt(b,'ord',p.name,'');commit(b,p.ordered?'اتشالت علامة «اتطلب»':'اتعلّم «اتطلب» عند الكل')}
+function urgent(p){const b=fs.batch();if(newAlert(b,p,good(p),false,'عاجل')){commit(b,'التنبيه وصل لكل اللي فاتحين الموقع')}else toast('في تنبيه مفتوح للصنف ده بالفعل')}
+function alertAllOut(){const b=fs.batch();const ns=[];S.items.filter(p=>mItem(p)&&!good(p)).forEach(p=>{if(newAlert(b,p,0,false,'خلصان',true))ns.push(p.name)});const c=ns.length;if(c){commit(b,`اتبعت ${c} تنبيه للكل`);push(`🔔 ${c} صنف خلصان — ${SHOP_NAME}`,ns.join('\n'),{prio:5,tags:['rotating_light']})}else toast('كله متبعتله تنبيه بالفعل')}
+function exportData(){
+  const items={};S.items.forEach(p=>{const {id,...r}=p;items[id]=r});
+  const blob=new Blob([JSON.stringify({items,cfg:S.cfg},null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='drcorner-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function importData(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=async()=>{try{const d=JSON.parse(await inp.files[0].text());if(!d.items)throw 0;const ids=Object.keys(d.items);for(let i=0;i<ids.length;i+=400){const b=fs.batch();ids.slice(i,i+400).forEach(id=>b.set(ref('items/'+id),d.items[id]));await b.commit()}toast('النسخة اترفعت لكل الموظفين')}catch(e){toast('الملف ده مش نسخة احتياطية صحيحة')}};
+  inp.click();
+}
+
+/* ---------- notifications ---------- */
+let actx=null;
+document.addEventListener('pointerdown',()=>{try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}},{passive:true});
+function beep(){try{if(!actx)return;[0,0.22].forEach(d=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.setValueAtTime(.0001,actx.currentTime+d);g.gain.exponentialRampToValueAtTime(.3,actx.currentTime+d+.02);g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d+.18);o.connect(g).connect(actx.destination);o.start(actx.currentTime+d);o.stop(actx.currentTime+d+.2)})}catch(e){}}
+function askPerm(){if(!('Notification' in window)){toast('الجهاز ده مش بيدعم الإشعارات — هيوصلك صوت وشريط أحمر طول ما الموقع مفتوح');return}Notification.requestPermission().then(p=>toast(p==='granted'?'الإشعارات اتفعلت':'الإشعارات مقفولة من المتصفح'))}
+function notify(list){
+  beep();try{navigator.vibrate&&navigator.vibrate([250,120,250])}catch(e){}
+  toast(`🔔 عاجل: ${list.map(a=>a.name).join('، ')}`);
+  if('Notification' in window&&Notification.permission==='granted'){list.slice(0,3).forEach(a=>{try{sysNote('🔔 ناقص عاجل — '+SHOP_NAME,{body:`${a.name} — ${a.qty?'فاضل '+a.qty:'خلصان'} (${a.by})`,tag:a.aid})}catch(e){}})}
+}
+let seen=+LS.get('drc.seen')||Date.now();LS.set('drc.seen',seen);
+
+
+/* ---------- live chat ---------- */
+const $fab=$('fab'),$fp=$('fabpill'),$chat=$('chat'),$cb=$('cBody'),$cIn=$('cIn'),$cSub=$('cSub'),$cAv=$('cAv');
+const C={msgs:[],open:false,seen:+LS.get('drc.chatSeen')||Date.now(),notified:0,shown:new Set(),first:true,pres:[]};
+C.notified=C.seen;LS.set('drc.chatSeen',C.seen);
+const QUICK=['👍','✅','❤️','😂','🙏','🔥','تمام','اتطلب','خلص 😬','جاي حالًا'];
+const REACT=['❤️','👍','😂','😮','🙏','✅'];
+const hue=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;return h};
+const avColor=n=>`hsl(${hue(n)} 55% 44%)`;
+const av=n=>`<span class="av" style="background:${avColor(n)}">${esc(String(n||'؟').trim().charAt(0))}</span>`;
+const onlyEmoji=t=>t.length<=12&&/^(\p{Extended_Pictographic}|\p{Emoji_Component}|\u200d|\ufe0f|\s)+$/u.test(t)&&!/^[\d#*\s]+$/.test(t);
+const chatDay=k=>k===today()?'النهارده':k===dayKey(new Date(Date.now()-864e5))?'امبارح':`${dayName(k)} ${fmtDay(k)}`;
+function unread(){return C.msgs.filter(m=>m.t>C.seen&&m.dev!==DEV).length}
+function renderFab(){const n=unread();$fp.hidden=!n||C.open;$fp.textContent=n>99?'99+':n}
+function renderChatHead(){
+  const now=Date.now(),on=C.pres.filter(p=>p.t>now-100000&&p.name),others=on.filter(p=>p.id!==DEV);
+  const typing=C.pres.filter(p=>p.id!==DEV&&p.typing>now-5000&&p.name).map(p=>p.name);
+  $cSub.className=typing.length?'typing':'';
+  $cSub.textContent=typing.length?`${typing.join(' و')} ${typing.length>1?'بيكتبوا':'بيكتب'}…`:others.length?`متصلين دلوقتي: ${on.map(p=>p.id===DEV?'إنت':p.name).join('، ')}`:'محدش تاني فاتح دلوقتي — الرسايل هتستناهم';
+  $cAv.innerHTML=others.slice(0,4).map(p=>av(p.name)).join('');
+  const td=$cb.querySelector('.typingdots');if(td)td.hidden=!typing.length;
+}
+function renderChat(){
+  if(!C.open)return;
+  const nearBottom=$cb.scrollHeight-$cb.scrollTop-$cb.clientHeight<120;
+  let h='',lastDay='',prev=null;
+  if(!C.msgs.length)h=`<div class="cempty"><b>👋</b>الشات فاضي — ابدأ إنت!<br>أي حد معاه اللينك بيشوف الرسايل على طول.</div>`;
+  C.msgs.forEach(m=>{
+    const d=dayKey(new Date(m.t));if(d!==lastDay){h+=`<div class="cday">${chatDay(d)}</div>`;lastDay=d;prev=null}
+    const mine=m.dev===DEV,first=!prev||prev.dev!==m.dev||m.t-prev.t>300000,big=onlyEmoji(m.text||'');
+    const isNew=!C.first&&!C.shown.has(m.id);C.shown.add(m.id);
+    h+=`<div class="msg ${mine?'me':''} ${first?'first':''} ${isNew?'new':''}">${mine?'':`<span class="avs">${first?av(m.by):''}</span>`}<button class="bub ${big?'big':''}" data-mid="${m.id}">${!mine&&first&&!big?`<span class="who" style="color:${avColor(m.by)}">${esc(m.by)}</span>`:''}${esc(m.text)}<time>${fmtTime(m.t)}</time></button></div>`;
+    const rs=Object.entries(m.r||{}).filter(([,v])=>v&&v.length);
+    if(rs.length)h+=`<div class="reacts ${mine?'me':''}">${rs.map(([e,v])=>`<button data-rmid="${m.id}" data-e="${e}" class="${v.includes(DEV)?'mine':''}">${e} ${v.length>1?v.length:''}</button>`).join('')}</div>`;
+    prev=m;
+  });
+  h+=`<div class="typingdots" hidden><i></i><i></i><i></i></div>`;
+  $cb.innerHTML=h;C.first=false;
+  const lastMine=C.msgs.length&&C.msgs[C.msgs.length-1].dev===DEV;
+  if(nearBottom||lastMine||C.jump){$cb.scrollTop=$cb.scrollHeight;C.jump=false}
+  renderChatHead();markSeen();
+}
+function markSeen(){if(!C.open||document.hidden)return;const mx=Math.max(C.seen,...C.msgs.map(m=>m.t));if(mx!==C.seen){C.seen=mx;LS.set('drc.chatSeen',mx)}renderFab()}
+function openChat(){
+  if(!S.me){askName(false,openChat);return}
+  C.open=true;C.jump=true;$chat.hidden=false;$fab.hidden=true;document.body.style.overflow='hidden';$cQ();fitChat();renderChat();heartbeat();
+  if(matchMedia('(min-width:700px)').matches)setTimeout(()=>$cIn.focus(),50);
+}
+function closeChat(){C.open=false;$chat.hidden=true;$fab.hidden=false;document.body.style.overflow='';renderFab()}
+function $cQ(){$('cQuick').innerHTML=QUICK.map(q=>`<button data-q="${esc(q)}">${esc(q)}</button>`).join('')}
+function sendMsg(text){
+  text=String(text||'').trim();if(!text)return;if(!S.me){askName(false,()=>sendMsg(text));return}
+  if(text.length>1000)text=text.slice(0,1000);
+  run(col('chat').doc().set({t:Date.now(),by:S.me,dev:DEV,text,r:{}}));
+  if(S.cfg.pushChat!==false)push('💬 '+S.me,text,{prio:3,tags:['speech_balloon']});
+  run(ref('presence/'+DEV).set({typing:0},{merge:true}));
+}
+function msgSheet(m){
+  const mine=m.dev===DEV;
+  openSheet(`<h4>${mine?'رسالتك':esc(m.by)}</h4><p class="hint" style="margin-top:0">${esc(m.text).slice(0,140)}</p><div class="rpick">${REACT.map(e=>`<button data-m="r:${e}">${e}</button>`).join('')}</div>
+    <div class="actions"><button class="btn" data-m="copy">نسخ</button>${mine?'<button class="btn danger" data-m="del">مسح الرسالة</button>':''}<button class="btn" data-cancel>قفل</button></div>`,
+  async k=>{closeSheet();if(k.startsWith('r:'))react(m,k.slice(2));if(k==='copy')toast(await copyText(m.text)?'اتنسخت':'مقدرتش أنسخ');if(k==='del')run(ref('chat/'+m.id).delete(),'اتمسحت')});
+}
+function react(m,e){const has=((m.r||{})[e]||[]).includes(DEV);run(ref('chat/'+m.id).set({r:{[e]:has?FV().arrayRemove(DEV):FV().arrayUnion(DEV)}},{merge:true}))}
+function chirp(){try{if(!actx)return;const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;o.type='sine';o.frequency.setValueAtTime(620,t);o.frequency.exponentialRampToValueAtTime(1180,t+.12);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.22);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+.24)}catch(e){}}
+function onNewMsgs(list){
+  if(C.open&&!document.hidden)return;
+  chirp();try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}
+  $fab.classList.remove('wiggle');void $fab.offsetWidth;$fab.classList.add('wiggle');
+  if(!C.open){const m=list[list.length-1];toast(`💬 ${m.by}: ${String(m.text).slice(0,60)}`)}
+  if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){const m=list[list.length-1];try{sysNote('💬 '+m.by,{body:m.text,tag:'drc-chat'})}catch(e){}}
+}
+let lastHB=0,lastTyping=0;
+function heartbeat(){if(!fs||!S.me)return;lastHB=Date.now();ref('presence/'+DEV).set({name:S.me,t:Date.now()},{merge:true}).catch(()=>{})}
+function fitChat(){const vv=window.visualViewport;if(!vv||!C.open||matchMedia('(min-width:700px)').matches){$chat.style.height='';$chat.style.top='';return}$chat.style.height=vv.height+'px';$chat.style.top=vv.offsetTop+'px'}
+addEventListener('resize',fitChat);if(window.visualViewport){visualViewport.addEventListener('resize',fitChat);visualViewport.addEventListener('scroll',fitChat)}
+$fab.addEventListener('click',openChat);
+$('cClose').addEventListener('click',closeChat);
+$('cSend').addEventListener('click',()=>{sendMsg($cIn.value);$cIn.value='';$cIn.style.height='';$cIn.focus()});
+$cIn.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('cSend').click()}});
+$cIn.addEventListener('input',()=>{$cIn.style.height='auto';$cIn.style.height=Math.min($cIn.scrollHeight,120)+'px';
+  if(S.me&&Date.now()-lastTyping>2500){lastTyping=Date.now();ref('presence/'+DEV).set({name:S.me,t:Date.now(),typing:Date.now()},{merge:true}).catch(()=>{})}});
+$('cQuick').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(b)sendMsg(b.dataset.q)});
+$cb.addEventListener('click',e=>{const r=e.target.closest('[data-rmid]');if(r){const m=C.msgs.find(x=>x.id===r.dataset.rmid);if(m)react(m,r.dataset.e);return}
+  const b=e.target.closest('[data-mid]');if(b){const m=C.msgs.find(x=>x.id===b.dataset.mid);if(m)msgSheet(m)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&C.open&&!$modal.innerHTML)closeChat()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){markSeen();heartbeat()}});
+setInterval(()=>{if(C.open)renderChatHead();if(!document.hidden&&Date.now()-lastHB>40000)heartbeat()},2000);
+function startChat(){
+  col('chat').orderBy('t','desc').limit(200).onSnapshot(snap=>{
+    C.msgs=snap.docs.map(d=>({id:d.id,...d.data()})).reverse();
+    const fresh=C.msgs.filter(m=>m.t>C.notified&&m.dev!==DEV);
+    if(fresh.length){C.notified=Math.max(...fresh.map(m=>m.t));onNewMsgs(fresh)}
+    renderChat();renderFab();
+  },e=>console.error(e));
+  col('presence').onSnapshot(snap=>{C.pres=snap.docs.map(d=>({id:d.id,...d.data()}));if(C.open)renderChatHead()},e=>console.error(e));
+  heartbeat();
+}
+
+
+/* ---------- voice ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const $mic=$('micfab');
+let VL=LS.get('drc.vlang')||'ar-EG',curRec=null;
+function listen(o){try{curRec&&curRec.abort()}catch(e){}
+  const r=new SR();r.lang=o.lang||VL;r.interimResults=true;r.continuous=false;r.maxAlternatives=1;let fin='',last='',err='';
+  r.onresult=e=>{let it='';fin='';for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=t;else it+=t}last=(fin+' '+it).trim();o.onInterim&&o.onInterim(last)};
+  r.onerror=e=>{err=e.error;o.onError&&o.onError(e.error)};
+  r.onend=()=>{if(curRec===r)curRec=null;o.onEnd&&o.onEnd((fin||last).trim(),err)};
+  try{r.start()}catch(e){o.onError&&o.onError('start')}curRec=r;return r}
+function micErr(e){if(e==='aborted')return;toast(e==='not-allowed'||e==='service-not-allowed'?'المايك مقفول — اسمح للمايك للموقع ده من إعدادات المتصفح':e==='no-speech'?'مسمعتش حاجة — جرب تاني':'المايك وقف — جرب تاني')}
+function dictate(el,btn){
+  if(!SR){el.focus();toast('دوس على مايك الكيبورد 🎤 واتكلم');return}
+  if(btn.classList.contains('on')){try{curRec&&curRec.stop()}catch(e){}return}
+  const base=el.value.trim()?el.value.trim()+' ':'';btn.classList.add('on');
+  listen({onInterim:t=>{el.value=base+t;el.dispatchEvent(new Event('input'))},onEnd:t=>{btn.classList.remove('on');if(t)el.value=base+t;el.dispatchEvent(new Event('input'))},onError:e=>{btn.classList.remove('on');micErr(e)}});
+}
+const NUMW={'واحد':1,'واحده':1,'وحده':1,'اتنين':2,'اثنين':2,'اتنان':2,'تلاته':3,'ثلاثه':3,'تلات':3,'اربعه':4,'اربع':4,'خمسه':5,'خمس':5,'سته':6,'سبعه':7,'سبع':7,'تمانيه':8,'ثمانيه':8,'تمانه':8,'تسعه':9,'تسع':9,'عشره':10,'عشر':10,'حداشر':11,'احداشر':11,'اتناشر':12,'طناشر':12,'تلتاشر':13,'اربعتاشر':14,'اربعطاشر':14,'خمستاشر':15,'خمسطاشر':15,'ستاشر':16,'سطاشر':16,'سبعتاشر':17,'سبعطاشر':17,'تمنتاشر':18,'تمنطاشر':18,'تسعتاشر':19,'تسعطاشر':19,'عشرين':20,'تلاتين':30,'ثلاثين':30,'اربعين':40,'خمسين':50,'ستين':60,'سبعين':70,'تمانين':80,'تسعين':90,'ميه':100,
+  'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'fifteen':15,'twenty':20,'thirty':30};
+const DUAL=new Set(['علبتين','قطعتين','حبتين','شريطين','ازازتين','انبوبتين','باكتين','كرتونتين','عبوتين']);
+const MONTHS={'يناير':1,'فبراير':2,'مارس':3,'ابريل':4,'مايو':5,'يونيو':6,'يونيه':6,'يوليو':7,'يوليه':7,'اغسطس':8,'سبتمبر':9,'اكتوبر':10,'نوفمبر':11,'ديسمبر':12,'january':1,'february':2,'march':3,'april':4,'may':5,'june':6,'july':7,'august':8,'september':9,'october':10,'november':11,'december':12};
+const EXK=new Set(['اكسبير','اكسباير','الاكسبير','الاكسباير','اكسبيره','صلاحيه','الصلاحيه','تاريخ','بتاريخ','تاريخه','ينتهي','expiry','exp','expire','expires','expiring','expiration']);
+const FILL=new Set(['قطعه','قطع','علبه','علب','حبه','عبوه','عبوات','شريط','ازازه','انبوبه','باكو','كرتونه','pieces','piece','pcs','box','boxes','من','بتاع','بتاعه','نوع','عدد','كميه','لو','سمحت','please','of','the','and','و']);
+const TYPEW={'دوا':'med','دواء':'med','ادويه':'med','الدوا':'med','medicine':'med','كوزماتكس':'cos','كوزمتكس':'cos','الكوزماتكس':'cos','تجميل':'cos','cosmetics':'cos'};
+const KW={add:[['صنف','جديد'],['ضيف','صنف'],['اضافه','صنف'],['اضف','صنف'],['new','item'],['add','item']],
+  sell:['بيع','بعت','بعنا','اتباع','باع','بيعه','بعتلي','sold','sell','sale'],
+  in:['استلام','استلمت','استلمنا','وصل','وصلت','وصلنا','ورد','اتورد','توريد','زود','received','receive','restock'],
+  note:['ملاحظه','نوت','نوته','فكرني','فكرنا','فكروني','تذكير','افتكروا','note','remind','reminder'],
+  urgent:['عاجل','ناقص','urgent'],chat:['رساله','قول','قولهم','شات','message'],search:['دور','ابحث','فين','بحث','search','find']};
+function wordsToDigits(tk){const out=[];let acc=null;const flush=()=>{if(acc!==null){out.push(String(acc));acc=null}};
+  for(const t of tk){let v=null,join=false;
+    if(/^\d+$/.test(t))v=+t;else if(NUMW[t]!=null)v=NUMW[t];else if(t.length>2&&t[0]==='و'&&NUMW[t.slice(1)]!=null){v=NUMW[t.slice(1)];join=true}else if(t==='الفين'||t==='الفان')v=2000;
+    else if(t==='و'&&acc!==null)continue;else if(DUAL.has(t)){flush();out.push('2');continue}
+    if(v===null){flush();out.push(t);continue}
+    if(acc===null)acc=v;else if(join||acc>=1000||(acc<10&&v>=20&&v<100&&v%10===0))acc+=v;else{flush();acc=v}}
+  flush();return out}
+const AR2L={'ب':'b','ت':'t','ث':'s','ج':'g','ح':'','خ':'k','د':'d','ذ':'z','ر':'r','ز':'z','س':'s','ش':'s','ص':'s','ض':'d','ط':'t','ظ':'z','غ':'g','ف':'f','ق':'k','ك':'k','ل':'l','م':'m','ن':'n','پ':'b','ڤ':'f','گ':'g','چ':'g'};
+function skel(x){let o='';for(const ch of norm(x)){if(AR2L[ch]!=null)o+=AR2L[ch];else if(/[a-z0-9 ]/.test(ch))o+=ch}
+  return o.replace(/ph/g,'f').replace(/c(?=[eiy])/g,'s').replace(/[ct]h/g,'s').replace(/sh/g,'s').replace(/ck/g,'k').replace(/x/g,'ks').replace(/[aeiouywh]/g,'').replace(/p/g,'b').replace(/v/g,'f').replace(/[cq]/g,'k').replace(/j/g,'g').replace(/z/g,'s').replace(/([a-z])\1+/g,'$1').replace(/\s+/g,' ').trim()}
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let pr=[...Array(n+1).keys()];for(let i=1;i<=m;i++){const cu=[i];for(let j=1;j<=n;j++)cu[j]=Math.min(pr[j]+1,cu[j-1]+1,pr[j-1]+(a[i-1]===b[j-1]?0:1));pr=cu}return pr[n]}
+const sim=(a,b)=>!a||!b?0:1-lev(a,b)/Math.max(a.length,b.length);
+function scoreItem(ph,p){
+  const n0=norm(ph);if(!n0)return 0;let best=0;
+  for(const f of [p.name,p.alias].filter(Boolean)){const nf=norm(f);
+    if(nf===n0)return 1;if(n0.length>=3&&nf.includes(n0))best=Math.max(best,.9);if(nf.length>=3&&n0.includes(nf))best=Math.max(best,.92);
+    const a=skel(n0),b=skel(nf),A=a.replace(/ /g,''),B=b.replace(/ /g,'');
+    if(A.length>=2&&B.length>=2)best=Math.max(best,sim(A,B),sim(A,B.slice(0,A.length))*.93);
+    const pw=a.split(' ').filter(w=>w.length>=2),fw=b.split(' ').filter(w=>w.length>=2);
+    if(pw.length&&fw.length)best=Math.max(best,pw.reduce((s,w)=>s+Math.max(...fw.map(x=>Math.max(sim(w,x),w.length>=3&&x.startsWith(w)?.9:0))),0)/pw.length*.95)}
+  return best}
+const matchItems=ph=>S.items.map(p=>({p,s:scoreItem(ph,p)})).filter(x=>x.s>=.5).sort((a,b)=>b.s-a.s);
+function guessYear(m){const d=new Date();return m>=d.getMonth()+1?d.getFullYear():d.getFullYear()+1}
+function parseLine(tk){
+  let k=null,type=null;const keep=[];
+  for(let j=0;j<tk.length;j++){const t=tk[j];
+    if(EXK.has(t)||MONTHS[t]){let jj=EXK.has(t)?j+1:j,m=null,y=null;
+      if(MONTHS[tk[jj]]){m=MONTHS[tk[jj]];jj++}else if(/^\d{1,2}$/.test(tk[jj]||'')&&+tk[jj]>=1&&+tk[jj]<=12){m=+tk[jj];jj++}
+      else if(/^\d{1,2}[\/\-.]\d{2,4}$/.test(tk[jj]||'')){const kk=parseExp(tk[jj]);if(kk&&kk!=='x'){k=kk;j=jj;continue}}
+      if(tk[jj]==='سنه'||tk[jj]==='year')jj++;
+      if(/^\d{2,4}$/.test(tk[jj]||'')){let yy=+tk[jj];if(yy<100)yy+=2000;if(yy>=2015&&yy<=2045){y=yy;jj++}}
+      if(m){k=bk(y||guessYear(m),m);j=jj-1;continue}
+      if(EXK.has(t))continue}
+    if(/^\d{1,2}[\/\-.]\d{2,4}$/.test(t)){const kk=parseExp(t);if(kk&&kk!=='x'){k=kk;continue}}
+    if(TYPEW[t]){type=TYPEW[t];continue}
+    if(FILL.has(t))continue;
+    keep.push(t)}
+  const nums=keep.map((t,i)=>/^\d{1,4}$/.test(t)?i:-1).filter(i=>i>=0);
+  const opts=[{q:null,ph:keep.join(' ')}].concat(nums.map(i=>({q:+keep[i],ph:keep.filter((_,j)=>j!==i).join(' ')})));
+  let bestO=null;
+  opts.forEach(o=>{o.m=matchItems(o.ph);o.s=o.m.length?o.m[0].s:0;o.s+=(o.q!=null&&o.q<=50?.03:0);if(!bestO||o.s>bestO.s)bestO=o});
+  return {q:bestO.q||1,hasQ:bestO.q!=null,ph:bestO.ph,m:bestO.m,s:bestO.m.length?bestO.m[0].s:0,k,type}}
+function parseTime(t){const now=new Date();let at=0;
+  let r=/بعد\s+(\d+)\s*(دقيقه|دقايق|دقيقة|دقائق)/.exec(t);if(r)at=Date.now()+r[1]*6e4;
+  else if(/بعد\s+نص\s+ساعه/.test(t))at=Date.now()+30*6e4;else if(/بعد\s+ربع\s+ساعه/.test(t))at=Date.now()+15*6e4;
+  else if(/بعد\s+ساعتين/.test(t))at=Date.now()+120*6e4;else if((r=/بعد\s+(\d+)\s*ساعات/.exec(t)))at=Date.now()+r[1]*36e5;else if(/بعد\s+ساعه/.test(t))at=Date.now()+60*6e4;
+  const h=/الساعه\s+(\d{1,2})(?:\s+و?\s*(نص|ربع)|[:.](\d{2}))?/.exec(t),tm=/بكره|بكرا/.test(t);
+  if(!at&&(h||tm)){const d=new Date(now);if(tm)d.setDate(d.getDate()+1);let H=h?+h[1]:9,M=h?(h[2]==='نص'?30:h[2]==='ربع'?15:+(h[3]||0)):0;
+    if(h){if(/بالليل|مساء|بليل|المغرب|العصر|بعد الضهر/.test(t)&&H<12)H+=12;else if(!/الصبح|صباحا|بدري/.test(t)&&H<=7)H+=12}
+    d.setHours(H,M,0,0);if(!tm&&d.getTime()<Date.now())d.setDate(d.getDate()+1);at=d.getTime()}
+  return at}
+function detect(tk){
+  for(const [a,b] of KW.add){const i=tk.indexOf(a);if(i>=0&&i<=3&&tk[i+1]===b)return {intent:'add',drop:[i,i+1]}}
+  for(const intent of ['note','sell','in','urgent','chat','search'])for(let i=0;i<Math.min(2,tk.length);i++)if(KW[intent].includes(tk[i]))return {intent,drop:[i]};
+  return {intent:null,drop:[]}}
+function runVoice(raw,force){
+  raw=String(raw||'').trim();if(!raw)return;
+  const n0=norm(raw).replace(/[.,،؟?!]/g,' ').replace(/\s+/g,' ').trim(),tk0=n0.split(' ');
+  let {intent,drop}=force?{intent:force,drop:[]}:detect(tk0);
+  const rawWords=raw.split(/\s+/);const restRaw=rawWords.filter((_,i)=>!drop.includes(i)).join(' ').trim();
+  if(intent==='note')return needName(()=>noteSheet({text:restRaw,at:parseTime(wordsToDigits(tk0).join(' '))}));
+  if(intent==='chat')return needName(()=>{openChat();$cIn.value=restRaw;$cIn.dispatchEvent(new Event('input'))});
+  if(intent==='search'){S.q=restRaw;$q.value=restRaw;go('items');return}
+  if(!S.items.length&&intent!=='add'){toast('لسه مفيش أصناف — ابدأ بـ «صنف جديد»');return}
+  const tk=wordsToDigits(tk0.filter((_,i)=>!drop.includes(i)));
+  if(intent==='add'){const L=parseLine(tk);let qUsed=!L.hasQ,after=9;const nm=restRaw.split(/\s+/).filter(w=>{const x=norm(w);after++;
+      if(EXK.has(x)||MONTHS[x]){after=0;return false}if(TYPEW[x]||FILL.has(x)||DUAL.has(x)||(NUMW[x]!=null)||(x[0]==='و'&&NUMW[x.slice(1)]!=null)||x==='الفين')return false;
+      if(/^\d+([\/\-.]\d+)?$/.test(x)){if(after<=2)return false;if(!qUsed&&+x===L.q){qUsed=true;return false}}return true}).join(' ');
+    return itemForm(null,{name:nm,type:L.type,q:L.hasQ?L.q:'',k:L.k,heard:raw})}
+  if(intent==='in'){const L=parseLine(tk);if(!L.m.length){toast('الصنف ده مش موجود — هتضيفه جديد');return itemForm(null,{name:L.ph,type:L.type,q:L.hasQ?L.q:'',k:L.k,heard:raw})}
+    return restockSheet(null,{name:L.m[0].p.name,q:L.hasQ?L.q:'',k:L.k,heard:raw})}
+  if(intent==='urgent'){const L=parseLine(tk);if(!L.m.length){toast('مش لاقي الصنف ده');return}const it=L.m[0].p;
+    return openSheet(`<h4>🔔 تنبيه عاجل للكل؟</h4><p class="heard">🎙️ «${esc(raw)}»</p><p><b>${esc(it.name)}</b> — موجود ${good(it)}</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">ابعت للكل</button></div>`,()=>{closeSheet();urgent(it)})}
+  // sell (explicit or default)
+  let lines=null;
+  const chunks=[];let cur=[];tk.forEach(t=>{if(t==='و'||t==='كمان'||t==='and'){if(cur.length)chunks.push(cur);cur=[]}else if(t.length>3&&t[0]==='و'&&!S.items.some(p=>norm(p.name).split(' ').includes(t))){if(cur.length)chunks.push(cur);cur=[t.slice(1)]}else cur.push(t)});if(cur.length)chunks.push(cur);
+  if(chunks.length>1){const ls=chunks.map(parseLine);if(ls.every(l=>l.s>=.6))lines=ls}
+  if(!lines){const L=parseLine(tk);if(!intent&&(!L.hasQ||L.s<.6)){S.q=restRaw;$q.value=restRaw;go('items');toast('🔎 دورتلك على: '+restRaw);return}lines=[L]}
+  voiceSellSheet(lines,raw);
+}
+function needName(fn){if(S.me)fn();else askName(false,fn)}
+function voiceSellSheet(lines,raw){
+  const all=S.items.slice().sort(byName);
+  const row=l=>{const top=l.m.slice(0,4).map(x=>x.p),sel=l.s>=.55&&top[0]?top[0].id:'';
+    return `<div class="vline"><select data-x="it" aria-label="الصنف"><option value="">— اختار الصنف —</option>${top.length?`<optgroup label="الأقرب للي اتقال">${top.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)} (${good(p)})</option>`).join('')}</optgroup>`:''}<optgroup label="كل الأصناف">${all.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</optgroup></select><input type="number" inputmode="numeric" data-x="q" value="${l.q}" aria-label="العدد"><button class="icon" data-m="rm" aria-label="شيل">✕</button></div>`};
+  openSheet(`<h4>🎙️ تسجيل مبيعات</h4><p class="heard">«${esc(raw)}»</p>${lines.map(row).join('')}
+    <p class="hint">راجع الصنف والعدد — هيتخصم من أقرب تاريخ مش منتهي.</p>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="again">🎙️ تاني</button><button class="btn primary" data-m="ok">سجّل</button></div>`,
+  (m,r,b)=>{if(m==='rm'){b.closest('.vline').remove();return}if(m==='again'){closeSheet();voiceSheet();return}if(m!=='ok')return;
+    const agg={};let bad=false;r.querySelectorAll('.vline').forEach(v=>{const id=v.querySelector('[data-x=it]').value,q=int(v.querySelector('[data-x=q]').value);if(!id||q<1){bad=true;return}agg[id]=(agg[id]||0)+q});
+    if(bad){toast('في سطر من غير صنف أو عدد');return}if(!Object.keys(agg).length){closeSheet();return}
+    closeSheet();let al=0;const names=[];for(const id in agg){const p=S.items.find(x=>x.id===id);if(p){if(doSell(p,agg[id],null,true))al++;names.push(`${p.name} × ${agg[id]}`)}}
+    toast(`اتسجل: ${names.join('، ')}${al?' — واتبعت تنبيه للكل':''}`)});
+}
+function voiceSheet(force){
+  let auto=true;
+  const ex=force==='note'?['المندوب جاي بكرة الساعة 11','فكرني بعد نص ساعة أكلم المورد']:['بيع بنادول اتنين','بيع بنادول اتنين وكونجستال واحد','وصل بنادول عشرة اكسبير تلاتة ٢٠٢٧','صنف جديد إيفا كريم جليسرين كوزماتكس خمسة','ملاحظة المندوب جاي بكرة الساعة ١١','عاجل بنادول','دوّر على بيوديرما'];
+  const r=openSheet(`<h4>${force==='note'?'📝 قول النوت':'🎙️ قول اللي عايزه'}</h4>
+    <div class="vbox"><button class="vmic" data-m="mic" aria-label="اتكلم">🎙️</button><p class="vst" id="vSt"></p></div>
+    <textarea id="vTx" class="vtx" placeholder="الكلام هيظهر هنا… وتقدر تعدّله بإيدك"></textarea>
+    <div class="chips">${[['ar-EG','عربي'],['en-US','English']].map(([k,l])=>`<button class="chip" data-m="lang:${k}" aria-pressed="${VL===k}">${l}</button>`).join('')}</div>
+    <details class="vex"><summary>أمثلة تقولها</summary><ul>${ex.map(e=>`<li>«${e}»</li>`).join('')}</ul></details>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="go">نفّذ</button></div>`,
+  (m,root,b)=>{
+    if(m==='mic'){if(curRec){try{curRec.stop()}catch(e){}}else start()}
+    else if(m.startsWith('lang:')){VL=m.slice(5);LS.set('drc.vlang',VL);root.querySelectorAll('[data-m^="lang:"]').forEach(x=>x.setAttribute('aria-pressed',x===b));try{curRec&&curRec.abort()}catch(e){}setTimeout(start,250)}
+    else if(m==='go'){const t=root.querySelector('#vTx').value.trim();if(!t){toast('مفيش كلام');return}auto=false;try{curRec&&curRec.abort()}catch(e){}closeSheet();runVoice(t,force)}});
+  const st=r.querySelector('#vSt'),tx=r.querySelector('#vTx'),mb=r.querySelector('.vmic');
+  tx.addEventListener('input',e=>{if(e.isTrusted)auto=false});
+  function start(){
+    if(!SR){st.textContent='المايك مش متاح هنا — دوس على مايك الكيبورد 🎤 واتكلم، وبعدين «نفّذ»';tx.focus();return}
+    auto=true;mb.classList.add('on');st.textContent='بسمعك… اتكلم';
+    listen({onInterim:t=>{tx.value=t},onError:micErr,onEnd:(t,err)=>{mb.classList.remove('on');
+      if(!r.isConnected)return;
+      if(t){tx.value=t;st.textContent='تمام';if(auto)setTimeout(()=>{if(r.isConnected&&auto){closeSheet();runVoice(tx.value,force)}},450)}
+      else st.textContent=err==='not-allowed'?'المايك مقفول — اسمح للمايك من إعدادات المتصفح':'مسمعتش — دوس المايك واتكلم تاني'}});
+  }
+  start();
+}
+$mic.addEventListener('click',()=>voiceSheet());
+$('cMic').addEventListener('click',e=>dictate($cIn,e.currentTarget));
+
+/* ---------- notes ---------- */
+const NCOL=['#FFF1A8','#FFD9E2','#CDF2E2','#D7E6FF','#FFE2C4'];
+const ncol=id=>NCOL[hue(id)%NCOL.length];
+let nSeen=+LS.get('drc.nSeen')||Date.now();LS.set('drc.nSeen',nSeen);
+const rung=new Set(JSON.parse(LS.get('drc.rung')||'[]'));
+const shownNotes=new Set();let notesFirst=true;
+function fmtAt(ms){const d=new Date(ms),k=dayKey(d),t=fmtTime(ms);if(k===today())return 'النهارده '+t;if(k===dayKey(new Date(Date.now()+864e5)))return 'بكرة '+t;return `${dayName(k)} ${d.getDate()}/${d.getMonth()+1} ${t}`}
+const toLocalInput=ms=>{const d=new Date(ms);return `${dayKey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
+function vNotes(){
+  const now=Date.now(),f=n=>matchQ(n.text+' '+n.by);
+  const open=S.notes.filter(n=>!n.done&&f(n)).sort((a,b)=>{const A=a.at&&a.at>now-36e5?a.at:9e15,B=b.at&&b.at>now-36e5?b.at:9e15;return A-B||b.t-a.t});
+  const done=S.notes.filter(n=>n.done&&f(n)).slice(0,20);
+  const card=n=>{const isNew=!notesFirst&&!shownNotes.has(n.id);shownNotes.add(n.id);
+    return `<article class="sticky ${n.done?'done':''} ${isNew?'new':''}" style="--nc:${ncol(n.id)}"><p>${esc(n.text)}</p>${n.at&&!n.done?`<span class="rem ${n.at<=now?'due':''}">⏰ ${fmtAt(n.at)}</span>`:''}<footer><span>${esc(n.by)} — ${fmtTime(n.t,1)}${n.done&&n.doneBy?`<br>✓ ${esc(n.doneBy)}`:''}</span>${n.done?`<button data-act="note-undo" data-nid="${n.id}" aria-label="رجّعها">↺</button>`:`<button data-act="note-done" data-nid="${n.id}" aria-label="خلصت">✓</button>`}${n.dev===DEV||n.done?`<button data-act="note-del" data-nid="${n.id}" aria-label="امسح">🗑</button>`:''}</footer></article>`};
+  let h=`<div class="toolbar"><button class="btn primary" data-act="note-new">+ نوت جديدة</button><button class="btn" data-act="note-voice">🎙️ قول النوت</button></div>`;
+  h+=open.length?`<p class="hint">النوتس بتظهر عند كل اللي معاهم اللينك، واللي ليها تذكير بترن عند الكل في ميعادها.</p><div class="notes">${open.map(card).join('')}</div>`:`<div class="empty">مفيش نوتس مفتوحة 📝</div>`;
+  if(done.length)h+=`<section class="group"><h3>خلصت</h3><div class="notes">${done.map(card).join('')}</div></section>`;
+  $app.innerHTML=h;notesFirst=false;
+}
+function noteSheet(pre={}){
+  let at=pre.at||0;
+  const r=openSheet(`<h4>📝 نوت للكل</h4>
+    <div class="vrow"><textarea id="nTx" class="ntx" placeholder="مثلاً: المندوب جاي الساعة 5 — حضّروا المرتجع">${esc(pre.text||'')}</textarea><button class="icon mic" data-m="dict" aria-label="اكتب بصوتك">🎙️</button></div>
+    <label>تذكير بصوت عند الكل</label>
+    <div class="chips">${[['0','من غير'],['30','بعد نص ساعة'],['60','بعد ساعة'],['tm','بكرة 9 الصبح']].map(([k,l])=>`<button class="chip" data-m="at:${k}">${l}</button>`).join('')}</div>
+    <input type="datetime-local" id="nAt" aria-label="ميعاد التذكير"><p class="hint" id="nAtL" style="margin:6px 2px 0"></p>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">ثبّتها للكل</button></div>`,
+  (m,root,b)=>{
+    if(m==='dict')return dictate(root.querySelector('#nTx'),b);
+    if(m.startsWith('at:')){const v=m.slice(3);if(v==='0')at=0;else if(v==='tm'){const d=new Date();d.setDate(d.getDate()+1);d.setHours(9,0,0,0);at=d.getTime()}else at=Date.now()+v*6e4;show();return}
+    if(m==='ok'){const text=root.querySelector('#nTx').value.trim();if(!text){toast('اكتب النوت');return}try{curRec&&curRec.abort()}catch(e){}
+      closeSheet();needName(()=>{const b2=fs.batch(),nr=col('notes').doc();push('📝 '+S.me,text,{prio:4,tags:['memo']});const pushed=schedRem(text,S.me,at)?at:0;b2.set(nr,{t:Date.now(),by:S.me,dev:DEV,text,at:at||0,pushed,done:false});evt(b2,'note',text.slice(0,60),'');commit(b2,at?`النوت اتثبتت — هترن عند الكل ${fmtAt(at)}`:'النوت وصلت للكل');if(S.view!=='notes')go('notes')})}});
+  const show=()=>{r.querySelector('#nAt').value=at?toLocalInput(at):'';r.querySelector('#nAtL').textContent=at?`⏰ هترن عند الكل ${fmtAt(at)}`:'من غير تذكير — هتوصل للكل دلوقتي بصوت';};
+  r.querySelector('#nAt').addEventListener('change',e=>{at=e.target.value?new Date(e.target.value).getTime():0;show()});
+  show();
+}
+function dingdong(times=1){try{if(!actx)return;for(let r=0;r<times;r++)[[659,0],[523,.28]].forEach(([f,d])=>{const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime+r*.75+d;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.35,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.5);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+.52)})}catch(e){}}
+function ringNote(n){
+  dingdong(3);try{navigator.vibrate&&navigator.vibrate([300,150,300,150,300])}catch(e){}
+  const el=$('remind');el.hidden=false;el.dataset.nid=n.id;
+  el.innerHTML=`<b>⏰ تذكير — من ${esc(n.by)}</b><p>${esc(n.text)}</p><div class="actions"><button class="btn primary" data-r="done">✓ خلصت</button><button class="btn" data-r="snooze">بعد 10 دقايق</button><button class="btn" data-r="close">قفل</button></div>`;
+  if('Notification' in window&&Notification.permission==='granted'){try{sysNote('⏰ تذكير — '+SHOP_NAME,{body:n.text,tag:'note-'+n.id})}catch(e){}}
+}
+$('remind').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(!b)return;const el=$('remind'),id=el.dataset.nid;el.hidden=true;
+  if(b.dataset.r==='done')run(ref('notes/'+id).update({done:true,doneBy:me(),doneT:Date.now()}),'اتعلّمت خلصت عند الكل');
+  if(b.dataset.r==='snooze'){const at=Date.now()+10*6e4,n=S.notes.find(x=>x.id===id);run(ref('notes/'+id).update({at,pushed:at}),'هترن تاني عند الكل بعد 10 دقايق');if(n)schedRem(n.text,n.by,at)}});
+function checkReminders(){const now=Date.now();S.notes.forEach(n=>{if(n.done||!n.at||n.at>now||n.at<now-6*36e5)return;const key=n.id+':'+n.at;if(rung.has(key))return;rung.add(key);LS.set('drc.rung',JSON.stringify([...rung].slice(-200)));ringNote(n)})}
+setInterval(checkReminders,15000);
+function startNotes(){
+  col('notes').orderBy('t','desc').limit(120).onSnapshot(snap=>{
+    S.notes=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const fresh=S.notes.filter(n=>n.t>nSeen&&n.dev!==DEV&&!n.done);
+    const mx=Math.max(nSeen,...S.notes.map(n=>n.t||0));nSeen=mx;LS.set('drc.nSeen',mx);
+    if(fresh.length&&!snap.metadata.hasPendingWrites){dingdong(1);try{navigator.vibrate&&navigator.vibrate([120,80,120])}catch(e){}const n=fresh[0];toast(`📝 ${n.by}: ${n.text.slice(0,70)}`);
+      if('Notification' in window&&Notification.permission==='granted'){try{sysNote('📝 نوت جديدة — '+n.by,{body:n.text,tag:'note-'+n.id})}catch(e){}}}
+    checkReminders();schedulePending();if(S.ready)render();
+  },e=>console.error(e));
+}
+$('notesBtn').addEventListener('click',()=>go(S.view==='notes'?'items':'notes'));
+
+
+/* ---------- app (PWA) + lock-screen push via ntfy ---------- */
+let swReg=null,deferredPrompt=null;
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').then(r=>{swReg=r}).catch(e=>console.warn('sw',e));
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
+addEventListener('appinstalled',()=>{deferredPrompt=null;toast('التطبيق اتثبت ✓')});
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+function sysNote(title,o){if(!('Notification' in window)||Notification.permission!=='granted')return;try{if(swReg)swReg.showNotification(title,{...o,icon:'icon-192.png',badge:'icon-192.png'});else new Notification(title,o)}catch(e){}}
+const appUrl=()=>location.origin+location.pathname;
+const MAXD=3*864e5-6e4;
+function push(title,message,o={}){
+  const topic=S.cfg.topic;if(!topic)return;
+  const body={topic,title,message:String(message||'').slice(0,1500),priority:o.prio||4,tags:o.tags||[],click:appUrl()};
+  if(o.at&&o.at-Date.now()>15000)body.delay=String(Math.floor(o.at/1000));
+  fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify(body)}).catch(e=>console.warn('push',e));
+}
+function schedRem(text,by,at){if(!at||at-Date.now()>MAXD)return false;push('⏰ تذكير — '+SHOP_NAME,`${text}\n(${by})`,{prio:5,tags:['alarm_clock'],at});return true}
+const schedTried=new Set();
+function schedulePending(){if(!fs||!fs.runTransaction||!S.cfg.topic)return;const now=Date.now();
+  S.notes.forEach(n=>{if(n.done||!n.at||n.pushed===n.at||n.at<now||n.at-now>MAXD||schedTried.has(n.id+':'+n.at))return;schedTried.add(n.id+':'+n.at);
+    fs.runTransaction(async tx=>{const d=await tx.get(ref('notes/'+n.id));const x=d.data();if(!x||x.done||x.pushed===x.at)throw 'skip';tx.update(ref('notes/'+n.id),{pushed:x.at});return x}).then(x=>schedRem(x.text,x.by,x.at)).catch(()=>{})})}
+async function ensureTopic(){const t='drcorner-'+Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8);
+  try{if(fs.runTransaction)await fs.runTransaction(async tx=>{const d=await tx.get(ref('settings/app'));if(d.exists&&d.data().topic)return;tx.set(ref('settings/app'),{topic:t},{merge:true})});else await ref('settings/app').set({topic:t},{merge:true})}catch(e){console.warn(e)}}
+function appSheet(){
+  const t=S.cfg.topic||'',ua=navigator.userAgent,isIOS=/iphone|ipad|ipod/i.test(ua)||(/macintosh/i.test(ua)&&'ontouchend' in document);
+  openSheet(`<h4>📲 التطبيق وإشعارات الموبايل</h4>
+    <div class="astep"><b>1) نزّل التطبيق على الموبايل</b>
+      ${standalone()?'<p class="ok">✓ إنت فاتح من التطبيق دلوقتي</p>':deferredPrompt?'<button class="btn primary" data-m="install" style="width:100%">⬇️ تثبيت التطبيق</button>':`<p class="hint" style="margin:4px 0">${isIOS?'من Safari: زرار المشاركة ⬆️ ← «إضافة إلى الشاشة الرئيسية»':'من Chrome: النقط التلاتة ⋮ فوق ← «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية»'}</p>`}
+    </div>
+    <div class="astep"><b>2) الإشعارات والموبايل مقفول</b>
+      <p class="hint" style="margin:4px 0">نزّل تطبيق <b>ntfy</b> المجاني مرة واحدة، واشترك في قناة الصيدلية. هيوصلك عليه النواقص العاجلة والنوتس والتذكيرات والشات حتى والموبايل مقفول، ولما تدوس على الإشعار بيفتحلك التطبيق.</p>
+      ${t?`<div class="actions"><a class="btn" href="${isIOS?'https://docs.ntfy.sh/subscribe/phone/':'https://play.google.com/store/apps/details?id=io.heckel.ntfy'}" target="_blank" rel="noopener">⬇️ نزّل ntfy</a><a class="btn primary" href="ntfy://ntfy.sh/${t}">🔔 اشترك في القناة</a></div>
+      <p class="hint">لو زرار الاشتراك ما فتحش: افتح ntfy ← ➕ ← اكتب اسم القناة ده بالظبط:<br><span class="ltr">${t}</span> <button class="btn sm" data-m="copy">نسخ</button></p>
+      <button class="btn" data-m="test" style="width:100%">🧪 ابعت إشعار تجربة</button>`:'<p class="hint">جاري تجهيز القناة… افتح الشاشة دي تاني بعد ثانية.</p>'}
+    </div>
+    ${t?`<div class="astep"><b>3) على الكمبيوتر</b><p class="hint" style="margin:4px 0">افتح <a href="https://ntfy.sh/${t}" target="_blank" rel="noopener">ntfy.sh/${t}</a> ← Subscribe ← اسمح بالإشعارات.</p></div>`:''}
+    <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  async m=>{
+    if(m==='install'&&deferredPrompt){deferredPrompt.prompt();const r=await deferredPrompt.userChoice.catch(()=>null);deferredPrompt=null;closeSheet();if(r&&r.outcome==='accepted')toast('التطبيق بيتثبت ✓')}
+    if(m==='copy')toast(await copyText(t)?'اسم القناة اتنسخ':'انسخه يدوي');
+    if(m==='test'){push('✅ تجربة — '+SHOP_NAME,`الإشعارات شغالة${S.me?' — من '+S.me:''}`,{prio:4,tags:['white_check_mark']});toast('اتبعت — لو مشترك هيوصلك في ثواني')}
+  });
+}
+
+/* ---------- events ---------- */
+function go(view){S.view=view;render();scrollTo(0,0)}
+$tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
+$seg.addEventListener('click',e=>{const b=e.target.closest('[data-type]');if(!b)return;S.type=b.dataset.type;LS.set('drc.type',S.type);render()});
+$q.addEventListener('input',()=>{S.q=$q.value;render()});
+$bell.addEventListener('click',alertsSheet);$ab.addEventListener('click',alertsSheet);
+$app.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='dayIn'&&t.value){S.day=t.value>today()?today():t.value;render()}
+  if(t.id==='expFrom'||t.id==='expTo'){S.expPreset='';S[t.id]=t.value;render()}});
+$app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const act=b.dataset.act,p=S.items.find(x=>x.id===b.dataset.id),k=b.dataset.k;
+  if(act==='open'&&p)itemSheet(p);
+  else if(act==='sell'&&p)sellSheet(p);
+  else if(act==='add')itemForm(null);
+  else if(act==='restock')restockSheet(p||null);
+  else if(act==='bulk')bulkSheet();
+  else if(act==='ordered'&&p)toggleOrdered(p);
+  else if(act==='urgent'&&p)urgent(p);
+  else if(act==='alert-out')alertAllOut();
+  else if(act==='out'&&p)outSheet(p,k);
+  else if(act==='smode'){S.shortMode=k;render()}
+  else if(act==='epre'){S.expPreset=k;render()}
+  else if(act==='day-prev'||act==='day-next'){const d=new Date(S.day+'T12:00:00');d.setDate(d.getDate()+(act==='day-prev'?-1:1));const nk=dayKey(d);S.day=nk>today()?today():nk;render()}
+  else if(act==='undo-sale'){const s=(salesOf(S.day)||[]).find(x=>x.sid===b.dataset.sid);if(s)undoSale(s)}
+  else if(act==='rep-short')doReport(repShort(),k);
+  else if(act==='rep-sales')doReport(repSales(),k);
+  else if(act==='rep-exp')doReport(repExp(),k);
+  else if(act==='name')askName(false);
+  else if(act==='settings')settingsSheet();
+  else if(act==='perm')askPerm();
+  else if(act==='app')appSheet();
+  else if(act==='export')exportData();
+  else if(act==='import')importData();
+  else if(act==='note-new')noteSheet();
+  else if(act==='note-voice')voiceSheet('note');
+  else if(act==='note-done')run(ref('notes/'+b.dataset.nid).update({done:true,doneBy:me(),doneT:Date.now()}),'اتعلّمت خلصت عند الكل');
+  else if(act==='note-undo')run(ref('notes/'+b.dataset.nid).update({done:false}),'رجعت للنوتس المفتوحة');
+  else if(act==='note-del')openSheet('<h4>تمسح النوت دي من عند الكل؟</h4><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">امسح</button></div>',()=>{closeSheet();run(ref('notes/'+b.dataset.nid).delete(),'اتمسحت')});
+});
+
+/* ---------- start ---------- */
+(function start(){
+  if(typeof firebase==='undefined'){S.error='مش قادر أحمّل Firebase — اتأكد إن النت شغال وافتح الصفحة تاني.';render();return}
+  try{firebase.initializeApp(FIREBASE_CONFIG);fs=firebase.firestore();fs.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){S.error='بيانات Firebase غلط.';render();return}
+  render();
+  let lastErr='';
+  const fail=e=>{console.error(e);lastErr=(e&&(e.code||e.message))||'';if(e&&e.code==='permission-denied'){S.error='Firebase رافض القراية — افتح Firestore ← Rules وخلّي المسار shops مسموح، ودوس Publish.';render()}};
+  col('items').onSnapshot({includeMetadataChanges:true},snap=>{
+    S.offline=snap.metadata.fromCache;S.items=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!S.ready){S.ready=true;S.error=''}render();
+  },fail);
+  col('sales').where('t','>=',winStart).orderBy('t','desc').onSnapshot(snap=>{S.sales=snap.docs.map(d=>({sid:d.id,...d.data()}));if(S.ready)render()},fail);
+  col('alerts').orderBy('t','desc').limit(80).onSnapshot(snap=>{
+    S.alerts=snap.docs.map(d=>({aid:d.id,...d.data()}));
+    const fresh=S.alerts.filter(a=>!a.done&&a.t>seen&&a.dev!==DEV);
+    const mx=Math.max(seen,...S.alerts.map(a=>a.t||0));seen=mx;LS.set('drc.seen',mx);
+    if(fresh.length&&!snap.metadata.hasPendingWrites)notify(fresh);
+    if(S.ready)render();
+  },e=>console.error(e));
+  col('events').orderBy('t','desc').limit(400).onSnapshot(snap=>{S.events=snap.docs.map(d=>d.data());if(S.view==='log')render()},e=>console.error(e));
+  startChat();startNotes();
+  ref('settings/app').onSnapshot({includeMetadataChanges:true},d=>{S.cfg={cur:'ج.م',...(d.data()||{})};if(!d.metadata.fromCache&&!S.cfg.topic)ensureTopic();if(S.ready)render()},e=>console.error(e));
+  setTimeout(()=>{if(S.ready||S.error)return;
+    S.error=`الموقع مش قادر يوصل للبيانات.<br><br>1) اقفل أي تاب تاني مفتوح فيه الموقع.<br>2) اتأكد إن النت شغال.${lastErr?`<br><br><small style="direction:ltr;display:block">${esc(lastErr)}</small>`:''}<div class="toolbar" style="margin-top:14px"><button class="btn primary" onclick="location.reload()">إعادة المحاولة</button></div>`;render();
+  },12000);
+  addEventListener('online',()=>{S.offline=false;renderTop()});addEventListener('offline',()=>{S.offline=true;renderTop()});
+})();
+})();
+</script>
+</body>
+</html>
