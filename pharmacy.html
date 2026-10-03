@@ -232,7 +232,11 @@ button.bt.sel{outline:3px solid var(--green);outline-offset:1px}
 .vrow textarea{flex:1}
 
 /* ---------- notes ---------- */
-.bell[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.notesbtn{position:relative;display:flex;align-items:center;gap:6px;height:46px;padding:0 14px 0 12px;border:0;border-radius:14px;background:#FFE45C;color:#2A2A22;font-weight:800;font-size:15px;box-shadow:0 3px 0 #D9B900,0 6px 14px rgba(0,0,0,.18);transform:rotate(-2deg)}
+.notesbtn .ni{font-size:22px;line-height:1}
+.notesbtn .pill{position:absolute;top:-8px;inset-inline-end:-8px;min-width:24px;line-height:24px;font-size:13px;border:2px solid var(--bg)}
+.notesbtn[aria-pressed="true"]{background:var(--ink);color:#FFE45C;box-shadow:none;transform:none}
+.notesbtn.wiggle{animation:wig .6s ease}
 .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-top:6px}
 .sticky{position:relative;background:var(--nc);color:#2A2A22;padding:14px 12px 10px;border-radius:3px 3px 14px 3px;box-shadow:0 8px 14px -8px rgba(0,0,0,.35),0 1px 1px rgba(0,0,0,.08);transform:rotate(-1deg);display:flex;flex-direction:column;min-height:130px}
 .sticky:nth-child(even){transform:rotate(1.1deg)}
@@ -264,6 +268,10 @@ a.btn{text-decoration:none;text-align:center;color:inherit}
 a.btn.primary{color:#fff}
 .ltr{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px}
 
+.diag{list-style:none;margin:8px 0 0;padding:0;font-size:13px}
+.diag li{padding:5px 8px;border-radius:8px;margin-top:4px;background:var(--card)}
+.diag li.ok{color:var(--green)}
+.diag li.bad{color:var(--red);background:var(--red-soft);font-weight:700}
 #print{display:none}
 @media print{
   body>*:not(#print){display:none!important}
@@ -284,7 +292,7 @@ a.btn.primary{color:#fff}
 <header class="top">
   <div class="brand">
     <h1>Dr. Corner<small id="status">صيدلية وكوزماتكس</small></h1>
-    <button class="bell" id="notesBtn" aria-label="النوتس" hidden>📝<span class="pill amber" id="notespill" hidden></span></button>
+    <button class="notesbtn" id="notesBtn" aria-label="النوتس" hidden><span class="ni">📝</span><span class="nl">النوتس</span><span class="pill" id="notespill" hidden></span></button>
     <button class="bell" id="bell" aria-label="التنبيهات" hidden>🔔<span class="pill" id="bellpill" hidden></span></button>
   </div>
   <nav class="tabs" id="tabs"></nav>
@@ -1036,7 +1044,7 @@ function startNotes(){
     S.notes=snap.docs.map(d=>({id:d.id,...d.data()}));
     const fresh=S.notes.filter(n=>n.t>nSeen&&n.dev!==DEV&&!n.done);
     const mx=Math.max(nSeen,...S.notes.map(n=>n.t||0));nSeen=mx;LS.set('drc.nSeen',mx);
-    if(fresh.length&&!snap.metadata.hasPendingWrites){dingdong(1);try{navigator.vibrate&&navigator.vibrate([120,80,120])}catch(e){}const n=fresh[0];toast(`📝 ${n.by}: ${n.text.slice(0,70)}`);
+    if(fresh.length&&!snap.metadata.hasPendingWrites){dingdong(1);const nb=$('notesBtn');nb.classList.remove('wiggle');void nb.offsetWidth;nb.classList.add('wiggle');try{navigator.vibrate&&navigator.vibrate([120,80,120])}catch(e){}const n=fresh[0];toast(`📝 ${n.by}: ${n.text.slice(0,70)}`);
       if('Notification' in window&&Notification.permission==='granted'){try{sysNote('📝 نوت جديدة — '+n.by,{body:n.text,tag:'note-'+n.id})}catch(e){}}}
     checkReminders();schedulePending();if(S.ready)render();
   },e=>console.error(e));
@@ -1071,6 +1079,7 @@ function appSheet(){
   openSheet(`<h4>📲 التطبيق وإشعارات الموبايل</h4>
     <div class="astep"><b>1) نزّل التطبيق على الموبايل</b>
       ${standalone()?'<p class="ok">✓ إنت فاتح من التطبيق دلوقتي</p>':deferredPrompt?'<button class="btn primary" data-m="install" style="width:100%">⬇️ تثبيت التطبيق</button>':`<p class="hint" style="margin:4px 0">${isIOS?'من Safari: زرار المشاركة ⬆️ ← «إضافة إلى الشاشة الرئيسية»':'من Chrome: النقط التلاتة ⋮ فوق ← «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية»'}</p>`}
+      ${standalone()?'':'<button class="btn" data-m="diag" style="width:100%;margin-top:6px">🔎 افحص ليه مش بيتثبت</button><ul class="diag" id="diag" hidden></ul>'}
     </div>
     <div class="astep"><b>2) الإشعارات والموبايل مقفول</b>
       <p class="hint" style="margin:4px 0">نزّل تطبيق <b>ntfy</b> المجاني مرة واحدة، واشترك في قناة الصيدلية. هيوصلك عليه النواقص العاجلة والنوتس والتذكيرات والشات حتى والموبايل مقفول، ولما تدوس على الإشعار بيفتحلك التطبيق.</p>
@@ -1083,9 +1092,38 @@ function appSheet(){
   async m=>{
     if(m==='install'&&deferredPrompt){deferredPrompt.prompt();const r=await deferredPrompt.userChoice.catch(()=>null);deferredPrompt=null;closeSheet();if(r&&r.outcome==='accepted')toast('التطبيق بيتثبت ✓')}
     if(m==='copy')toast(await copyText(t)?'اسم القناة اتنسخ':'انسخه يدوي');
+    if(m==='diag'){const el=document.getElementById('diag');el.hidden=false;el.innerHTML='<li>جاري الفحص…</li>';el.innerHTML=(await installCheck()).join('')}
     if(m==='test'){push('✅ تجربة — '+SHOP_NAME,`الإشعارات شغالة${S.me?' — من '+S.me:''}`,{prio:4,tags:['white_check_mark']});toast('اتبعت — لو مشترك هيوصلك في ثواني')}
   });
 }
+
+
+const pageName=()=>decodeURIComponent(location.pathname.split('/').pop()||'index.html');
+async function installCheck(){
+  const out=[],add=(ok,txt)=>out.push(`<li class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${txt}</li>`);
+  const page=pageName(),dir=location.pathname.replace(/[^/]*$/,'');
+  add(location.protocol==='https:','الموقع فاتح على https');
+  let man=null;
+  try{const r=await fetch('manifest.json',{cache:'no-store'});if(r.ok){man=await r.json();add(true,'manifest.json موجود')}else add(false,`manifest.json مش لاقيه في <span class="ltr">${esc(dir)}</span> — ارفعه جنب ${esc(page)}`)}catch(e){add(false,'manifest.json موجود بس فيه غلط — ارفعه تاني من الـ zip')}
+  if(man){const su=decodeURIComponent(new URL(man.start_url||'.',new URL('manifest.json',location.href)).pathname.split('/').pop()||'index.html');
+    add(su===page,su===page?`التطبيق هيفتح ${esc(page)} ✓`:`الصفحة عندك اسمها <b>${esc(page)}</b> والتطبيق مستني <b>${esc(su)}</b> — غيّر اسم الصفحة لـ ${esc(su)}`)}
+  for(const f of ['icon-192.png','icon-512.png','sw.js']){try{const r=await fetch(f,{cache:'no-store'});add(r.ok,r.ok?`${f} موجود`:`${f} مش موجود — ارفعه جنب ${esc(page)}`)}catch(e){add(false,`${f} مش موجود`)}}
+  const reg='serviceWorker' in navigator?await navigator.serviceWorker.getRegistration().catch(()=>null):null;
+  add(!!(reg&&reg.active),reg&&reg.active?'الـ service worker شغال':'الـ service worker مش شغال لسه — اقفل التاب وافتحه تاني');
+  if(!out.some(x=>x.includes('class="bad"')))out.push('<li class="ok">👌 كله تمام — اقفل كل تابات الموقع، افتحه تاني، واستنى 30 ثانية وبعدين ⋮ ← «تثبيت التطبيق»</li>');
+  return out;
+}
+/* fallback: لو manifest.json مش موجود أو بيشاور على صفحة تانية، اعمل واحد للصفحة دي */
+(async()=>{if(location.protocol!=='https:')return;try{
+  let ok=false;const r=await fetch('manifest.json',{cache:'no-store'});
+  if(r.ok){const m=await r.json();const su=decodeURIComponent(new URL(m.start_url||'.',new URL('manifest.json',location.href)).pathname.split('/').pop()||'index.html');ok=su===pageName()}
+  if(ok)return;
+  const base=location.href.split('#')[0].split('?')[0],dir=new URL('./',base).href;
+  const icon=n=>{const c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d');x.fillStyle='#0E7C66';x.fillRect(0,0,n,n);x.font=`${n*.6}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText('💊',n/2,n/2+n*.04);return c.toDataURL('image/png')};
+  const man={name:'Dr. Corner — المخزن والمبيعات',short_name:'Dr. Corner',start_url:base,scope:dir,display:'standalone',background_color:'#EEF4F3',theme_color:'#0E7C66',dir:'rtl',lang:'ar',
+    icons:[{src:icon(192),sizes:'192x192',type:'image/png'},{src:icon(512),sizes:'512x512',type:'image/png'},{src:icon(512),sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+  const l=document.querySelector('link[rel=manifest]');l.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'}));
+}catch(e){}})();
 
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
