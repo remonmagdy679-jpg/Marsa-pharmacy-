@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0E7C66">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Dr. Corner">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>Dr. Corner — المخزن والمبيعات</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -226,7 +232,11 @@ button.bt.sel{outline:3px solid var(--green);outline-offset:1px}
 .vrow textarea{flex:1}
 
 /* ---------- notes ---------- */
-.bell[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.notesbtn{position:relative;display:flex;align-items:center;gap:6px;height:46px;padding:0 14px 0 12px;border:0;border-radius:14px;background:#FFE45C;color:#2A2A22;font-weight:800;font-size:15px;box-shadow:0 3px 0 #D9B900,0 6px 14px rgba(0,0,0,.18);transform:rotate(-2deg)}
+.notesbtn .ni{font-size:22px;line-height:1}
+.notesbtn .pill{position:absolute;top:-8px;inset-inline-end:-8px;min-width:24px;line-height:24px;font-size:13px;border:2px solid var(--bg)}
+.notesbtn[aria-pressed="true"]{background:var(--ink);color:#FFE45C;box-shadow:none;transform:none}
+.notesbtn.wiggle{animation:wig .6s ease}
 .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-top:6px}
 .sticky{position:relative;background:var(--nc);color:#2A2A22;padding:14px 12px 10px;border-radius:3px 3px 14px 3px;box-shadow:0 8px 14px -8px rgba(0,0,0,.35),0 1px 1px rgba(0,0,0,.08);transform:rotate(-1deg);display:flex;flex-direction:column;min-height:130px}
 .sticky:nth-child(even){transform:rotate(1.1deg)}
@@ -250,6 +260,18 @@ button.bt.sel{outline:3px solid var(--green);outline-offset:1px}
 .remind .btn.primary{background:#0E7C66;color:#fff}
 @media (prefers-reduced-motion: no-preference){.remind{animation:up .25s ease-out}}
 
+.astep{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;background:var(--bg)}
+.astep>b{display:block;margin-bottom:4px}
+.astep .ok{color:var(--green);font-weight:700;margin:4px 0}
+.astep .actions{margin-top:8px}
+a.btn{text-decoration:none;text-align:center;color:inherit}
+a.btn.primary{color:#fff}
+.ltr{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,monospace;font-size:13px}
+
+.diag{list-style:none;margin:8px 0 0;padding:0;font-size:13px}
+.diag li{padding:5px 8px;border-radius:8px;margin-top:4px;background:var(--card)}
+.diag li.ok{color:var(--green)}
+.diag li.bad{color:var(--red);background:var(--red-soft);font-weight:700}
 #print{display:none}
 @media print{
   body>*:not(#print){display:none!important}
@@ -270,7 +292,7 @@ button.bt.sel{outline:3px solid var(--green);outline-offset:1px}
 <header class="top">
   <div class="brand">
     <h1>Dr. Corner<small id="status">صيدلية وكوزماتكس</small></h1>
-    <button class="bell" id="notesBtn" aria-label="النوتس" hidden>📝<span class="pill amber" id="notespill" hidden></span></button>
+    <button class="notesbtn" id="notesBtn" aria-label="النوتس" hidden><span class="ni">📝</span><span class="nl">النوتس</span><span class="pill" id="notespill" hidden></span></button>
     <button class="bell" id="bell" aria-label="التنبيهات" hidden>🔔<span class="pill" id="bellpill" hidden></span></button>
   </div>
   <nav class="tabs" id="tabs"></nav>
@@ -466,7 +488,7 @@ function vExp(){
 function vLog(){
   const list=S.events.filter(e=>matchQ(e.name+' '+(e.by||'')+' '+(ACT[e.a]||'')));
   const ppl=[...new Set(S.events.slice(0,200).map(e=>e.by).filter(Boolean))];
-  let h=`<div class="toolbar"><button class="btn" data-act="name">اسمي: ${esc(S.me||'—')}</button><button class="btn" data-act="settings">الإعدادات</button><button class="btn" data-act="perm">فعّل الإشعارات</button><button class="btn" data-act="export">نسخة احتياطية</button><button class="btn" data-act="import">رفع نسخة</button></div>`;
+  let h=`<div class="toolbar"><button class="btn" data-act="name">اسمي: ${esc(S.me||'—')}</button><button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="export">نسخة احتياطية</button><button class="btn" data-act="import">رفع نسخة</button></div>`;
   if(ppl.length)h+=`<p class="hint">اللي بيستخدموا الموقع: ${ppl.map(esc).join('، ')}</p>`;
   h+=list.length?`<div class="rows log">${list.slice(0,300).map(e=>`<div class="row slim"><time>${fmtTime(e.t,1)}</time><span class="tag ${e.a}">${ACT[e.a]||e.a}</span><div class="kit"><b>${esc(e.name)}${e.n!==''&&e.n!=null?` × ${esc(e.n)}`:''}</b><div class="meta">${e.by?`<span>👤 ${esc(e.by)}</span>`:''}${e.note?`<span>${esc(e.note)}</span>`:''}</div></div></div>`).join('')}</div>`:`<div class="empty">مفيش حركات لسه</div>`;
   $app.innerHTML=h;
@@ -616,8 +638,9 @@ function delSheet(p){
 }
 function settingsSheet(){
   openSheet(`<h4>الإعدادات</h4><label for="fCur">العملة اللي بتظهر جنب الأسعار</label><input id="fCur" value="${esc(S.cfg.cur)}" placeholder="ج.م أو €">
-    <p class="hint">بتتغير عند كل اللي فاتحين الموقع.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">حفظ</button></div>`,
-  (m,r)=>{const c=r.querySelector('#fCur').value.trim()||'ج.م';closeSheet();run(ref('settings/app').set({cur:c},{merge:true}),'اتحفظ')});
+    <label class="check"><input type="checkbox" id="fPc" ${S.cfg.pushChat!==false?'checked':''}> ابعت رسايل الشات كإشعار للموبايلات</label>
+    <p class="hint">الإعدادات دي بتتغير عند الكل.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">حفظ</button></div>`,
+  (m,r)=>{const c=r.querySelector('#fCur').value.trim()||'ج.م';const pc=r.querySelector('#fPc').checked;closeSheet();run(ref('settings/app').set({cur:c,pushChat:pc},{merge:true}),'اتحفظ')});
 }
 function alertsSheet(){
   const oa=openAlerts(),done=S.alerts.filter(a=>a.done).slice(0,10);
@@ -625,11 +648,11 @@ function alertsSheet(){
   const row=a=>`<div class="row slim"><div class="kit"><b>${TYPES[a.type||'cos'].icon} ${esc(a.name)}</b><div class="meta"><span class="${a.done?'':'rd'}">${a.qty?`فاضل ${a.qty}`:'خلصان'}${a.msg?' — '+esc(a.msg):''}</span><span>👤 ${esc(a.by)} ${fmtTime(a.t,1)}</span>${a.done?`<span class="ok">✓ ${esc(a.doneBy||'')}</span>`:''}</div></div>${a.done?'':`<button class="btn sm primary" data-m="done:${a.aid}">اتحل ✓</button>`}</div>`;
   openSheet(`<h4>🔔 النواقص العاجلة</h4>
     ${canN&&perm!=='granted'?'<button class="btn" data-m="perm" style="width:100%">فعّل الإشعارات على الجهاز ده</button>':''}
-    <p class="hint">التنبيه بيوصل لكل اللي فاتحين الموقع على طول (صوت + اهتزاز + الشريط الأحمر). عشان يوصل للكل حتى لو الموقع مقفول، ابعته على جروب الواتساب.</p>
+    <p class="hint">التنبيه بيوصل للكل على طول — وعلى الموبايلات حتى وهي مقفولة لو مشتركين في قناة الإشعارات.</p><button class="btn" data-m="app" style="width:100%;margin-bottom:10px">📲 إشعارات والموبايل مقفول</button>
     ${oa.length?`<div class="rows">${oa.map(row).join('')}</div>`:'<div class="empty">مفيش نواقص عاجلة دلوقتي 👌</div>'}
     ${done.length?`<label>اتحلت قريب</label><div class="rows">${done.map(row).join('')}</div>`:''}
     <div class="actions"><button class="btn" data-cancel>قفل</button>${oa.length?'<button class="btn primary" data-m="wa">ابعت على الواتساب</button>':''}</div>`,
-  m=>{if(m==='perm')askPerm();if(m==='wa')wa(`🔔 نواقص عاجلة — ${SHOP_NAME}\n`+oa.map(a=>`- ${a.name} (${a.qty?'فاضل '+a.qty:'خلصان'})`).join('\n'));
+  m=>{if(m==='app')return appSheet();if(m==='perm')askPerm();if(m==='wa')wa(`🔔 نواقص عاجلة — ${SHOP_NAME}\n`+oa.map(a=>`- ${a.name} (${a.qty?'فاضل '+a.qty:'خلصان'})`).join('\n'));
     if(m.startsWith('done:')){const a=S.alerts.find(x=>x.aid===m.slice(5));if(a){const b=fs.batch();b.update(ref('alerts/'+a.aid),{done:true,doneBy:S.me,doneT:Date.now()});evt(b,'done',a.name,'');commit(b);closeSheet()}}});
 }
 
@@ -642,7 +665,7 @@ function run(promise,okMsg){if(okMsg)toast(okMsg);promise.catch(e=>{console.erro
 const commit=(b,msg)=>run(b.commit(),msg);
 const me=()=>S.me||'بدون اسم';
 function evt(b,a,name,n,note,anon){b.set(col('events').doc(),{t:Date.now(),by:anon?'':me(),a,name:name||'',n:n??'',note:note||''})}
-function newAlert(b,p,q,auto,msg){if(openAlerts().some(a=>a.id===p.id))return false;b.set(col('alerts').doc(),{t:Date.now(),by:auto?'تلقائي':me(),dev:DEV,id:p.id,name:p.name,type:tOf(p),qty:q,auto:!!auto,msg:msg||'',done:false});evt(b,'alert',p.name,q,msg);return true}
+function newAlert(b,p,q,auto,msg,silent){if(openAlerts().some(a=>a.id===p.id))return false;b.set(col('alerts').doc(),{t:Date.now(),by:auto?'تلقائي':me(),dev:DEV,id:p.id,name:p.name,type:tOf(p),qty:q,auto:!!auto,msg:msg||'',done:false});evt(b,'alert',p.name,q,msg);if(!silent)push('🔔 ناقص عاجل — '+SHOP_NAME,`${p.name} — ${q?'فاضل '+q:'خلص'}${msg&&msg!=='عاجل'?' ('+msg+')':''}${auto?'':' — '+me()}`,{prio:5,tags:['rotating_light']});return true}
 function doSell(p,n,start,quiet){
   const bl=bats(p);if(!start)start=(bl.find(([k])=>bkIdx(k)>=nowIdx())||[])[0];let order=bl.map(x=>x[0]);if(start&&order.includes(start))order=[start,...order.filter(k=>k!==start)];
   let rem=n;const alloc={},upd={};
@@ -693,7 +716,7 @@ async function bulkAdd(type,rows){
 }
 function toggleOrdered(p){const b=fs.batch();b.update(ref('items/'+p.id),{ordered:p.ordered?FV().delete():{by:me(),t:Date.now()}});if(!p.ordered)evt(b,'ord',p.name,'');commit(b,p.ordered?'اتشالت علامة «اتطلب»':'اتعلّم «اتطلب» عند الكل')}
 function urgent(p){const b=fs.batch();if(newAlert(b,p,good(p),false,'عاجل')){commit(b,'التنبيه وصل لكل اللي فاتحين الموقع')}else toast('في تنبيه مفتوح للصنف ده بالفعل')}
-function alertAllOut(){const b=fs.batch();let c=0;S.items.filter(p=>mItem(p)&&!good(p)).forEach(p=>{if(newAlert(b,p,0,false,'خلصان'))c++});if(c)commit(b,`اتبعت ${c} تنبيه للكل`);else toast('كله متبعتله تنبيه بالفعل')}
+function alertAllOut(){const b=fs.batch();const ns=[];S.items.filter(p=>mItem(p)&&!good(p)).forEach(p=>{if(newAlert(b,p,0,false,'خلصان',true))ns.push(p.name)});const c=ns.length;if(c){commit(b,`اتبعت ${c} تنبيه للكل`);push(`🔔 ${c} صنف خلصان — ${SHOP_NAME}`,ns.join('\n'),{prio:5,tags:['rotating_light']})}else toast('كله متبعتله تنبيه بالفعل')}
 function exportData(){
   const items={};S.items.forEach(p=>{const {id,...r}=p;items[id]=r});
   const blob=new Blob([JSON.stringify({items,cfg:S.cfg},null,1)],{type:'application/json'});
@@ -713,7 +736,7 @@ function askPerm(){if(!('Notification' in window)){toast('الجهاز ده مش
 function notify(list){
   beep();try{navigator.vibrate&&navigator.vibrate([250,120,250])}catch(e){}
   toast(`🔔 عاجل: ${list.map(a=>a.name).join('، ')}`);
-  if('Notification' in window&&Notification.permission==='granted'){list.slice(0,3).forEach(a=>{try{new Notification('🔔 ناقص عاجل — '+SHOP_NAME,{body:`${a.name} — ${a.qty?'فاضل '+a.qty:'خلصان'} (${a.by})`,tag:a.aid})}catch(e){}})}
+  if('Notification' in window&&Notification.permission==='granted'){list.slice(0,3).forEach(a=>{try{sysNote('🔔 ناقص عاجل — '+SHOP_NAME,{body:`${a.name} — ${a.qty?'فاضل '+a.qty:'خلصان'} (${a.by})`,tag:a.aid})}catch(e){}})}
 }
 let seen=+LS.get('drc.seen')||Date.now();LS.set('drc.seen',seen);
 
@@ -771,6 +794,7 @@ function sendMsg(text){
   text=String(text||'').trim();if(!text)return;if(!S.me){askName(false,()=>sendMsg(text));return}
   if(text.length>1000)text=text.slice(0,1000);
   run(col('chat').doc().set({t:Date.now(),by:S.me,dev:DEV,text,r:{}}));
+  if(S.cfg.pushChat!==false)push('💬 '+S.me,text,{prio:3,tags:['speech_balloon']});
   run(ref('presence/'+DEV).set({typing:0},{merge:true}));
 }
 function msgSheet(m){
@@ -786,7 +810,7 @@ function onNewMsgs(list){
   chirp();try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}
   $fab.classList.remove('wiggle');void $fab.offsetWidth;$fab.classList.add('wiggle');
   if(!C.open){const m=list[list.length-1];toast(`💬 ${m.by}: ${String(m.text).slice(0,60)}`)}
-  if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){const m=list[list.length-1];try{new Notification('💬 '+m.by,{body:m.text,tag:'drc-chat'})}catch(e){}}
+  if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){const m=list[list.length-1];try{sysNote('💬 '+m.by,{body:m.text,tag:'drc-chat'})}catch(e){}}
 }
 let lastHB=0,lastTyping=0;
 function heartbeat(){if(!fs||!S.me)return;lastHB=Date.now();ref('presence/'+DEV).set({name:S.me,t:Date.now()},{merge:true}).catch(()=>{})}
@@ -998,7 +1022,7 @@ function noteSheet(pre={}){
     if(m==='dict')return dictate(root.querySelector('#nTx'),b);
     if(m.startsWith('at:')){const v=m.slice(3);if(v==='0')at=0;else if(v==='tm'){const d=new Date();d.setDate(d.getDate()+1);d.setHours(9,0,0,0);at=d.getTime()}else at=Date.now()+v*6e4;show();return}
     if(m==='ok'){const text=root.querySelector('#nTx').value.trim();if(!text){toast('اكتب النوت');return}try{curRec&&curRec.abort()}catch(e){}
-      closeSheet();needName(()=>{const b2=fs.batch();b2.set(col('notes').doc(),{t:Date.now(),by:S.me,dev:DEV,text,at:at||0,done:false});evt(b2,'note',text.slice(0,60),'');commit(b2,at?`النوت اتثبتت — هترن عند الكل ${fmtAt(at)}`:'النوت وصلت للكل');if(S.view!=='notes')go('notes')})}});
+      closeSheet();needName(()=>{const b2=fs.batch(),nr=col('notes').doc();push('📝 '+S.me,text,{prio:4,tags:['memo']});const pushed=schedRem(text,S.me,at)?at:0;b2.set(nr,{t:Date.now(),by:S.me,dev:DEV,text,at:at||0,pushed,done:false});evt(b2,'note',text.slice(0,60),'');commit(b2,at?`النوت اتثبتت — هترن عند الكل ${fmtAt(at)}`:'النوت وصلت للكل');if(S.view!=='notes')go('notes')})}});
   const show=()=>{r.querySelector('#nAt').value=at?toLocalInput(at):'';r.querySelector('#nAtL').textContent=at?`⏰ هترن عند الكل ${fmtAt(at)}`:'من غير تذكير — هتوصل للكل دلوقتي بصوت';};
   r.querySelector('#nAt').addEventListener('change',e=>{at=e.target.value?new Date(e.target.value).getTime():0;show()});
   show();
@@ -1008,11 +1032,11 @@ function ringNote(n){
   dingdong(3);try{navigator.vibrate&&navigator.vibrate([300,150,300,150,300])}catch(e){}
   const el=$('remind');el.hidden=false;el.dataset.nid=n.id;
   el.innerHTML=`<b>⏰ تذكير — من ${esc(n.by)}</b><p>${esc(n.text)}</p><div class="actions"><button class="btn primary" data-r="done">✓ خلصت</button><button class="btn" data-r="snooze">بعد 10 دقايق</button><button class="btn" data-r="close">قفل</button></div>`;
-  if('Notification' in window&&Notification.permission==='granted'){try{new Notification('⏰ تذكير — '+SHOP_NAME,{body:n.text,tag:'note-'+n.id})}catch(e){}}
+  if('Notification' in window&&Notification.permission==='granted'){try{sysNote('⏰ تذكير — '+SHOP_NAME,{body:n.text,tag:'note-'+n.id})}catch(e){}}
 }
 $('remind').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(!b)return;const el=$('remind'),id=el.dataset.nid;el.hidden=true;
   if(b.dataset.r==='done')run(ref('notes/'+id).update({done:true,doneBy:me(),doneT:Date.now()}),'اتعلّمت خلصت عند الكل');
-  if(b.dataset.r==='snooze')run(ref('notes/'+id).update({at:Date.now()+10*6e4}),'هترن تاني عند الكل بعد 10 دقايق')});
+  if(b.dataset.r==='snooze'){const at=Date.now()+10*6e4,n=S.notes.find(x=>x.id===id);run(ref('notes/'+id).update({at,pushed:at}),'هترن تاني عند الكل بعد 10 دقايق');if(n)schedRem(n.text,n.by,at)}});
 function checkReminders(){const now=Date.now();S.notes.forEach(n=>{if(n.done||!n.at||n.at>now||n.at<now-6*36e5)return;const key=n.id+':'+n.at;if(rung.has(key))return;rung.add(key);LS.set('drc.rung',JSON.stringify([...rung].slice(-200)));ringNote(n)})}
 setInterval(checkReminders,15000);
 function startNotes(){
@@ -1020,12 +1044,86 @@ function startNotes(){
     S.notes=snap.docs.map(d=>({id:d.id,...d.data()}));
     const fresh=S.notes.filter(n=>n.t>nSeen&&n.dev!==DEV&&!n.done);
     const mx=Math.max(nSeen,...S.notes.map(n=>n.t||0));nSeen=mx;LS.set('drc.nSeen',mx);
-    if(fresh.length&&!snap.metadata.hasPendingWrites){dingdong(1);try{navigator.vibrate&&navigator.vibrate([120,80,120])}catch(e){}const n=fresh[0];toast(`📝 ${n.by}: ${n.text.slice(0,70)}`);
-      if('Notification' in window&&Notification.permission==='granted'){try{new Notification('📝 نوت جديدة — '+n.by,{body:n.text,tag:'note-'+n.id})}catch(e){}}}
-    checkReminders();if(S.ready)render();
+    if(fresh.length&&!snap.metadata.hasPendingWrites){dingdong(1);const nb=$('notesBtn');nb.classList.remove('wiggle');void nb.offsetWidth;nb.classList.add('wiggle');try{navigator.vibrate&&navigator.vibrate([120,80,120])}catch(e){}const n=fresh[0];toast(`📝 ${n.by}: ${n.text.slice(0,70)}`);
+      if('Notification' in window&&Notification.permission==='granted'){try{sysNote('📝 نوت جديدة — '+n.by,{body:n.text,tag:'note-'+n.id})}catch(e){}}}
+    checkReminders();schedulePending();if(S.ready)render();
   },e=>console.error(e));
 }
 $('notesBtn').addEventListener('click',()=>go(S.view==='notes'?'items':'notes'));
+
+
+/* ---------- app (PWA) + lock-screen push via ntfy ---------- */
+let swReg=null,deferredPrompt=null;
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').then(r=>{swReg=r}).catch(e=>console.warn('sw',e));
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
+addEventListener('appinstalled',()=>{deferredPrompt=null;toast('التطبيق اتثبت ✓')});
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+function sysNote(title,o){if(!('Notification' in window)||Notification.permission!=='granted')return;try{if(swReg)swReg.showNotification(title,{...o,icon:'icon-192.png',badge:'icon-192.png'});else new Notification(title,o)}catch(e){}}
+const appUrl=()=>location.origin+location.pathname;
+const MAXD=3*864e5-6e4;
+function push(title,message,o={}){
+  const topic=S.cfg.topic;if(!topic)return;
+  const body={topic,title,message:String(message||'').slice(0,1500),priority:o.prio||4,tags:o.tags||[],click:appUrl()};
+  if(o.at&&o.at-Date.now()>15000)body.delay=String(Math.floor(o.at/1000));
+  fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify(body)}).catch(e=>console.warn('push',e));
+}
+function schedRem(text,by,at){if(!at||at-Date.now()>MAXD)return false;push('⏰ تذكير — '+SHOP_NAME,`${text}\n(${by})`,{prio:5,tags:['alarm_clock'],at});return true}
+const schedTried=new Set();
+function schedulePending(){if(!fs||!fs.runTransaction||!S.cfg.topic)return;const now=Date.now();
+  S.notes.forEach(n=>{if(n.done||!n.at||n.pushed===n.at||n.at<now||n.at-now>MAXD||schedTried.has(n.id+':'+n.at))return;schedTried.add(n.id+':'+n.at);
+    fs.runTransaction(async tx=>{const d=await tx.get(ref('notes/'+n.id));const x=d.data();if(!x||x.done||x.pushed===x.at)throw 'skip';tx.update(ref('notes/'+n.id),{pushed:x.at});return x}).then(x=>schedRem(x.text,x.by,x.at)).catch(()=>{})})}
+async function ensureTopic(){const t='drcorner-'+Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8);
+  try{if(fs.runTransaction)await fs.runTransaction(async tx=>{const d=await tx.get(ref('settings/app'));if(d.exists&&d.data().topic)return;tx.set(ref('settings/app'),{topic:t},{merge:true})});else await ref('settings/app').set({topic:t},{merge:true})}catch(e){console.warn(e)}}
+function appSheet(){
+  const t=S.cfg.topic||'',ua=navigator.userAgent,isIOS=/iphone|ipad|ipod/i.test(ua)||(/macintosh/i.test(ua)&&'ontouchend' in document);
+  openSheet(`<h4>📲 التطبيق وإشعارات الموبايل</h4>
+    <div class="astep"><b>1) نزّل التطبيق على الموبايل</b>
+      ${standalone()?'<p class="ok">✓ إنت فاتح من التطبيق دلوقتي</p>':deferredPrompt?'<button class="btn primary" data-m="install" style="width:100%">⬇️ تثبيت التطبيق</button>':`<p class="hint" style="margin:4px 0">${isIOS?'من Safari: زرار المشاركة ⬆️ ← «إضافة إلى الشاشة الرئيسية»':'من Chrome: النقط التلاتة ⋮ فوق ← «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية»'}</p>`}
+      ${standalone()?'':'<button class="btn" data-m="diag" style="width:100%;margin-top:6px">🔎 افحص ليه مش بيتثبت</button><ul class="diag" id="diag" hidden></ul>'}
+    </div>
+    <div class="astep"><b>2) الإشعارات والموبايل مقفول</b>
+      <p class="hint" style="margin:4px 0">نزّل تطبيق <b>ntfy</b> المجاني مرة واحدة، واشترك في قناة الصيدلية. هيوصلك عليه النواقص العاجلة والنوتس والتذكيرات والشات حتى والموبايل مقفول، ولما تدوس على الإشعار بيفتحلك التطبيق.</p>
+      ${t?`<div class="actions"><a class="btn" href="${isIOS?'https://docs.ntfy.sh/subscribe/phone/':'https://play.google.com/store/apps/details?id=io.heckel.ntfy'}" target="_blank" rel="noopener">⬇️ نزّل ntfy</a><a class="btn primary" href="ntfy://ntfy.sh/${t}">🔔 اشترك في القناة</a></div>
+      <p class="hint">لو زرار الاشتراك ما فتحش: افتح ntfy ← ➕ ← اكتب اسم القناة ده بالظبط:<br><span class="ltr">${t}</span> <button class="btn sm" data-m="copy">نسخ</button></p>
+      <button class="btn" data-m="test" style="width:100%">🧪 ابعت إشعار تجربة</button>`:'<p class="hint">جاري تجهيز القناة… افتح الشاشة دي تاني بعد ثانية.</p>'}
+    </div>
+    ${t?`<div class="astep"><b>3) على الكمبيوتر</b><p class="hint" style="margin:4px 0">افتح <a href="https://ntfy.sh/${t}" target="_blank" rel="noopener">ntfy.sh/${t}</a> ← Subscribe ← اسمح بالإشعارات.</p></div>`:''}
+    <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  async m=>{
+    if(m==='install'&&deferredPrompt){deferredPrompt.prompt();const r=await deferredPrompt.userChoice.catch(()=>null);deferredPrompt=null;closeSheet();if(r&&r.outcome==='accepted')toast('التطبيق بيتثبت ✓')}
+    if(m==='copy')toast(await copyText(t)?'اسم القناة اتنسخ':'انسخه يدوي');
+    if(m==='diag'){const el=document.getElementById('diag');el.hidden=false;el.innerHTML='<li>جاري الفحص…</li>';el.innerHTML=(await installCheck()).join('')}
+    if(m==='test'){push('✅ تجربة — '+SHOP_NAME,`الإشعارات شغالة${S.me?' — من '+S.me:''}`,{prio:4,tags:['white_check_mark']});toast('اتبعت — لو مشترك هيوصلك في ثواني')}
+  });
+}
+
+
+const pageName=()=>decodeURIComponent(location.pathname.split('/').pop()||'index.html');
+async function installCheck(){
+  const out=[],add=(ok,txt)=>out.push(`<li class="${ok?'ok':'bad'}">${ok?'✓':'✗'} ${txt}</li>`);
+  const page=pageName(),dir=location.pathname.replace(/[^/]*$/,'');
+  add(location.protocol==='https:','الموقع فاتح على https');
+  let man=null;
+  try{const r=await fetch('manifest.json',{cache:'no-store'});if(r.ok){man=await r.json();add(true,'manifest.json موجود')}else add(false,`manifest.json مش لاقيه في <span class="ltr">${esc(dir)}</span> — ارفعه جنب ${esc(page)}`)}catch(e){add(false,'manifest.json موجود بس فيه غلط — ارفعه تاني من الـ zip')}
+  if(man){const su=decodeURIComponent(new URL(man.start_url||'.',new URL('manifest.json',location.href)).pathname.split('/').pop()||'index.html');
+    add(su===page,su===page?`التطبيق هيفتح ${esc(page)} ✓`:`الصفحة عندك اسمها <b>${esc(page)}</b> والتطبيق مستني <b>${esc(su)}</b> — غيّر اسم الصفحة لـ ${esc(su)}`)}
+  for(const f of ['icon-192.png','icon-512.png','sw.js']){try{const r=await fetch(f,{cache:'no-store'});add(r.ok,r.ok?`${f} موجود`:`${f} مش موجود — ارفعه جنب ${esc(page)}`)}catch(e){add(false,`${f} مش موجود`)}}
+  const reg='serviceWorker' in navigator?await navigator.serviceWorker.getRegistration().catch(()=>null):null;
+  add(!!(reg&&reg.active),reg&&reg.active?'الـ service worker شغال':'الـ service worker مش شغال لسه — اقفل التاب وافتحه تاني');
+  if(!out.some(x=>x.includes('class="bad"')))out.push('<li class="ok">👌 كله تمام — اقفل كل تابات الموقع، افتحه تاني، واستنى 30 ثانية وبعدين ⋮ ← «تثبيت التطبيق»</li>');
+  return out;
+}
+/* fallback: لو manifest.json مش موجود أو بيشاور على صفحة تانية، اعمل واحد للصفحة دي */
+(async()=>{if(location.protocol!=='https:')return;try{
+  let ok=false;const r=await fetch('manifest.json',{cache:'no-store'});
+  if(r.ok){const m=await r.json();const su=decodeURIComponent(new URL(m.start_url||'.',new URL('manifest.json',location.href)).pathname.split('/').pop()||'index.html');ok=su===pageName()}
+  if(ok)return;
+  const base=location.href.split('#')[0].split('?')[0],dir=new URL('./',base).href;
+  const icon=n=>{const c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d');x.fillStyle='#0E7C66';x.fillRect(0,0,n,n);x.font=`${n*.6}px sans-serif`;x.textAlign='center';x.textBaseline='middle';x.fillText('💊',n/2,n/2+n*.04);return c.toDataURL('image/png')};
+  const man={name:'Dr. Corner — المخزن والمبيعات',short_name:'Dr. Corner',start_url:base,scope:dir,display:'standalone',background_color:'#EEF4F3',theme_color:'#0E7C66',dir:'rtl',lang:'ar',
+    icons:[{src:icon(192),sizes:'192x192',type:'image/png'},{src:icon(512),sizes:'512x512',type:'image/png'},{src:icon(512),sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+  const l=document.querySelector('link[rel=manifest]');l.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'}));
+}catch(e){}})();
 
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
@@ -1058,6 +1156,7 @@ $app.addEventListener('click',e=>{
   else if(act==='name')askName(false);
   else if(act==='settings')settingsSheet();
   else if(act==='perm')askPerm();
+  else if(act==='app')appSheet();
   else if(act==='export')exportData();
   else if(act==='import')importData();
   else if(act==='note-new')noteSheet();
@@ -1088,7 +1187,7 @@ $app.addEventListener('click',e=>{
   },e=>console.error(e));
   col('events').orderBy('t','desc').limit(400).onSnapshot(snap=>{S.events=snap.docs.map(d=>d.data());if(S.view==='log')render()},e=>console.error(e));
   startChat();startNotes();
-  ref('settings/app').onSnapshot(d=>{S.cfg={cur:'ج.م',...(d.data()||{})};if(S.ready)render()},e=>console.error(e));
+  ref('settings/app').onSnapshot({includeMetadataChanges:true},d=>{S.cfg={cur:'ج.م',...(d.data()||{})};if(!d.metadata.fromCache&&!S.cfg.topic)ensureTopic();if(S.ready)render()},e=>console.error(e));
   setTimeout(()=>{if(S.ready||S.error)return;
     S.error=`الموقع مش قادر يوصل للبيانات.<br><br>1) اقفل أي تاب تاني مفتوح فيه الموقع.<br>2) اتأكد إن النت شغال.${lastErr?`<br><br><small style="direction:ltr;display:block">${esc(lastErr)}</small>`:''}<div class="toolbar" style="margin-top:14px"><button class="btn primary" onclick="location.reload()">إعادة المحاولة</button></div>`;render();
   },12000);

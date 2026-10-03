@@ -1,5 +1,5 @@
 /* Dr. Corner — service worker: يخلّي الموقع تطبيق قابل للتثبيت ويفتح بسرعة */
-const CACHE='drcorner-v1';
+const CACHE='drcorner-v2';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
   for(const k of await caches.keys())if(k!==CACHE)await caches.delete(k);
@@ -20,6 +20,6 @@ self.addEventListener('notificationclick',e=>{
   e.notification.close();
   e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(ws=>{
     for(const w of ws)if('focus' in w)return w.focus();
-    return self.clients.openWindow(self.registration.scope+'pharmacy.html');
+    return self.clients.openWindow(self.registration.scope);
   }));
 });

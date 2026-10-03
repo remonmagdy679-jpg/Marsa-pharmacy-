@@ -2,7 +2,7 @@
   "name": "Dr. Corner — المخزن والمبيعات",
   "short_name": "Dr. Corner",
   "description": "نواقص ومبيعات وإكسباير وشات ونوتس الصيدلية والكوزماتكس",
-  "start_url": "./pharmacy.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
