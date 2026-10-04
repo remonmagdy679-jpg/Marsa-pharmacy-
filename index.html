@@ -353,17 +353,49 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 
 #print{display:none}
 @media print{
+  @page{size:A4;margin:12mm 11mm 14mm}
   body>*:not(#print){display:none!important}
-  body{background:#fff;color:#000}
-  #print{display:block;font-size:12px;color:#000}
-  #print h1{font-size:18px;margin:0 0 4px}
-  #print p{margin:0 0 10px;color:#333}
-  #print table{width:100%;border-collapse:collapse}
-  #print th,#print td{border:1px solid #999;padding:5px 6px;text-align:right;vertical-align:top}
-  #print th{background:#E6EFEE}
-  #print tfoot td{font-weight:800;background:#F4F4F4}
+  html,body{background:#fff!important;color:#1d2b2d;padding:0!important}
+  :root{padding:0!important}
+  #print{display:block;font-family:"Alexandria","Segoe UI",Tahoma,sans-serif;font-size:12.5px;line-height:1.5;color:#1d2b2d;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print .ph{display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:3px solid #0E7C66;margin-bottom:12px}
+  #print .ph img{width:46px;height:46px;border-radius:12px}
+  #print .ph .tt{flex:1}
+  #print .ph .tt b{display:block;font-size:20px;font-weight:800;color:#0E7C66;line-height:1.2}
+  #print .ph .tt span{font-size:15px;font-weight:700;color:#1d2b2d}
+  #print .ph .mt{text-align:left;font-size:11px;color:#5a6b6d;line-height:1.6}
+  #print .ph .mt b{display:block;font-size:13px;color:#1d2b2d}
+  #print .sum{display:flex;gap:8px;margin:0 0 14px}
+  #print .sum div{flex:1;border-radius:10px;padding:8px 10px;background:#F2F6F5;border:1px solid #DCE6E4}
+  #print .sum small{display:block;font-size:10.5px;color:#5a6b6d}
+  #print .sum b{font-size:20px;font-weight:800}
+  #print .sum .red{background:#FDEDED;border-color:#F3C4C5}#print .sum .red b{color:#C62A2F}
+  #print .sum .amb{background:#FFF5E0;border-color:#F2DDB0}#print .sum .amb b{color:#A8650A}
+  #print .sum .grn{background:#E6F4EF;border-color:#BFE3D6}#print .sum .grn b{color:#0E7C66}
+  #print h2{font-size:14px;font-weight:800;margin:14px 0 6px;padding:5px 10px;border-radius:8px;background:#0E7C66;color:#fff;break-after:avoid}
+  #print h2 small{font-weight:500;opacity:.85;margin-inline-start:6px}
+  #print table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #DCE6E4;border-radius:10px;overflow:hidden;margin-bottom:6px}
+  #print thead{display:table-header-group}
+  #print th{background:#EAF2F0;color:#3c5153;font-size:11px;font-weight:700;text-align:right;padding:7px 8px;border-bottom:1px solid #DCE6E4}
+  #print td{padding:7px 8px;text-align:right;vertical-align:middle;border-bottom:1px solid #EEF2F1}
+  #print tbody tr:nth-child(even) td{background:#FAFCFB}
+  #print tbody tr:last-child td{border-bottom:0}
   #print tr{break-inside:avoid}
-  #print .pf{margin-top:10px;font-size:10px;color:#666}
+  #print td.n{color:#8a9a9c;width:22px;text-align:center;font-size:11px}
+  #print td.nm{font-weight:700;font-size:13px}
+  #print td.q{font-size:16px;font-weight:800;text-align:center;width:52px}
+  #print td.q.z{color:#C62A2F}
+  #print td.c{text-align:center}
+  #print td.mu{color:#5a6b6d;font-size:11.5px}
+  #print .im{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid #DCE6E4;display:block}
+  #print .ic{width:40px;height:40px;border-radius:8px;background:#F2F6F5;display:flex;align-items:center;justify-content:center;font-size:18px}
+  #print .bd{display:inline-block;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+  #print .bd.red{background:#FDEDED;color:#C62A2F}
+  #print .bd.amb{background:#FFF5E0;color:#A8650A}
+  #print .bd.grn{background:#E6F4EF;color:#0E7C66;margin-top:3px}
+  #print .ex{display:inline-block;direction:ltr;font-size:11px;border:1px solid #c9d6d4;border-radius:6px;padding:0 6px;margin:1px 2px;white-space:nowrap}
+  #print tfoot td{font-weight:800;background:#EAF2F0!important;border-top:1px solid #DCE6E4}
+  #print .pf{margin-top:12px;padding-top:8px;border-top:1px solid #DCE6E4;font-size:10px;color:#8a9a9c;display:flex;justify-content:space-between}
 }
 </style>
 </head>
@@ -580,10 +612,21 @@ function vLog(){
 
 /* ---------- reports: copy / pdf / whatsapp ---------- */
 function repShort(){
-  const list=shortList();let t=`نواقص ${SHOP_NAME} — ${fmtDay(today())}\n`;const rows=[];
-  ['med','cos'].forEach(ty=>{const l=list.filter(p=>tOf(p)===ty);if(!l.length)return;t+=`\n${TYPES[ty].icon} ${TYPES[ty].name}:\n`;
-    l.forEach(p=>{const q=good(p),bl=bats(p),d=bl.map(([k,v])=>`${bkLabel(k)}×${v}`).join('، ');t+=`- ${p.name} — ${q?`موجود ${q}`:'خلصان'}${d?` (${d})`:''}${p.ordered?' ✓اتطلب':''}\n`;rows.push([rows.length+1,p.name,TYPES[ty].name,q,d||'—',minOf(p),p.ordered?'اتطلب':''])})});
-  return {title:'النواقص',sub:`${fmtDay(today())} — ${list.length} صنف`,text:t.trim(),head:['#','الصنف','النوع','الموجود','التواريخ والعدد','الحد','ملاحظة'],rows};
+  const list=shortList(),out=list.filter(p=>!good(p)).length,ord=list.filter(p=>p.ordered).length;
+  const expTxt=p=>bats(p).filter(([k])=>k!=='x').map(([k,v])=>`${bkLabel(k)} ×${v}`).join('، ');
+  let t=`*📋 نواقص ${SHOP_NAME}*\n${dayName(today())} ${fmtDay(today())} — ${list.length} صنف${out?` (${out} خلصان)`:''}\n`;
+  const sections=[];
+  ['med','cos'].forEach(ty=>{const l=list.filter(p=>tOf(p)===ty);if(!l.length)return;
+    t+=`\n*${TYPES[ty].icon} ${TYPES[ty].name} — ${l.length}*\n`;
+    l.forEach((p,i)=>{const q=good(p),e=expTxt(p);t+=`${i+1}. ${p.name} — ${q?`⚠️ فاضل ${q}`:'⛔ خلصان'}${q&&e&&ty==='med'?` | ${e}`:''}${p.ordered?' ✓ اتطلب':''}\n`});
+    sections.push({title:`${TYPES[ty].icon} ${TYPES[ty].name}`,count:l.length,
+      head:[{t:'#',w:'22px'},{t:'',w:'46px'},'الصنف',{t:'الموجود',w:'56px'},{t:'الحد',w:'40px'},'التواريخ الموجودة',{t:'الحالة',w:'92px'}],
+      rows:l.map((p,i)=>{const q=good(p),dq=deadQ(p);return [{h:i+1,c:'n'},{h:p.img?`<img class="im" src="${p.img}" alt="">`:`<div class="ic">${TYPES[ty].icon}</div>`},{h:`${esc(p.name)}${p.grp?`<div class="mu" style="font-weight:400">${esc(p.grp)}</div>`:''}`,c:'nm'},{h:q,c:'q'+(q?'':' z')},{h:minOf(p),c:'c mu'},
+        {h:bats(p).filter(([k])=>k!=='x').map(([k,v])=>`<span class="ex">${bkShort(k)} ×${v}</span>`).join('')||'<span class="mu">—</span>'},
+        {h:`<span class="bd ${q?'amb':'red'}">${q?'قرب يخلص':'خلصان'}</span>${dq?`<div class="mu">+${dq} منتهي</div>`:''}${p.ordered?'<br><span class="bd grn">✓ اتطلب</span>':''}`,c:'c'}]})})});
+  if(ord)t+=`\n✓ = اتطلب من المورد`;
+  return {title:'تقرير النواقص',sub:`${list.length} صنف`,text:t.trim(),sections,
+    sum:[['إجمالي النواقص',list.length,''],['خلصان خالص',out,'red'],['قرب يخلص',list.length-out,'amb'],['اتطلب من المورد',ord,'grn']]};
 }
 function repSales(){
   const d=S.day,agg=aggSales((salesOf(d)||[]).filter(s=>typeOk(s.type||'cos')&&matchQ(s.name)));
@@ -596,15 +639,23 @@ function repExp(){
   const list=expList();const r=`${S.expFrom?fmtDay(S.expFrom):'الأول'} لحد ${S.expTo?fmtDay(S.expTo):'الآخر'}`;
   let t=`إكسباير ${SHOP_NAME} — من ${r}\n`;let last='';
   list.forEach(x=>{if(x.k!==last){last=x.k;t+=`\n📅 ${bkLabel(x.k)}${EXPW[expCls(x.k)]?' — '+EXPW[expCls(x.k)]:''}:\n`}t+=`- ${x.p.name} × ${x.v}\n`});
-  return {title:'الإكسباير',sub:`من ${r} — ${list.reduce((a,x)=>a+x.v,0)} قطعة`,text:t.trim(),head:['الإكسباير','الصنف','النوع','العدد','السعر','الحالة'],
+  const pcs=list.reduce((a,x)=>a+x.v,0);return {sum:[['عدد القطع',pcs,'amb'],['عدد التشغيلات',list.length,''],['منتهي',list.filter(x=>expCls(x.k)==='dead').reduce((a,x)=>a+x.v,0),'red']],title:'الإكسباير',sub:`من ${r} — ${list.reduce((a,x)=>a+x.v,0)} قطعة`,text:t.trim(),head:['الإكسباير','الصنف','النوع','العدد','السعر','الحالة'],
     rows:list.map(x=>[bkLabel(x.k),x.p.name,TYPES[tOf(x.p)].name,x.v,x.p.price?num(x.p.price):'—',EXPW[expCls(x.k)]||''])};
 }
+const cellH=c=>c&&typeof c==='object'&&'h' in c?c.h:esc(c);
+const cellC=c=>c&&typeof c==='object'&&c.c?` class="${c.c}"`:'';
+function tableH(head,rows,foot,cls){return `<table><thead><tr>${head.map(x=>`<th${x&&x.w?` style="width:${x.w}"`:''}>${esc(x&&x.t!=null?x.t:x)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(c=>`<td${cellC(c)}>${cellH(c)}</td>`).join('')}</tr>`).join('')}</tbody>${foot?`<tfoot><tr>${foot.map(c=>`<td${cellC(c)}>${cellH(c)}</td>`).join('')}</tr></tfoot>`:''}</table>`}
 function doReport(r,k){
   if(k==='wa')return wa(r.text);
   if(k==='copy')return textSheet(r.title,r.text);
-  $pr.innerHTML=`<h1>${esc(SHOP_NAME)} — ${esc(r.title)}</h1><p>${esc(r.sub)}</p><table><thead><tr>${r.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row=>`<tr>${row.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>${r.foot?`<tfoot><tr>${r.foot.map(c=>`<td>${esc(c)}</td>`).join('')}</tr></tfoot>`:''}</table><p class="pf">اتطبع ${fmtDay(today())} ${fmtTime(Date.now())} — ${esc(S.me)}</p>`;
+  const now=new Date();
+  $pr.innerHTML=`<div class="ph"><img src="icon-192.png" alt="" onerror="this.remove()"><div class="tt"><b>${esc(SHOP_NAME)}</b><span>${esc(r.title)}</span></div><div class="mt"><b>${dayName(today())} ${fmtDay(today())}</b>${esc(r.sub||'')}</div></div>
+    ${r.sum?`<div class="sum">${r.sum.map(([l,v,c])=>`<div class="${c||''}"><small>${esc(l)}</small><b>${esc(v)}</b></div>`).join('')}</div>`:''}
+    ${r.sections?r.sections.map(sec=>`<h2>${esc(sec.title)}${sec.count!=null?`<small>(${sec.count})</small>`:''}</h2>${tableH(sec.head,sec.rows,sec.foot)}`).join(''):tableH(r.head,r.rows,r.foot)}
+    <div class="pf"><span>${esc(SHOP_NAME)} — ${esc(r.title)}</span><span>اتعمل ${fmtTime(now.getTime())} — ${esc(S.me||'')}</span></div>`;
   const old=document.title;document.title=`${SHOP_NAME} ${r.title} ${today()}`;
-  setTimeout(()=>{window.print();setTimeout(()=>{document.title=old},800)},60);
+  const imgs=[...$pr.querySelectorAll('img')].filter(x=>!x.complete);
+  Promise.race([Promise.all(imgs.map(x=>new Promise(res=>{x.onload=x.onerror=res}))),new Promise(res=>setTimeout(res,1500))]).then(()=>{window.print();setTimeout(()=>{document.title=old},800)});
   toast('اختار «حفظ كـ PDF» من شاشة الطباعة');
 }
 function wa(text){window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank')}
@@ -1419,7 +1470,7 @@ function repAcc(){const c=S.companies.find(x=>x.id===S.acc);const l=accList(c.id
   const rows=l.map(e=>{const a=+e.amount||0;bal+=KIND[e.kind].s*a;return [e.date?fmtDay(e.date):'—',KIND[e.kind].l,e.no||'—',e.notes||'',e.kind==='inv'?num(a):'',e.kind!=='inv'?num(a):'',num(bal)]});
   let t=`حساب ${c.name} — ${SHOP_NAME}\n${RANGES[S.accRange]} — لحد ${fmtDay(today())}\n\nعدد الفواتير: ${st.n}\nإجمالي الفواتير: ${mon(st.inv)}\nإجمالي المرتجعات: ${mon(st.ret)}\nالمدفوع: ${mon(st.pay)}\n💰 الصافي المطلوب: ${mon(st.net)}\n\nالتفاصيل:\n`;
   l.forEach(e=>{t+=`${e.date?fmtDay(e.date):'—'} — ${KIND[e.kind].l}${e.no?' '+e.no:''} — ${KIND[e.kind].s<0?'−':''}${num(e.amount)}\n`});
-  return {title:'حساب '+c.name,sub:`${RANGES[S.accRange]} — عدد الفواتير ${st.n} — الصافي المطلوب ${mon(st.net)}`,text:t.trim(),
+  return {sum:[['عدد الفواتير',st.n,''],['إجمالي الفواتير',num(st.inv),''],['مرتجعات ودفعات',num(st.ret+st.pay),'grn'],['الصافي المطلوب',num(st.net),'red']],title:'حساب '+c.name,sub:`${RANGES[S.accRange]} — عدد الفواتير ${st.n} — الصافي المطلوب ${mon(st.net)}`,text:t.trim(),
     head:['التاريخ','النوع','الرقم','ملاحظات','فاتورة','مرتجع / دفعة','الرصيد'],rows,foot:['','','','الإجمالي',num(st.inv),num(st.ret+st.pay),num(st.net)]}}
 /* استيراد من صفحة الفواتير القديمة (نفس الموقع github.io — بيقرا من نفس المتصفح) */
 const GENK=/^(invoices?|records?|items?|data|list|entries|bills?|history|rows?|returns?|transactions?|docs?|state|store|app|all|db)$/i;
