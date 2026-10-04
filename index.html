@@ -408,6 +408,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
+const APP_V = '4-10 رجوع 2';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -571,6 +572,7 @@ function vLog(){
   const list=S.events.filter(e=>matchQ(e.name+' '+(e.by||'')+' '+(ACT[e.a]||'')));
   const ppl=[...new Set(S.events.slice(0,200).map(e=>e.by).filter(Boolean))];
   let h=`<div class="toolbar"><button class="btn" data-act="account">👤 ${esc(S.me||'حسابي')}</button>${S.role==='admin'?'<button class="btn" data-act="users">👥 المستخدمين</button>':''}<button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button><button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
+  h+=`<p class="hint">نسخة التطبيق: <b>${APP_V}</b></p>`;
   if(ppl.length)h+=`<p class="hint">اللي بيستخدموا الموقع: ${ppl.map(esc).join('، ')}</p>`;
   h+=list.length?`<div class="rows log">${list.slice(0,300).map(e=>`<div class="row slim"><time>${fmtTime(e.t,1)}</time><span class="tag ${e.a}">${ACT[e.a]||e.a}</span><div class="kit"><b>${esc(e.name)}${e.n!==''&&e.n!=null?` × ${esc(e.n)}`:''}</b><div class="meta">${e.by?`<span>👤 ${esc(e.by)}</span>`:''}${e.note?`<span>${esc(e.note)}</span>`:''}</div></div></div>`).join('')}</div>`:`<div class="empty">مفيش حركات لسه</div>`;
   $app.innerHTML=h;
@@ -1223,7 +1225,7 @@ $('notesBtn').addEventListener('click',()=>go(S.view==='notes'?'items':'notes'))
 
 /* ---------- app (PWA) + lock-screen push via ntfy ---------- */
 let swReg=null,deferredPrompt=null;
-if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').then(r=>{swReg=r}).catch(e=>console.warn('sw',e));
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').then(r=>{swReg=r;try{r.update()}catch(e){}}).catch(e=>console.warn('sw',e));
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
 addEventListener('appinstalled',()=>{deferredPrompt=null;toast('التطبيق اتثبت ✓')});
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -1671,7 +1673,9 @@ function accountSheet(){
 /* ---------- زرار الرجوع في أندرويد: يقفل اللي مفتوح بدل ما يخرج من التطبيق ---------- */
 let backGuard=false,lastBack=0;
 function pushGuard(){if(backGuard)return;try{history.pushState({drc:1},'');backGuard=true}catch(e){}}
-document.addEventListener('pointerdown',pushGuard,{capture:true,passive:true});
+// لازم بعد لمسة حقيقية (click/touchend) — أندرويد بيتجاهل أي خطوة رجوع اتعملت قبل اللمس
+document.addEventListener('click',pushGuard,{capture:true,passive:true});
+document.addEventListener('touchend',pushGuard,{capture:true,passive:true});
 addEventListener('popstate',()=>{
   backGuard=false;let handled=true;
   if(!$zoom.hidden)closeZoom();
@@ -1683,7 +1687,7 @@ addEventListener('popstate',()=>{
   else if(S.view!=='items')go('items');
   else if(Date.now()-lastBack>2000){lastBack=Date.now();toast('دوس رجوع تاني عشان تخرج من التطبيق')}
   else handled=false;
-  if(handled)pushGuard();else history.back();
+  if(!handled)history.back();
 });
 
 /* ---------- events ---------- */
