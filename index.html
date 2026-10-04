@@ -303,6 +303,23 @@ a.btn.primary{color:#fff}
 .mvlist{max-height:40vh;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:6px}
 .mvlist label.check{margin:0;padding:8px 10px;border-top:1px solid var(--line);font-size:14px}
 .mvlist label.check:first-child{border-top:0}
+/* ---------- product photos ---------- */
+.thumb{flex:none;width:48px;height:48px;padding:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;cursor:zoom-in}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.hero{display:block;position:relative;width:100%;padding:0;border:0;border-radius:14px;overflow:hidden;background:#fff;margin-bottom:10px;cursor:zoom-in}
+.hero img{display:block;width:100%;max-height:240px;object-fit:contain}
+.hero span{position:absolute;bottom:8px;inset-inline-start:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:2px 8px;border-radius:8px}
+h4.withimg{display:flex;align-items:center;gap:10px}
+h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:#fff}
+.photo{display:flex;gap:10px;align-items:center}
+.photo img{width:84px;height:84px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#fff}
+.pbtns{display:flex;flex-wrap:wrap;gap:6px}
+.zoom{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none}
+.zoom img{max-width:100%;max-height:100%;transform-origin:center;will-change:transform;user-select:none;-webkit-user-drag:none}
+.zoom .zx{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));inset-inline-end:12px;width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:22px;z-index:2}
+.zoom .zc{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff;font-size:15px;padding:0 16px;pointer-events:none;text-shadow:0 1px 3px #000}
+.zoom .zc small{display:block;opacity:.7;font-size:12px}
+
 #print{display:none}
 @media print{
   body>*:not(#print){display:none!important}
@@ -343,6 +360,7 @@ a.btn.primary{color:#fff}
 </section>
 <button class="micfab" id="micfab" aria-label="سجّل بصوتك" hidden>🎙️</button>
 <div class="remind" id="remind" hidden></div>
+<div class="zoom" id="zoom" hidden><button class="zx" id="zx" aria-label="قفل">✕</button><img id="zimg" alt=""><div class="zc" id="zc"></div></div>
 <div id="modal"></div>
 <div id="print"></div>
 
@@ -446,7 +464,7 @@ function render(){
 /* ---------- views ---------- */
 function rowItem(p){
   const q=good(p),sh=isShort(p),dq=deadQ(p);
-  return `<div class="row ${q===0?'out':sh?'low':''}"><span class="ti">${TYPES[tOf(p)].icon}</span><div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta">${p.price?`<span>${money(p.price)}</span>`:''}${dq?`<span class="rd">+${dq} منتهي</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.ordered?'<span class="ok">✓ اتطلب</span>':''}</div>${tags(p)}</div><div class="step"><span class="qty ${q===0?'zero':sh?'lowq':''}">${q}</span><button class="sell" data-act="sell" data-id="${p.id}">بيع</button></div></div>`;
+  return `<div class="row ${q===0?'out':sh?'low':''}">${ico(p)}<div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta">${p.price?`<span>${money(p.price)}</span>`:''}${dq?`<span class="rd">+${dq} منتهي</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.ordered?'<span class="ok">✓ اتطلب</span>':''}</div>${tags(p)}</div><div class="step"><span class="qty ${q===0?'zero':sh?'lowq':''}">${q}</span><button class="sell" data-act="sell" data-id="${p.id}">بيع</button></div></div>`;
 }
 function grouped(list,keyFn,rowFn){
   const g={};list.forEach(p=>{const k=keyFn(p);(g[k]=g[k]||[]).push(p)});
@@ -461,7 +479,7 @@ function vItems(){
   else h+=`<p class="hint">${list.length} صنف — دوس على اسم الصنف للتفاصيل والتعديل.</p>`+grouped(list,p=>p.grp||TYPES[tOf(p)].name,rowItem);
   $app.innerHTML=h;
 }
-function aggSales(list){const m={};list.forEach(s=>{const key=s.id||s.name;const a=m[key]=m[key]||{name:s.name,type:s.type||'cos',qty:0,d:{},short:0,last:null};a.qty+=+s.qty||0;a.short+=+s.short||0;for(const k in (s.alloc||{}))a.d[k]=(a.d[k]||0)+s.alloc[k];if(!a.last||s.t>a.last.t)a.last=s});return Object.values(m).sort(byName)}
+function aggSales(list){const m={};list.forEach(s=>{const key=s.id||s.name;const a=m[key]=m[key]||{id:s.id,name:s.name,type:s.type||'cos',qty:0,d:{},short:0,last:null};a.qty+=+s.qty||0;a.short+=+s.short||0;for(const k in (s.alloc||{}))a.d[k]=(a.d[k]||0)+s.alloc[k];if(!a.last||s.t>a.last.t)a.last=s});return Object.values(m).sort(byName)}
 const dChips=d=>Object.entries(d).sort((a,b)=>bkIdx(a[0])-bkIdx(b[0])).map(([k,v])=>`<span class="bt ${expCls(k)}" data-n="${v}"><i>${bkShort(k)}</i></span>`).join('');
 const dText=d=>Object.entries(d).filter(([k])=>k!=='x').sort((a,b)=>bkIdx(a[0])-bkIdx(b[0])).map(([k,v])=>`${bkLabel(k)}×${v}`).join('، ');
 function vSales(){
@@ -471,7 +489,7 @@ function vSales(){
   const agg=aggSales(raw.filter(s=>typeOk(s.type||'cos')&&matchQ(s.name)));
   if(agg.length){
     h+=`<div class="toolbar"><button class="btn" data-act="rep-sales" data-k="copy">نسخ</button><button class="btn" data-act="rep-sales" data-k="pdf">PDF</button><button class="btn" data-act="rep-sales" data-k="wa">واتساب</button></div>`;
-    h+=`<div class="rows">${agg.map(a=>`<div class="row"><span class="ti">${TYPES[a.type].icon}</span><div class="kit"><b>${esc(a.name)}</b>${Object.keys(a.d).length?`<div class="bts">${dChips(a.d)}</div>`:''}${a.short?`<div class="meta"><span class="rd">${a.short} مكانوش متسجلين في المخزن</span></div>`:''}</div><span class="qty">${a.qty}</span><button class="icon" data-act="undo-sale" data-sid="${a.last.sid}" aria-label="تراجع عن آخر تسجيل">↶</button></div>`).join('')}</div>
+    h+=`<div class="rows">${agg.map(a=>`<div class="row">${ico(S.items.find(i=>i.id===a.id)||{type:a.type})}<div class="kit"><b>${esc(a.name)}</b>${Object.keys(a.d).length?`<div class="bts">${dChips(a.d)}</div>`:''}${a.short?`<div class="meta"><span class="rd">${a.short} مكانوش متسجلين في المخزن</span></div>`:''}</div><span class="qty">${a.qty}</span><button class="icon" data-act="undo-sale" data-sid="${a.last.sid}" aria-label="تراجع عن آخر تسجيل">↶</button></div>`).join('')}</div>
     <p class="hint">↶ بيلغي آخر تسجيل للصنف ده ويرجّع الكمية للمخزن على نفس التاريخ.</p>`;
   }else h+=`<div class="empty">${S.q?'مفيش مبيعات بالاسم ده':'مفيش مبيعات في اليوم ده'}</div>`;
   $app.innerHTML=h;
@@ -485,7 +503,7 @@ function shortList(){
 }
 function rowShort(p){
   const q=good(p);
-  return `<div class="row ${q?'low':'out'}"><span class="ti">${TYPES[tOf(p)].icon}</span><div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta"><span class="${q?'':'rd'}">${q?`موجود ${q} — الحد ${minOf(p)}`:'خلصان خالص'}${deadQ(p)?` (+${deadQ(p)} منتهي)`:''}</span>${p.ordered?`<span class="ok">✓ اتطلب (${esc(p.ordered.by)} ${fmtTime(p.ordered.t,1)})</span>`:''}</div>${qty(p)?tags(p):''}<div class="acts"><button class="btn sm primary" data-act="restock" data-id="${p.id}">اتورد</button><button class="btn sm" data-act="ordered" data-id="${p.id}">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn sm" data-act="urgent" data-id="${p.id}">🔔 عاجل</button></div></div><span class="qty ${q?'lowq':'zero'}">${q}</span></div>`;
+  return `<div class="row ${q?'low':'out'}">${ico(p)}<div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta"><span class="${q?'':'rd'}">${q?`موجود ${q} — الحد ${minOf(p)}`:'خلصان خالص'}${deadQ(p)?` (+${deadQ(p)} منتهي)`:''}</span>${p.ordered?`<span class="ok">✓ اتطلب (${esc(p.ordered.by)} ${fmtTime(p.ordered.t,1)})</span>`:''}</div>${qty(p)?tags(p):''}<div class="acts"><button class="btn sm primary" data-act="restock" data-id="${p.id}">اتورد</button><button class="btn sm" data-act="ordered" data-id="${p.id}">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn sm" data-act="urgent" data-id="${p.id}">🔔 عاجل</button></div></div><span class="qty ${q?'lowq':'zero'}">${q}</span></div>`;
 }
 function vShort(){
   const list=shortList(),all=S.items.filter(p=>mItem(p)&&isShort(p));
@@ -513,7 +531,7 @@ function vExp(){
   if(list.length){
     h+=`<div class="toolbar"><button class="btn" data-act="rep-exp" data-k="copy">نسخ</button><button class="btn" data-act="rep-exp" data-k="pdf">PDF</button><button class="btn" data-act="rep-exp" data-k="wa">واتساب</button></div>`;
     const g={};list.forEach(x=>{(g[x.k]=g[x.k]||[]).push(x)});
-    h+=Object.keys(g).sort((a,b)=>bkIdx(a)-bkIdx(b)).map(k=>`<section class="group"><h3>${bkLabel(k)}${EXPW[expCls(k)]?' — '+EXPW[expCls(k)]:''}</h3><div class="rows">${g[k].map(x=>`<div class="row slim"><span class="ti">${TYPES[tOf(x.p)].icon}</span><div class="kit"><button class="linkbtn" data-act="open" data-id="${x.p.id}"><b>${esc(x.p.name)}</b></button><div class="meta">${x.p.price?`<span>${money(x.p.price)}</span>`:''}<span>الإجمالي في المخزن ${qty(x.p)}</span></div></div><span class="bt ${expCls(k)}" data-n="${x.v}"><i>${bkShort(k)}</i></span><button class="btn sm" data-act="out" data-id="${x.p.id}" data-k="${k}">شيل</button></div>`).join('')}</div></section>`).join('');
+    h+=Object.keys(g).sort((a,b)=>bkIdx(a)-bkIdx(b)).map(k=>`<section class="group"><h3>${bkLabel(k)}${EXPW[expCls(k)]?' — '+EXPW[expCls(k)]:''}</h3><div class="rows">${g[k].map(x=>`<div class="row slim">${ico(x.p)}<div class="kit"><button class="linkbtn" data-act="open" data-id="${x.p.id}"><b>${esc(x.p.name)}</b></button><div class="meta">${x.p.price?`<span>${money(x.p.price)}</span>`:''}<span>الإجمالي في المخزن ${qty(x.p)}</span></div></div><span class="bt ${expCls(k)}" data-n="${x.v}"><i>${bkShort(k)}</i></span><button class="btn sm" data-act="out" data-id="${x.p.id}" data-k="${k}">شيل</button></div>`).join('')}</div></section>`).join('');
   }else h+=`<div class="empty">مفيش إكسباير في الفترة دي 👌</div>`;
   $app.innerHTML=h;
 }
@@ -581,17 +599,20 @@ function askName(force,then){
 }
 function itemSheet(p){
   const bl=bats(p);
-  openSheet(`<h4>${TYPES[tOf(p)].icon} ${esc(p.name)}</h4><div class="facts"><span>صالح للبيع <b>${good(p)}</b></span>${deadQ(p)?`<span>منتهي <b>${deadQ(p)}</b></span>`:''}<span>الحد الأدنى <b>${minOf(p)}</b></span>${p.price?`<span>${money(p.price)}</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.alias?`<span>${esc(p.alias)}</span>`:''}${p.critical?'<span>⭐ صنف مهم</span>':''}</div>
+  const sh=openSheet(`${p.img?`<button class="hero" data-m="zoom" aria-label="كبّر الصورة"><img src="${p.img}" alt="${esc(p.name)}"><span>🔍 دوس للتكبير</span></button>`:''}<h4>${TYPES[tOf(p)].icon} ${esc(p.name)}</h4><div class="facts"><span>صالح للبيع <b>${good(p)}</b></span>${deadQ(p)?`<span>منتهي <b>${deadQ(p)}</b></span>`:''}<span>الحد الأدنى <b>${minOf(p)}</b></span>${p.price?`<span>${money(p.price)}</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.alias?`<span>${esc(p.alias)}</span>`:''}${p.critical?'<span>⭐ صنف مهم</span>':''}</div>
   <label>التواريخ اللي في المخزن</label><div class="rows">${bl.length?bl.map(([k,v])=>`<div class="row slim"><span class="bt ${expCls(k)}" data-n="${v}"><i>${bkLabel(k)}</i></span><span class="grow">${EXPW[expCls(k)]}</span><button class="btn sm" data-m="out:${k}">شيل</button></div>`).join(''):'<div class="empty">مفيش حاجة في المخزن</div>'}</div>
   <div class="actions"><button class="btn primary" data-m="sell">بيع</button><button class="btn" data-m="in">استلام</button><button class="btn" data-m="edit">تعديل</button></div>
-  <div class="actions"><button class="btn" data-m="urgent">🔔 عاجل للكل</button><button class="btn" data-m="ord">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn danger" data-m="del">حذف</button></div>`,
+  <div class="actions"><button class="btn" data-m="urgent">🔔 عاجل للكل</button><button class="btn" data-m="ord">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn danger" data-m="del">حذف</button></div>
+  <div class="actions"><button class="btn" data-m="photo">📷 ${p.img?'غيّر صورة المنتج':'ضيف صورة للمنتج'}</button></div>`,
   m=>{const x=S.items.find(i=>i.id===p.id);if(!x){closeSheet();return}
+    if(m==='zoom')return openZoom(x);if(m==='photo')return pickPhoto(false,async d=>{closeSheet();await setItemImage(x.id,d);toast('الصورة اتحفظت عند الكل')});
     if(m==='sell')sellSheet(x);else if(m==='in')restockSheet(x);else if(m==='edit')itemForm(x);else if(m==='urgent'){closeSheet();urgent(x)}
     else if(m==='ord'){closeSheet();toggleOrdered(x)}else if(m==='del')delSheet(x);else if(m.startsWith('out:'))outSheet(x,m.slice(4))});
+  if(p.img)fullImg(p.id).then(d=>{const im=sh.querySelector('.hero img');if(d&&im)im.src=d});
 }
 function sellSheet(p){
   const bl=bats(p),n0=nowIdx();const def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];let start=def;
-  const r=openSheet(`<h4>بيع — ${esc(p.name)}</h4>
+  const r=openSheet(`<h4 class="withimg">${p.img?`<img src="${p.img}" alt="">`:''}بيع — ${esc(p.name)}</h4>
     ${bl.length>1?`<label>هيتخصم من أنهي تاريخ الأول؟</label><div class="chips">${bl.map(([k,v])=>`<button class="bt ${expCls(k)} ${k===def?'sel':''}" data-m="pk:${k}" data-n="${v}"><i>${bkShort(k)}</i></button>`).join('')}</div>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
     <label for="fN">العدد</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fN" type="number" inputmode="numeric" value="1" min="1"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
@@ -617,7 +638,7 @@ function itemForm(p,preset){
   const grps=[...new Set(S.items.map(x=>x.grp).filter(Boolean))].sort();
   const t=p?tOf(p):(preset&&preset.type)||(S.type==='all'?'med':S.type);
   const brow=(k,v)=>`<div class="brow">${expSel(k)}<input class="bq" type="number" inputmode="numeric" value="${v??''}" placeholder="العدد"><button class="icon" data-m="rm" aria-label="شيل السطر">✕</button></div>`;
-  const bl=p?bats(p):[];
+  const bl=p?bats(p):[];let pimg=null;
   openSheet(`<h4>${p?'تعديل صنف':'صنف جديد'}</h4>${preset&&preset.heard?`<p class="heard">🎙️ «${esc(preset.heard)}»</p>`:''}
     <label for="fName">اسم الصنف</label><input id="fName" value="${esc(p?.name||preset?.name||'')}" placeholder="مثلاً: Panadol Extra 24 tab">
     <div class="two"><div><label for="fType">النوع</label><select id="fType"><option value="med" ${t==='med'?'selected':''}>💊 دوا</option><option value="cos" ${t==='cos'?'selected':''}>🧴 كوزماتكس</option></select></div>
@@ -625,11 +646,14 @@ function itemForm(p,preset){
     <label for="fAl">اسم تاني للبحث (إنجليزي / عربي)</label><input id="fAl" value="${esc(p?.alias||'')}" placeholder="مثلاً: بنادول اكسترا">
     <div class="two"><div><label for="fPr">سعر البيع</label><input id="fPr" type="number" inputmode="decimal" value="${p?.price??''}" placeholder="0"></div>
     <div><label for="fMin">الحد الأدنى (ينزل نواقص)</label><input id="fMin" type="number" inputmode="numeric" value="${p?minOf(p):2}"></div></div>
+    <label>📷 صورة المنتج (بتسهّل التعرف عليه)</label><div class="photo"><img id="fImg" ${p&&p.img?`src="${p.img}"`:'hidden'} alt="صورة المنتج"><div class="pbtns"><button class="btn sm" data-m="pcam">📷 صوّر</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button><button class="btn sm" data-m="pdel" ${p&&p.img?'':'hidden'}>🗑 شيل</button></div></div>
     <label class="check"><input type="checkbox" id="fCr" ${p?.critical?'checked':''}> صنف مهم — نبّه الكل أول ما يوصل للحد الأدنى</label>
     <label>الكمية حسب تاريخ الإكسباير ${p?'(تعديل الجرد)':''}</label><div id="fB">${bl.length?bl.map(([k,v])=>brow(k,v)).join(''):brow(preset&&preset.k||'',preset&&preset.q||'')}</div>
     <button class="btn sm" data-m="addrow" style="margin-top:8px">+ تاريخ تاني</button>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="save">${p?'حفظ التعديل':'إضافة'}</button></div>`,
   (m,r,b)=>{
+    if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',d=>{pimg=d;const im=r.querySelector('#fImg');im.src=d;im.hidden=false;r.querySelector('[data-m=pdel]').hidden=false});
+    if(m==='pdel'){pimg='del';r.querySelector('#fImg').hidden=true;b.hidden=true;return}
     if(m==='addrow'){r.querySelector('#fB').insertAdjacentHTML('beforeend',brow('',''));return}
     if(m==='rm'){b.closest('.brow').remove();return}
     if(m!=='save')return;
@@ -639,7 +663,7 @@ function itemForm(p,preset){
     r.querySelectorAll('.brow').forEach(row=>{const q=int(row.querySelector('.bq').value);if(q<=0)return;const k=readExp(row);if(k==='x'&&type==='med')noDate=true;bm[k]=(bm[k]||0)+q});
     if(noDate){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
     const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked};
-    closeSheet();saveItem(p,data,bm);
+    closeSheet();saveItem(p,data,bm,pimg);
   });
 }
 function bulkSheet(){
@@ -731,10 +755,12 @@ function removeBatch(p,k,q,why){
   b.set(ref('items/'+p.id),{b:{[k]:q>=have?FV().delete():FV().increment(-q)}},{merge:true});
   evt(b,'out',p.name,q,`${why} — ${bkLabel(k)}`);commit(b,`اتشال ${q} من ${p.name}`);
 }
-function saveItem(p,data,bm){
-  const b=fs.batch();
+async function saveItem(p,data,bm,pimg){
+  const b=fs.batch();let th=null;
+  if(pimg&&pimg!=='del'){th=await thumbOf(pimg);data.img=th}else if(pimg==='del'&&p)data.img=FV().delete();
   if(p){const diff=Object.values(bm).reduce((a,v)=>a+v,0)-qty(p);b.update(ref('items/'+p.id),{...data,b:bm});evt(b,diff?'fix':'edit',data.name,diff?(diff>0?'+'+diff:diff):'');if(Object.values(bm).reduce((a,v)=>a+v,0)>minOf({min:data.min}))resolveAlerts(b,p);commit(b,'اتعدل');}
-  else{b.set(col('items').doc(),{...data,b:bm,created:Date.now(),by:me()});evt(b,'add',data.name,Object.values(bm).reduce((a,v)=>a+v,0));commit(b,'الصنف اتضاف')}
+  else{const nr=col('items').doc();p={id:nr.id};b.set(nr,{...data,b:bm,created:Date.now(),by:me()});evt(b,'add',data.name,Object.values(bm).reduce((a,v)=>a+v,0));commit(b,'الصنف اتضاف')}
+  if(pimg==='del')run(ref('imgs/'+p.id).delete());else if(pimg)run(ref('imgs/'+p.id).set({d:pimg,t:Date.now()}));
 }
 async function bulkAdd(type,rows){
   let b=fs.batch(),n=0,added=0,upd=0;const seen={};const flush=async()=>{if(n){await b.commit();b=fs.batch();n=0}};
@@ -1249,7 +1275,7 @@ function keySheet(then){
   (m,r)=>{const k=r.querySelector('#kK').value.trim();if(!/^sk-ant-/.test(k)){toast('المفتاح لازم يبدأ بـ sk-ant-');return}LS.set('drc.akey',k);closeSheet();toast('المفتاح اتحفظ');if(then)then()});
 }
 function pickImage(cam){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');inp.onchange=()=>{const f=inp.files&&inp.files[0];if(f)scanFile(f)};inp.click()}
-function toJpeg(file,max=1600){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.85))};im.onerror=()=>rej('img');im.src=u})}
+function toJpeg(file,max=1600,q=.85){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',q))};im.onerror=()=>rej('img');im.src=u})}
 const SCAN_PROMPT=`This is a photo of an Egyptian pharmacy supplier document: a sales invoice (فاتورة) or a return / credit note (اشعار مرتجع / اشعار خصم).
 Return ONLY one JSON object, no markdown, no other text:
 {"type":"invoice" or "return","number":"document number exactly as printed","date":"YYYY-MM-DD","amount":final net total payable as a plain number (the grand total after discounts: الصافي / الإجمالي المستحق / صافي الفاتورة),"supplier":"distributor or company name","items":number of line items or null}
@@ -1388,6 +1414,33 @@ function startAcc(){
   col('ledger').onSnapshot(snap=>{S.ledger=snap.docs.map(d=>({id:d.id,...d.data()}));if(S.ready&&S.view==='acc')render()},e=>console.error(e));
 }
 
+
+/* ---------- product photos + zoom ---------- */
+function ico(p){return p&&p.img?`<button class="thumb" data-act="zoom" data-id="${p.id}" aria-label="كبّر صورة ${esc(p.name)}"><img src="${p.img}" alt="" loading="lazy"></button>`:`<span class="ti">${TYPES[p&&p.type==='med'?'med':'cos'].icon}</span>`}
+function thumbOf(dataUrl){return new Promise(res=>{const im=new Image();im.onload=()=>{const n=160,c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d'),s=Math.min(im.width,im.height);x.fillStyle='#fff';x.fillRect(0,0,n,n);x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,n,n);res(c.toDataURL('image/jpeg',.7))};im.onerror=()=>res('');im.src=dataUrl})}
+function pickPhoto(cam,cb){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');
+  inp.onchange=async()=>{const f=inp.files&&inp.files[0];if(!f)return;try{toast('جاري تجهيز الصورة…');cb(await toJpeg(f,1000,.75))}catch(e){toast('الصورة دي مش مدعومة — جرب صورة تانية')}};inp.click()}
+async function setItemImage(id,d){const th=await thumbOf(d);const b=fs.batch();b.set(ref('imgs/'+id),{d,t:Date.now()});b.update(ref('items/'+id),{img:th});const p=S.items.find(x=>x.id===id);evt(b,'edit',p?p.name:'','','صورة المنتج');await b.commit().catch(e=>{console.error(e);toast('الصورة ما اتحفظتش — جرب تاني')})}
+const imgCache={};
+async function fullImg(id){if(imgCache[id])return imgCache[id];try{const d=await ref('imgs/'+id).get();const v=d.exists?(d.data()||{}).d:'';if(v)imgCache[id]=v;return v}catch(e){return ''}}
+const $zoom=$('zoom'),$zimg=$('zimg');let zs=1,zx=0,zy=0,zst=null,lastTap=0;const zpts=new Map();
+const zApply=()=>{$zimg.style.transform=`translate(${zx}px,${zy}px) scale(${zs})`};
+function openZoom(p){if(!p||!p.img)return;zs=1;zx=zy=0;zApply();$zimg.src=p.img;$zimg.alt=p.name;$('zc').innerHTML=`${esc(p.name)}<small>اقرص بصباعين أو دوس مرتين للتكبير</small>`;$zoom.hidden=false;
+  fullImg(p.id).then(d=>{if(d&&!$zoom.hidden&&$zimg.alt===p.name)$zimg.src=d})}
+function closeZoom(){$zoom.hidden=true;zpts.clear()}
+$('zx').addEventListener('click',closeZoom);
+let zOnImg=false;
+$zoom.addEventListener('click',()=>{if(!zOnImg&&zs===1&&zpts.size===0)closeZoom()});
+$zoom.addEventListener('pointerdown',e=>{if(e.target.id==='zx')return;zOnImg=e.target===$zimg||zs>1;$zoom.setPointerCapture(e.pointerId);zpts.set(e.pointerId,{x:e.clientX,y:e.clientY});zst={s:zs,x:zx,y:zy,p:[...zpts.values()].map(v=>({...v}))};
+  if(zpts.size===1){const now=Date.now();if(now-lastTap<300){if(zs>1){zs=1;zx=zy=0}else zs=2.5;zApply();lastTap=0}else lastTap=now}});
+$zoom.addEventListener('pointermove',e=>{if(!zpts.has(e.pointerId))return;zpts.set(e.pointerId,{x:e.clientX,y:e.clientY});const a=[...zpts.values()],b=zst.p;
+  if(a.length>=2&&b.length>=2){const d=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y)||1;zs=Math.min(6,Math.max(1,zst.s*d(a[0],a[1])/d(b[0],b[1])))}
+  else if(a.length===1&&b.length===1&&zs>1){zx=zst.x+a[0].x-b[0].x;zy=zst.y+a[0].y-b[0].y}zApply()});
+const zUp=e=>{zpts.delete(e.pointerId);zst={s:zs,x:zx,y:zy,p:[...zpts.values()].map(v=>({...v}))};if(zs<=1.02){zs=1;zx=zy=0;zApply()}};
+$zoom.addEventListener('pointerup',zUp);$zoom.addEventListener('pointercancel',zUp);
+$zoom.addEventListener('wheel',e=>{e.preventDefault();zs=Math.min(6,Math.max(1,zs*(e.deltaY<0?1.15:.87)));if(zs===1)zx=zy=0;zApply()},{passive:false});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$zoom.hidden)closeZoom()});
+
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
 $tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
@@ -1400,7 +1453,8 @@ $app.addEventListener('change',e=>{const t=e.target;
 $app.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const act=b.dataset.act,p=S.items.find(x=>x.id===b.dataset.id),k=b.dataset.k;
-  if(act==='open'&&p)itemSheet(p);
+  if(act==='zoom'&&p)openZoom(p);
+  else if(act==='open'&&p)itemSheet(p);
   else if(act==='sell'&&p)sellSheet(p);
   else if(act==='add')itemForm(null);
   else if(act==='restock')restockSheet(p||null);
