@@ -16,6 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{
   --bg:#EEF4F3; --card:#FFFFFF; --ink:#102A2E; --muted:#587074; --line:#D3E0DE;
@@ -333,6 +334,23 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 .pres{margin:0;font-size:13px}
 .pres b{font-size:16px;color:var(--green)}
 
+/* ---------- login ---------- */
+.login{position:fixed;inset:0;z-index:45;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 18px calc(20px + env(safe-area-inset-bottom,0px));overflow:auto}
+.lcard{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 20px 20px;box-shadow:0 20px 50px rgba(16,42,46,.12)}
+.lcard .lg{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:16px;text-align:center}
+.lcard .lg img{width:72px;height:72px;border-radius:18px}
+.lcard .lg b{font-size:22px;font-weight:800}
+.lcard .lg span{font-size:13px;color:var(--muted)}
+.lcard label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+.lcard input,.lcard select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+.lcard .pw{position:relative}
+.lcard .pw button{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:18px;padding:6px}
+.lcard .go{width:100%;margin-top:18px;padding:13px;font-size:16px;font-weight:800}
+.lcard .err{min-height:20px;margin:10px 0 0;color:var(--red);font-size:14px;font-weight:700;text-align:center}
+.lcard .note{font-size:12.5px;color:var(--muted);text-align:center;margin:12px 0 0}
+.role{font-size:11px;font-weight:700;border-radius:8px;padding:1px 7px;background:var(--green-soft);color:var(--green)}
+.role.off{background:var(--red-soft);color:var(--red)}
+
 #print{display:none}
 @media print{
   body>*:not(#print){display:none!important}
@@ -374,6 +392,7 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 <button class="micfab" id="micfab" aria-label="سجّل بصوتك" hidden>🎙️</button>
 <div class="remind" id="remind" hidden></div>
 <div class="zoom" id="zoom" hidden><button class="zx" id="zx" aria-label="قفل">✕</button><img id="zimg" alt=""><div class="zc" id="zc"></div></div>
+<div class="login" id="login" hidden></div>
 <div id="modal"></div>
 <div id="print"></div>
 
@@ -551,7 +570,7 @@ function vExp(){
 function vLog(){
   const list=S.events.filter(e=>matchQ(e.name+' '+(e.by||'')+' '+(ACT[e.a]||'')));
   const ppl=[...new Set(S.events.slice(0,200).map(e=>e.by).filter(Boolean))];
-  let h=`<div class="toolbar"><button class="btn" data-act="name">اسمي: ${esc(S.me||'—')}</button><button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button><button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
+  let h=`<div class="toolbar"><button class="btn" data-act="account">👤 ${esc(S.me||'حسابي')}</button>${S.role==='admin'?'<button class="btn" data-act="users">👥 المستخدمين</button>':''}<button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button><button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
   if(ppl.length)h+=`<p class="hint">اللي بيستخدموا الموقع: ${ppl.map(esc).join('، ')}</p>`;
   h+=list.length?`<div class="rows log">${list.slice(0,300).map(e=>`<div class="row slim"><time>${fmtTime(e.t,1)}</time><span class="tag ${e.a}">${ACT[e.a]||e.a}</span><div class="kit"><b>${esc(e.name)}${e.n!==''&&e.n!=null?` × ${esc(e.n)}`:''}</b><div class="meta">${e.by?`<span>👤 ${esc(e.by)}</span>`:''}${e.note?`<span>${esc(e.note)}</span>`:''}</div></div></div>`).join('')}</div>`:`<div class="empty">مفيش حركات لسه</div>`;
   $app.innerHTML=h;
@@ -1544,6 +1563,110 @@ function calcProd(ex){const pm=+ex.querySelector('[data-x=pm]').value,py=+ex.que
 document.addEventListener('click',e=>{const b=e.target.closest('[data-prod]');if(!b)return;const ex=b.closest('.ex'),pn=ex.querySelector('.prod');pn.hidden=!pn.hidden;b.classList.toggle('on',!pn.hidden);b.textContent=pn.hidden?'🏭 عندك تاريخ إنتاج؟ احسب الإكسباير':'🏭 إخفاء حاسبة الإنتاج';if(pn.hidden)delete ex.dataset.life;else calcProd(ex)});
 document.addEventListener('change',e=>{const x=e.target.dataset&&e.target.dataset.x;if(x==='pm'||x==='py'||x==='pl')calcProd(e.target.closest('.ex'))});
 
+
+/* ---------- login: username + password لكل واحد ---------- */
+const SUF='@drcorner-pharmacy.app';
+let auth=null,secApp=null,settingUp=false;
+const ukey=u=>norm(u).replace(/[\/.#$\[\]]/g,'').replace(/\s+/g,'_');
+const rid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const $login=$('login');
+function authErr(e){const c=e&&e.code||'';return /wrong-password|invalid-credential|invalid-login/.test(c)?'كلمة المرور غلط':/too-many/.test(c)?'محاولات كتير — استنى دقيقة وجرب تاني':/network/.test(c)?'مفيش نت — اتأكد من الاتصال':/weak-password/.test(c)?'كلمة المرور لازم 6 حروف أو أرقام على الأقل':/operation-not-allowed|configuration-not-found/.test(c)?'لازم تفعّل Email/Password في Firebase ← Authentication الأول':/permission/.test(c)?'Firebase رافض — راجع القواعد (Rules)':'حصلت مشكلة — جرب تاني'}
+function lcard(inner){$login.hidden=false;document.body.style.overflow='hidden';$login.innerHTML=`<div class="lcard"><div class="lg"><img src="icon-192.png" alt="" onerror="this.remove()"><b>Dr. Corner</b><span>المخزن والمبيعات والحسابات</span></div>${inner}</div>`;
+  $login.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{const i=b.previousElementSibling;i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'👁️':'🙈'});
+  const f=$login.querySelector('input');if(f)setTimeout(()=>f.focus(),80)}
+const pwIn=(id,ph,ac)=>`<div class="pw"><input id="${id}" type="password" placeholder="${ph}" autocomplete="${ac}"><button type="button" data-eye aria-label="إظهار كلمة المرور">👁️</button></div>`;
+let loginMsg='';
+async function showLogin(msg){
+  msg=msg||loginMsg;loginMsg='';
+  let hasOwner=true;try{const d=await ref('meta/owner').get();hasOwner=d.exists}catch(e){hasOwner=true}
+  if(!hasOwner)return showSetup();
+  lcard(`<label for="lU">اسم المستخدم</label><input id="lU" autocomplete="username" autocapitalize="none" placeholder="مثلاً: remon">
+    <label for="lP">كلمة المرور</label>${pwIn('lP','••••••','current-password')}
+    <button class="btn primary go" id="lGo">دخول</button><p class="err" id="lE">${msg||''}</p><p class="note">نسيت كلمة المرور؟ كلّم المدير يعملك واحدة جديدة.</p>`);
+  const go=async()=>{const u=$('lU').value.trim(),pw=$('lP').value,e=$('lE'),b=$('lGo');if(!u||!pw){e.textContent='اكتب اسم المستخدم وكلمة المرور';return}
+    b.disabled=true;b.textContent='جاري الدخول…';e.textContent='';
+    try{const d=await ref('logins/'+ukey(u)).get();if(!d.exists)throw {code:'nouser'};await auth.signInWithEmailAndPassword(d.data().email,pw)}
+    catch(x){e.textContent=x.code==='nouser'?'اسم المستخدم ده مش موجود':authErr(x);b.disabled=false;b.textContent='دخول'}};
+  $('lGo').onclick=go;$login.querySelectorAll('input').forEach(i=>i.onkeydown=ev=>{if(ev.key==='Enter')go()});
+}
+function showSetup(){
+  lcard(`<p class="hint" style="text-align:center;margin-top:0">إعداد أول مرة — اعمل حساب <b>المدير</b>. بعدها هتقدر تضيف حساب لكل واحد في الفريق.</p>
+    <label for="sN">اسمك (اللي هيظهر للكل)</label><input id="sN" value="${esc(S.me||'')}" placeholder="مثلاً: ريمون">
+    <label for="sU">اسم المستخدم</label><input id="sU" autocapitalize="none" autocomplete="username" placeholder="مثلاً: remon">
+    <label for="sP">كلمة المرور (6 على الأقل)</label>${pwIn('sP','','new-password')}
+    <label for="sP2">اكتبها تاني</label>${pwIn('sP2','','new-password')}
+    <button class="btn primary go" id="sGo">إنشاء حساب المدير</button><p class="err" id="sE"></p>`);
+  $('sGo').onclick=async()=>{const n=$('sN').value.trim(),u=$('sU').value.trim(),p1=$('sP').value,p2=$('sP2').value,e=$('sE'),b=$('sGo');
+    if(!n||!u){e.textContent='اكتب الاسم واسم المستخدم';return}if(p1.length<6){e.textContent='كلمة المرور لازم 6 على الأقل';return}if(p1!==p2){e.textContent='كلمتين المرور مش زي بعض';return}
+    b.disabled=true;b.textContent='جاري الإنشاء…';settingUp=true;
+    try{const email='o'+rid()+SUF,c=await auth.createUserWithEmailAndPassword(email,p1),uid=c.user.uid;
+      await ref('meta/owner').set({uid,t:Date.now()});
+      await ref('members/'+uid).set({name:n,username:u,role:'admin',active:true,t:Date.now(),email});
+      await ref('logins/'+ukey(u)).set({email,uid});
+      settingUp=false;await afterAuth(c.user);toast('حساب المدير اتعمل ✓ — ضيف باقي الفريق من السجل ← 👥 المستخدمين')}
+    catch(x){settingUp=false;e.textContent=authErr(x);b.disabled=false;b.textContent='إنشاء حساب المدير';try{await auth.signOut()}catch(_){}}};
+}
+async function loadMember(u){
+  try{const [m,o]=await Promise.all([ref('members/'+u.uid).get(),ref('meta/owner').get()]);
+    const isOwner=o.exists&&o.data().uid===u.uid,d=m.exists?m.data():null;
+    if(!d||(!d.active&&!isOwner))return null;const r={uid:u.uid,...d,owner:isOwner,role:isOwner?'admin':d.role};LS.set('drc.member',JSON.stringify(r));return r}
+  catch(e){try{const c=JSON.parse(LS.get('drc.member')||'null');if(c&&c.uid===u.uid)return c}catch(_){}throw e}}
+let dataStarted=false;
+async function afterAuth(u){
+  let m=null;try{m=await loadMember(u)}catch(e){$login.hidden=false;lcard(`<p class="err">${authErr(e)}</p><button class="btn primary go" onclick="location.reload()">إعادة المحاولة</button>`);return}
+  if(!m){loginMsg='الحساب ده متوقف أو ملوش صلاحية — كلّم المدير';await auth.signOut();return}
+  S.me=m.name;S.role=m.role;S.uid=m.uid;S.member=m;LS.set('drc.me',m.name);
+  $login.hidden=true;$login.innerHTML='';document.body.style.overflow='';
+  if(!dataStarted){dataStarted=true;startData()}else render();
+}
+function secAuth(){if(!secApp)secApp=firebase.initializeApp(FIREBASE_CONFIG,'sec');return secApp.auth()}
+async function newAuthUser(pw){const email='u'+rid()+SUF,c=await secAuth().createUserWithEmailAndPassword(email,pw);const uid=c.user.uid;await secAuth().signOut();return {email,uid}}
+async function usersSheet(){
+  if(S.role!=='admin'){toast('الصفحة دي للمدير بس');return}
+  let ms=[],ownerUid='';try{const [q,o]=await Promise.all([col('members').get(),ref('meta/owner').get()]);ms=q.docs.map(d=>({uid:d.id,...d.data()})).filter(x=>!x.replacedBy);ownerUid=o.exists?o.data().uid:''}catch(e){toast(authErr(e));return}
+  ms.sort((a,b)=>(b.active?1:0)-(a.active?1:0)||String(a.name).localeCompare(String(b.name),'ar'));
+  openSheet(`<h4>👥 المستخدمين</h4><p class="hint" style="margin-top:0">كل واحد بيدخل باسم مستخدم وكلمة مرور خاصين بيه. الموقوف ما يقدرش يدخل.</p>
+    <div class="rows">${ms.map(x=>`<div class="row slim"><div class="kit"><b>${esc(x.name)} ${x.uid===ownerUid?'⭐':''}</b><div class="meta"><span class="ltr">${esc(x.username)}</span><span class="role ${x.active?'':'off'}">${x.active?(x.role==='admin'?'مدير':'موظف'):'موقوف'}</span></div></div>
+      ${x.uid===S.uid?'<span class="hint" style="margin:0">ده إنت</span>':`<button class="btn sm" data-m="rs:${x.uid}">🔑 كلمة مرور جديدة</button>${x.uid===ownerUid?'':`<button class="btn sm" data-m="ro:${x.uid}">${x.role==='admin'?'خليه موظف':'خليه مدير'}</button><button class="btn sm ${x.active?'danger':''}" data-m="ac:${x.uid}">${x.active?'إيقاف':'تفعيل'}</button>`}`}</div>`).join('')}</div>
+    <div class="astep"><b>➕ مستخدم جديد</b>
+      <label for="nN">الاسم</label><input id="nN" placeholder="مثلاً: أمجد">
+      <div class="two"><div><label for="nU">اسم المستخدم</label><input id="nU" autocapitalize="none" placeholder="amgad"></div><div><label for="nP">كلمة المرور</label><input id="nP" placeholder="6 على الأقل" autocomplete="off"></div></div>
+      <label for="nR">الصلاحية</label><select id="nR"><option value="staff">موظف</option><option value="admin">مدير (يقدر يضيف ويوقف مستخدمين)</option></select>
+      <button class="btn primary" data-m="add" style="width:100%;margin-top:10px">➕ إضافة</button></div>
+    <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  async(m,r,b)=>{
+    const [k,uid]=m.split(':'),x=ms.find(y=>y.uid===uid);
+    if(m==='add'){const n=r.querySelector('#nN').value.trim(),u=r.querySelector('#nU').value.trim(),pw=r.querySelector('#nP').value,role=r.querySelector('#nR').value;
+      if(!n||!u){toast('اكتب الاسم واسم المستخدم');return}if(pw.length<6){toast('كلمة المرور لازم 6 على الأقل');return}
+      b.disabled=true;b.textContent='جاري الإضافة…';
+      try{if((await ref('logins/'+ukey(u)).get()).exists){toast('اسم المستخدم ده موجود — اختار غيره');b.disabled=false;b.textContent='➕ إضافة';return}
+        const a=await newAuthUser(pw),bt=fs.batch();bt.set(ref('members/'+a.uid),{name:n,username:u,role,active:true,t:Date.now(),by:S.me,email:a.email});bt.set(ref('logins/'+ukey(u)),{email:a.email,uid:a.uid});evt(bt,'add','مستخدم جديد: '+n,'',u);await bt.commit();
+        closeSheet();textSheet('بيانات الدخول',`Dr. Corner — بيانات دخولك\nاللينك: ${appUrl()}\nاسم المستخدم: ${u}\nكلمة المرور: ${pw}`)}
+      catch(e){toast(authErr(e));b.disabled=false;b.textContent='➕ إضافة'}return}
+    if(k==='ac'){await ref('members/'+uid).update({active:!x.active}).then(()=>toast(x.active?`${x.name} اتوقف ✓`:`${x.name} اتفعّل ✓`)).catch(e=>toast(authErr(e)));closeSheet();return usersSheet()}
+    if(k==='ro'){await ref('members/'+uid).update({role:x.role==='admin'?'staff':'admin'}).catch(e=>toast(authErr(e)));closeSheet();return usersSheet()}
+    if(k==='rs'){openSheet(`<h4>🔑 كلمة مرور جديدة — ${esc(x.name)}</h4><label for="rP">كلمة المرور الجديدة</label><input id="rP" placeholder="6 على الأقل" autocomplete="off"><p class="hint">اسم المستخدم هيفضل «${esc(x.username)}»، والقديمة هتبطل تشتغل.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">حفظ</button></div>`,
+      async(mm,rr,bb)=>{const pw=rr.querySelector('#rP').value;if(pw.length<6){toast('كلمة المرور لازم 6 على الأقل');return}bb.disabled=true;
+        try{const a=await newAuthUser(pw),{uid:_u,...rest}=x,bt=fs.batch();bt.set(ref('members/'+a.uid),{...rest,email:a.email,active:true,t:Date.now()});bt.update(ref('members/'+uid),{active:false,replacedBy:a.uid});bt.set(ref('logins/'+ukey(x.username)),{email:a.email,uid:a.uid});evt(bt,'edit','كلمة مرور جديدة: '+x.name,'','');await bt.commit();
+          closeSheet();textSheet('بيانات الدخول الجديدة',`Dr. Corner — بيانات دخولك الجديدة\nاللينك: ${appUrl()}\nاسم المستخدم: ${x.username}\nكلمة المرور: ${pw}`)}catch(e){toast(authErr(e));bb.disabled=false}})}
+  });
+}
+function accountSheet(){
+  const m=S.member||{};
+  openSheet(`<h4>👤 حسابي</h4><div class="facts"><span>${esc(S.me)}</span><span class="ltr">${esc(m.username||'')}</span><span>${S.role==='admin'?'مدير':'موظف'}</span></div>
+    <label for="aN">اسمك اللي بيظهر للكل</label><input id="aN" value="${esc(S.me)}">
+    <button class="btn" data-m="name" style="width:100%;margin-top:8px">حفظ الاسم</button>
+    <div class="astep"><b>🔑 تغيير كلمة المرور</b><label for="aO">الحالية</label><input id="aO" type="password" autocomplete="current-password"><label for="aP">الجديدة (6 على الأقل)</label><input id="aP" type="password" autocomplete="new-password"><button class="btn primary" data-m="pw" style="width:100%;margin-top:10px">تغيير</button></div>
+    <div class="actions"><button class="btn" data-cancel>قفل</button>${S.role==='admin'?'<button class="btn" data-m="users">👥 المستخدمين</button>':''}<button class="btn danger" data-m="out">🚪 خروج</button></div>`,
+  async(k,r,b)=>{
+    if(k==='users')return usersSheet();
+    if(k==='out'){closeSheet();LS.set('drc.member','');LS.set('drc.me','');await auth.signOut();location.reload();return}
+    if(k==='name'){const n=r.querySelector('#aN').value.trim();if(!n)return;try{await ref('members/'+S.uid).update({name:n});S.me=n;LS.set('drc.me',n);S.member.name=n;toast('الاسم اتغير ✓');closeSheet();render()}catch(e){toast(authErr(e))}return}
+    if(k==='pw'){const o=r.querySelector('#aO').value,n=r.querySelector('#aP').value;if(n.length<6){toast('الجديدة لازم 6 على الأقل');return}b.disabled=true;
+      try{const u=auth.currentUser;await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,o));await u.updatePassword(n);toast('كلمة المرور اتغيرت ✓');closeSheet()}catch(e){toast(authErr(e));b.disabled=false}}
+  });
+}
+
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
 $tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
@@ -1573,7 +1696,8 @@ $app.addEventListener('click',e=>{
   else if(act==='rep-short')doReport(repShort(),k);
   else if(act==='rep-sales')doReport(repSales(),k);
   else if(act==='rep-exp')doReport(repExp(),k);
-  else if(act==='name')askName(false);
+  else if(act==='account')accountSheet();
+  else if(act==='users')usersSheet();
   else if(act==='settings')settingsSheet();
   else if(act==='perm')askPerm();
   else if(act==='app')appSheet();
@@ -1603,10 +1727,13 @@ $app.addEventListener('click',e=>{
 /* ---------- start ---------- */
 (function start(){
   if(typeof firebase==='undefined'){S.error='مش قادر أحمّل Firebase — اتأكد إن النت شغال وافتح الصفحة تاني.';render();return}
-  try{firebase.initializeApp(FIREBASE_CONFIG);fs=firebase.firestore();fs.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){S.error='بيانات Firebase غلط.';render();return}
+  try{firebase.initializeApp(FIREBASE_CONFIG);fs=firebase.firestore();fs.enablePersistence({synchronizeTabs:true}).catch(()=>{});auth=firebase.auth()}catch(e){S.error='بيانات Firebase غلط.';render();return}
   render();
+  auth.onAuthStateChanged(u=>{if(settingUp)return;if(u)afterAuth(u);else showLogin()});
+})();
+function startData(){
   let lastErr='';
-  const fail=e=>{console.error(e);lastErr=(e&&(e.code||e.message))||'';if(e&&e.code==='permission-denied'){S.error='Firebase رافض القراية — افتح Firestore ← Rules وخلّي المسار shops مسموح، ودوس Publish.';render()}};
+  const fail=e=>{console.error(e);lastErr=(e&&(e.code||e.message))||'';if(e&&e.code==='permission-denied'){S.error='Firebase رافض القراية — الحساب ده ملوش صلاحية، أو القواعد (Rules) محتاجة تتراجع. <div class="toolbar" style="margin-top:12px"><button class="btn" onclick="firebase.auth().signOut().then(()=>location.reload())">خروج</button></div>';render()}};
   col('items').onSnapshot({includeMetadataChanges:true},snap=>{
     S.offline=snap.metadata.fromCache;const all=snap.docs.map(d=>({id:d.id,...d.data()}));S.items=all.filter(x=>!x.del);S.trash.items=all.filter(x=>x.del);S.loaded.items=1;
     if(!S.ready){S.ready=true;S.error=''}render();
@@ -1626,7 +1753,7 @@ $app.addEventListener('click',e=>{
     S.error=`الموقع مش قادر يوصل للبيانات.<br><br>1) اقفل أي تاب تاني مفتوح فيه الموقع.<br>2) اتأكد إن النت شغال.${lastErr?`<br><br><small style="direction:ltr;display:block">${esc(lastErr)}</small>`:''}<div class="toolbar" style="margin-top:14px"><button class="btn primary" onclick="location.reload()">إعادة المحاولة</button></div>`;render();
   },12000);
   addEventListener('online',()=>{S.offline=false;renderTop()});addEventListener('offline',()=>{S.offline=true;renderTop()});
-})();
+}
 })();
 </script>
 </body>
