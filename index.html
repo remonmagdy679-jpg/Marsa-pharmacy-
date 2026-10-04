@@ -398,7 +398,7 @@ const pad=n=>String(n).padStart(2,'0');
 const dayKey=(d=new Date())=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const today=()=>dayKey();
 const DEV=LS.get('drc.dev')||('d'+Math.random().toString(36).slice(2,10));LS.set('drc.dev',DEV);
-const S={companies:[],ledger:[],acc:LS.get('drc.acc')||'',accRange:'all',notes:[],items:[],sales:[],dayCache:{},events:[],alerts:[],cfg:{cur:'ج.م'},type:LS.get('drc.type')||'all',view:'items',q:'',
+const S={trash:{items:[],companies:[],ledger:[]},loaded:{},companies:[],ledger:[],acc:LS.get('drc.acc')||'',accRange:'all',notes:[],items:[],sales:[],dayCache:{},events:[],alerts:[],cfg:{cur:'ج.م'},type:LS.get('drc.type')||'all',view:'items',q:'',
   me:LS.get('drc.me')||'',day:today(),expPreset:'m3',expFrom:'',expTo:'',shortMode:'all',ready:false,offline:false,error:''};
 const $=id=>document.getElementById(id);
 const $app=$('app'),$tabs=$('tabs'),$modal=$('modal'),$q=$('q'),$sb=$('searchbar'),$st=$('status'),$seg=$('seg'),$bell=$('bell'),$bp=$('bellpill'),$ab=$('alertbar'),$pr=$('print');
@@ -446,7 +446,7 @@ const openAlerts=()=>S.alerts.filter(a=>!a.done);
 /* ---------- sales ---------- */
 const WIN=62*864e5;const winStart=Date.now()-WIN;const winDay=dayKey(new Date(winStart));
 function salesOf(day){if(day>=winDay)return S.sales.filter(s=>s.day===day);if(S.dayCache[day])return S.dayCache[day];fetchDay(day);return null}
-async function fetchDay(day){if(S.dayCache['_'+day])return;S.dayCache['_'+day]=1;try{const q=await col('sales').where('day','==',day).get();S.dayCache[day]=q.docs.map(d=>({sid:d.id,...d.data()})).sort((a,b)=>b.t-a.t)}catch(e){S.dayCache[day]=[];toast('مقدرتش أجيب مبيعات اليوم ده')}if(S.view==='sales')render()}
+async function fetchDay(day){if(S.dayCache['_'+day])return;S.dayCache['_'+day]=1;try{const q=await col('sales').where('day','==',day).get();S.dayCache[day]=q.docs.map(d=>({sid:d.id,...d.data()})).filter(x=>!x.del).sort((a,b)=>b.t-a.t)}catch(e){S.dayCache[day]=[];toast('مقدرتش أجيب مبيعات اليوم ده')}if(S.view==='sales')render()}
 const sum=(l,f='total')=>l.reduce((a,s)=>a+(+s[f]||0),0);
 
 /* ---------- top ---------- */
@@ -551,7 +551,7 @@ function vExp(){
 function vLog(){
   const list=S.events.filter(e=>matchQ(e.name+' '+(e.by||'')+' '+(ACT[e.a]||'')));
   const ppl=[...new Set(S.events.slice(0,200).map(e=>e.by).filter(Boolean))];
-  let h=`<div class="toolbar"><button class="btn" data-act="name">اسمي: ${esc(S.me||'—')}</button><button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="export">نسخة احتياطية</button><button class="btn" data-act="import">رفع نسخة</button></div>`;
+  let h=`<div class="toolbar"><button class="btn" data-act="name">اسمي: ${esc(S.me||'—')}</button><button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button><button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
   if(ppl.length)h+=`<p class="hint">اللي بيستخدموا الموقع: ${ppl.map(esc).join('، ')}</p>`;
   h+=list.length?`<div class="rows log">${list.slice(0,300).map(e=>`<div class="row slim"><time>${fmtTime(e.t,1)}</time><span class="tag ${e.a}">${ACT[e.a]||e.a}</span><div class="kit"><b>${esc(e.name)}${e.n!==''&&e.n!=null?` × ${esc(e.n)}`:''}</b><div class="meta">${e.by?`<span>👤 ${esc(e.by)}</span>`:''}${e.note?`<span>${esc(e.note)}</span>`:''}</div></div></div>`).join('')}</div>`:`<div class="empty">مفيش حركات لسه</div>`;
   $app.innerHTML=h;
@@ -709,8 +709,8 @@ function outSheet(p,k){
   (m,r)=>{if(m!=='ok')return;const q=Math.min(have,int(r.querySelector('#fQ').value));if(q<1){toast('اكتب العدد');return}closeSheet();removeBatch(p,k,q,r.querySelector('#fR').value)});
 }
 function delSheet(p){
-  openSheet(`<h4>حذف «${esc(p.name)}»؟</h4><p class="hint" style="margin-top:0">الصنف هيتمسح من عند الكل، والمبيعات القديمة بتاعته هتفضل في السجل.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn danger" data-m="ok">امسح</button></div>`,
-  ()=>{closeSheet();const b=fs.batch();b.delete(ref('items/'+p.id));evt(b,'del',p.name,qty(p));commit(b,'اتمسح')});
+  openSheet(`<h4>حذف «${esc(p.name)}»؟</h4><p class="hint" style="margin-top:0">الصنف هيختفي من عند الكل، وتقدر ترجّعه من «🗑️ سلة المحذوفات» في السجل.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn danger" data-m="ok">امسح</button></div>`,
+  ()=>{closeSheet();const b=fs.batch();b.update(ref('items/'+p.id),SOFT());evt(b,'del',p.name,qty(p));commit(b,'اتمسح — وموجود في سلة المحذوفات')});
 }
 function settingsSheet(){
   openSheet(`<h4>الإعدادات</h4><label for="fCur">العملة اللي بتظهر جنب الأسعار</label><input id="fCur" value="${esc(S.cfg.cur)}" placeholder="ج.م أو €">
@@ -735,6 +735,8 @@ function alertsSheet(){
 /* ---------- Firebase writes ---------- */
 let fs=null;
 const FV=()=>firebase.firestore.FieldValue;
+const SOFT=g=>({del:true,delT:Date.now(),delBy:S.me||'بدون اسم',...(g?{delG:g}:{})});
+const UNSOFT=()=>({del:FV().delete(),delT:FV().delete(),delBy:FV().delete(),delG:FV().delete()});
 const ref=p=>fs.doc(`shops/${SHOP_ID}/${p}`);
 const col=p=>fs.collection(`shops/${SHOP_ID}/${p}`);
 function run(promise,okMsg){if(okMsg)toast(okMsg);promise.catch(e=>{console.error(e);toast(e&&e.code==='permission-denied'?'Firebase رافض الحفظ — راجع القواعد (Rules)':'محصلش حفظ — جرب تاني')})}
@@ -762,7 +764,7 @@ function undoSale(s){
   ()=>{closeSheet();const b=fs.batch();const it=S.items.find(x=>x.id===s.id);const inc={};
     for(const k in (s.alloc||{}))inc[k]=FV().increment(s.alloc[k]);
     if(it&&Object.keys(inc).length)b.set(ref('items/'+it.id),{b:inc},{merge:true});
-    b.delete(ref('sales/'+s.sid));evt(b,'undo',s.name,s.qty,'',1);
+    b.update(ref('sales/'+s.sid),SOFT());evt(b,'undo',s.name,s.qty,'',1);
     delete S.dayCache[s.day];delete S.dayCache['_'+s.day];commit(b,'اتلغى والكمية رجعت');});
 }
 function resolveAlerts(b,p){openAlerts().filter(a=>a.id===p.id).forEach(a=>b.update(ref('alerts/'+a.aid),{done:true,doneBy:me(),doneT:Date.now()}))}
@@ -795,15 +797,75 @@ async function bulkAdd(type,rows){
 function toggleOrdered(p){const b=fs.batch();b.update(ref('items/'+p.id),{ordered:p.ordered?FV().delete():{by:me(),t:Date.now()}});if(!p.ordered)evt(b,'ord',p.name,'');commit(b,p.ordered?'اتشالت علامة «اتطلب»':'اتعلّم «اتطلب» عند الكل')}
 function urgent(p){const b=fs.batch();if(newAlert(b,p,good(p),false,'عاجل')){commit(b,'التنبيه وصل لكل اللي فاتحين الموقع')}else toast('في تنبيه مفتوح للصنف ده بالفعل')}
 function alertAllOut(){const b=fs.batch();const ns=[];S.items.filter(p=>mItem(p)&&!good(p)).forEach(p=>{if(newAlert(b,p,0,false,'خلصان',true))ns.push(p.name)});const c=ns.length;if(c){commit(b,`اتبعت ${c} تنبيه للكل`);push(`🔔 ${c} صنف خلصان — ${SHOP_NAME}`,ns.join('\n'),{prio:5,tags:['rotating_light']})}else toast('كله متبعتله تنبيه بالفعل')}
+function fullPayload(withImg){
+  const strip=o=>{const {id,sid,aid,...r}=o;if(!withImg)delete r.img;return r};
+  const m=l=>Object.fromEntries(l.map(x=>[x.id||x.sid,strip(x)]));
+  return {v:2,day:today(),t:Date.now(),by:S.me||'',items:m([...S.items,...S.trash.items]),companies:m([...S.companies,...S.trash.companies]),ledger:m([...S.ledger,...S.trash.ledger]),notes:m(S.notes),sales:m(S.sales),cfg:{cur:S.cfg.cur,pushChat:S.cfg.pushChat,topic:S.cfg.topic||''}}}
 function exportData(){
-  const items={};S.items.forEach(p=>{const {id,...r}=p;items[id]=r});
-  const blob=new Blob([JSON.stringify({items,cfg:S.cfg},null,1)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify(fullPayload(true))],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='drcorner-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  LS.set('drc.lastExport',String(Date.now()));toast('النسخة اتنزلت على الجهاز — احتفظ بيها في مكان آمن');
 }
+async function restorePayload(d){
+  const curImg=Object.fromEntries([...S.items,...S.trash.items].map(p=>[p.id,p.img]));
+  const jobs=[];for(const [colN,key] of [['items','items'],['companies','companies'],['ledger','ledger']])for(const [id,v] of Object.entries(d[key]||{})){const x={...v};if(colN==='items'&&!x.img&&curImg[id])x.img=curImg[id];jobs.push([colN+'/'+id,x])}
+  for(let i=0;i<jobs.length;i+=400){const b=fs.batch();jobs.slice(i,i+400).forEach(([p,x])=>b.set(ref(p),x));await b.commit()}
+  const b=fs.batch();evt(b,'fix','استرجاع نسخة احتياطية',jobs.length,d.day||'');await b.commit();return jobs.length}
 function importData(){
   const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
-  inp.onchange=async()=>{try{const d=JSON.parse(await inp.files[0].text());if(!d.items)throw 0;const ids=Object.keys(d.items);for(let i=0;i<ids.length;i+=400){const b=fs.batch();ids.slice(i,i+400).forEach(id=>b.set(ref('items/'+id),d.items[id]));await b.commit()}toast('النسخة اترفعت لكل الموظفين')}catch(e){toast('الملف ده مش نسخة احتياطية صحيحة')}};
+  inp.onchange=async()=>{let d;try{d=JSON.parse(await inp.files[0].text());if(!d.items)throw 0}catch(e){toast('الملف ده مش نسخة احتياطية صحيحة');return}
+    const n=k=>Object.keys(d[k]||{}).length;
+    openSheet(`<h4>↩️ استرجاع من ملف</h4><p class="hint" style="margin-top:0">نسخة ${d.day?fmtDay(d.day):''}: ${n('items')} صنف، ${n('companies')} شركة، ${n('ledger')} حركة حسابات.</p><p class="warn">الأصناف والحسابات اللي في الملف هترجع زي ما كانت وقتها، واللي اتضاف بعدها هيفضل زي ما هو.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">استرجع</button></div>`,
+    async()=>{closeSheet();toast('جاري الاسترجاع…');try{const c=await restorePayload(d);toast(`اترجع ${c} سجل ✓`)}catch(e){console.error(e);toast('حصلت مشكلة — جرب تاني')}})};
   inp.click();
+}
+/* ---------- automatic daily cloud backup (create-only) ---------- */
+const BKCH=300000;
+async function makeBackup(force){
+  if(!fs||!S.loaded.items||!S.loaded.ledger||!S.loaded.companies)return false;
+  if(!force&&S.cfg.lastBk===today())return false;
+  try{
+    if(!force){if(fs.runTransaction)await fs.runTransaction(async tx=>{const d=await tx.get(ref('settings/app'));if(d.exists&&d.data().lastBk===today())throw 'done';tx.set(ref('settings/app'),{lastBk:today()},{merge:true})});else await ref('settings/app').set({lastBk:today()},{merge:true})}
+    const pl=fullPayload(false),str=JSON.stringify(pl),id=today()+'-'+Math.random().toString(36).slice(2,7),n=Math.ceil(str.length/BKCH);
+    for(let i=0;i<n;i++)await ref(`backups/${id}_${i}`).set({id,i,n,data:str.slice(i*BKCH,(i+1)*BKCH)});
+    await ref('bkidx/'+id).set({id,day:today(),t:Date.now(),by:S.me||'تلقائي',n,auto:!force,counts:{items:Object.keys(pl.items).length,companies:Object.keys(pl.companies).length,ledger:Object.keys(pl.ledger).length,sales:Object.keys(pl.sales).length}});
+    return true}catch(e){if(e!=='done')console.warn('backup',e);return false}}
+setTimeout(function tick(){if(S.ready)makeBackup(false);setTimeout(tick,30*60*1000)},15000);
+async function backupsSheet(){
+  const le=+LS.get('drc.lastExport')||0;
+  const r=openSheet(`<h4>🛡️ النسخ الاحتياطية</h4>
+    <div class="astep"><b>☁️ نسخ تلقائية يومية</b><p class="hint" style="margin:4px 0">التطبيق بيعمل نسخة كاملة كل يوم لوحده (الأصناف والمخزن والحسابات والشركات). النسخ دي مش ممكن تتمسح أو تتعدل.</p><div id="bkList"><p class="hint"><span class="spin"></span>جاري التحميل…</p></div><button class="btn" data-m="now" style="width:100%;margin-top:6px">☁️ اعمل نسخة دلوقتي</button></div>
+    <div class="astep"><b>📱 نسخة على جهازك</b><p class="hint" style="margin:4px 0">${le?'آخر نسخة نزلتها: '+fmtDay(dayKey(new Date(le))):'لسه ما نزلتش نسخة على الجهاز'} — يُفضّل مرة في الأسبوع، وابعتها لنفسك على الواتساب أو Drive.</p><div class="actions"><button class="btn primary" data-m="exp">⬇️ نزّل نسخة كاملة</button><button class="btn" data-m="imp">↩️ استرجع من ملف</button></div></div>
+    <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  async(m,root,b)=>{
+    if(m==='exp')return exportData();if(m==='imp'){closeSheet();return importData()}
+    if(m==='now'){b.disabled=true;b.textContent='جاري عمل النسخة…';const ok=await makeBackup(true);toast(ok?'النسخة اتعملت ✓':'مقدرتش أعمل النسخة — جرب تاني');if(root.isConnected){closeSheet();backupsSheet()}return}
+    if(m.startsWith('rs:')){const id=m.slice(3),x=bks.find(y=>y.id===id);
+      openSheet(`<h4>↩️ استرجاع نسخة ${fmtDay(x.day)}؟</h4><p class="hint" style="margin-top:0">${x.counts.items} صنف، ${x.counts.companies} شركة، ${x.counts.ledger} حركة حسابات.</p><p class="warn">الأصناف (بالكميات والتواريخ) والحسابات هترجع زي ما كانت يوم ${fmtDay(x.day)}. أي حاجة اتسجلت بعد كده على نفس الأصناف هتتلغي — وأي صنف أو حركة جديدة هتفضل.</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn danger" data-m="ok">استرجع</button></div>`,
+      async()=>{closeSheet();toast('جاري الاسترجاع…');try{await makeBackup(true);const q=await col('backups').where('id','==',id).get();const parts=q.docs.map(d=>d.data()).sort((a,b)=>a.i-b.i);if(parts.length!==x.n)throw 'parts';const c=await restorePayload(JSON.parse(parts.map(p=>p.data).join('')));toast(`اترجع ${c} سجل ✓ (واتعملت نسخة من الوضع اللي قبل الاسترجاع)`)}catch(e){console.error(e);toast('مقدرتش أسترجع النسخة دي')}})}});
+  let bks=[];
+  try{const q=await col('bkidx').orderBy('t','desc').limit(30).get();bks=q.docs.map(d=>d.data())}catch(e){}
+  const el=r.querySelector('#bkList');if(!el)return;
+  el.innerHTML=bks.length?`<div class="rows">${bks.map(x=>`<div class="row slim"><div class="kit"><b>${x.day===today()?'النهارده':dayName(x.day)+' '+fmtDay(x.day)} ${x.auto?'':'✋'}</b><div class="meta"><span>${x.counts.items} صنف</span><span>${x.counts.companies} شركة</span><span>${x.counts.ledger} حركة</span><span>${fmtTime(x.t)}</span></div></div><button class="btn sm" data-m="rs:${x.id}">↩️ استرجع</button></div>`).join('')}</div>`:'<p class="hint">لسه مفيش نسخ — أول نسخة بتتعمل لوحدها خلال دقيقة.</p>';
+}
+/* ---------- trash (soft-deleted) ---------- */
+function trashSheet(){
+  const T=S.trash,byT=(a,b)=>(b.delT||0)-(a.delT||0),cn=id=>([...S.companies,...T.companies].find(c=>c.id===id)||{}).name||'—';
+  const delCids=new Set(T.companies.map(c=>c.id));
+  const items=T.items.slice().sort(byT).slice(0,60),comps=T.companies.slice().sort(byT).slice(0,30),led=T.ledger.filter(e=>!delCids.has(e.cid)).sort(byT).slice(0,80);
+  const row=(label,meta,key)=>`<div class="row slim"><div class="kit"><b>${label}</b><div class="meta">${meta}</div></div><button class="btn sm" data-m="${key}">↩️ رجّع</button></div>`;
+  const who=x=>`<span>🗑 ${esc(x.delBy||'')} ${x.delT?fmtDay(dayKey(new Date(x.delT))):''}</span>`;
+  openSheet(`<h4>🗑️ سلة المحذوفات</h4><p class="hint" style="margin-top:0">أي حاجة بتتمسح من الأصناف أو الحسابات بتيجي هنا، وتقدر ترجّعها في أي وقت.</p>
+    ${items.length?`<label>🧴 أصناف</label><div class="rows">${items.map(p=>row(esc(p.name),`<span>${qty(p)} قطعة</span>${who(p)}`,'ri:'+p.id)).join('')}</div>`:''}
+    ${comps.length?`<label>🏢 شركات (بحركاتها)</label><div class="rows">${comps.map(c=>row(esc(c.name),`<span>${T.ledger.filter(e=>e.cid===c.id&&e.delG&&e.delG===c.delG).length} حركة</span>${who(c)}`,'rc:'+c.id)).join('')}</div>`:''}
+    ${led.length?`<label>🧾 حركات حسابات</label><div class="rows">${led.map(e=>row(`${KIND[e.kind].l} ${e.no?'<bdi dir="ltr">'+esc(e.no)+'</bdi>':''} — ${num(e.amount)}`,`<span>🏢 ${esc(cn(e.cid))}</span><span>${e.date?fmtDay(e.date):''}</span>${who(e)}`,'rl:'+e.id)).join('')}</div>`:''}
+    ${items.length||comps.length||led.length?'':'<div class="empty">السلة فاضية 👌</div>'}
+    <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  async m=>{const [k,id]=m.split(':');const b=fs.batch();
+    if(k==='ri'){const p=T.items.find(x=>x.id===id);b.update(ref('items/'+id),UNSOFT());evt(b,'add',p?p.name:'','','رجوع من السلة')}
+    if(k==='rc'){const c=T.companies.find(x=>x.id===id);b.update(ref('companies/'+id),UNSOFT());T.ledger.filter(e=>e.cid===id&&c&&c.delG&&e.delG===c.delG).forEach(e=>b.update(ref('ledger/'+e.id),UNSOFT()));evt(b,'acc',c?c.name:'','','رجوع من السلة')}
+    if(k==='rl'){const e=T.ledger.find(x=>x.id===id);b.update(ref('ledger/'+id),UNSOFT());if(e&&delCids.has(e.cid))b.update(ref('companies/'+e.cid),UNSOFT());evt(b,'acc',cn(e&&e.cid),e?num(e.amount):'','رجوع من السلة')}
+    closeSheet();commit(b,'رجعت ✓')});
 }
 
 /* ---------- notifications ---------- */
@@ -1263,10 +1325,10 @@ function accMenu(c){
   <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
   m=>{if(m==='ren')return companySheet(c);if(m==='mv')return moveSheet(c);
     const what=m==='clr'?`مسح كل حركات «${esc(c.name)}» (${n})`:`حذف «${esc(c.name)}» وكل حركاتها (${n})`;
-    openSheet(`<h4>⚠️ ${what}؟</h4><p class="hint" style="margin-top:0">هيتمسح من عند الكل ومفيش رجوع. اعمل PDF الأول لو محتاجه.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">أيوه امسح</button></div>`,
-    async()=>{closeSheet();const ids=S.ledger.filter(e=>e.cid===c.id).map(e=>e.id);
-      try{for(let i=0;i<ids.length;i+=400){const b=fs.batch();ids.slice(i,i+400).forEach(id=>b.delete(ref('ledger/'+id)));await b.commit()}
-        if(m==='del'){await ref('companies/'+c.id).delete();S.acc='';LS.set('drc.acc','')}
+    openSheet(`<h4>⚠️ ${what}؟</h4><p class="hint" style="margin-top:0">هيختفي من عند الكل، وتقدر ترجّعه من «🗑️ سلة المحذوفات» في السجل.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">أيوه امسح</button></div>`,
+    async()=>{closeSheet();const ids=S.ledger.filter(e=>e.cid===c.id).map(e=>e.id),g='g'+Date.now();
+      try{for(let i=0;i<ids.length;i+=400){const b=fs.batch();ids.slice(i,i+400).forEach(id=>b.update(ref('ledger/'+id),SOFT(g)));await b.commit()}
+        if(m==='del'){await ref('companies/'+c.id).update(SOFT(g));S.acc='';LS.set('drc.acc','')}
         const b=fs.batch();evt(b,'acc',c.name,'',m==='del'?'حذف الشركة':'مسح كل الحركات');await b.commit();toast('اتمسح');render()}catch(e){toast('حصلت مشكلة — جرب تاني')}})});
 }
 function entrySheet(cid,kind,pre={},rec=null){
@@ -1282,7 +1344,7 @@ function entrySheet(cid,kind,pre={},rec=null){
     <div class="actions"><button class="btn" data-cancel>إلغاء</button>${rec?'<button class="btn danger" data-m="del">حذف</button>':''}<button class="btn primary" data-m="save">💾 حفظ</button></div>`,
   (m,root,b)=>{
     if(m.startsWith('k:')){k=m.slice(2);root.querySelectorAll('[data-m^="k:"]').forEach(x=>x.setAttribute('aria-pressed',x===b));warned=false;return}
-    if(m==='del'){openSheet(`<h4>تمسح ${KIND[rec.kind].l} ${esc(rec.no||'')} (${num(rec.amount)})؟</h4><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">امسح</button></div>`,()=>{closeSheet();const b2=fs.batch();b2.delete(ref('ledger/'+rec.id));evt(b2,'acc',c?c.name:'',num(rec.amount),'حذف '+KIND[rec.kind].l+' '+(rec.no||''));commit(b2,'اتمسح')});return}
+    if(m==='del'){openSheet(`<h4>تمسح ${KIND[rec.kind].l} ${esc(rec.no||'')} (${num(rec.amount)})؟</h4><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">امسح</button></div>`,()=>{closeSheet();const b2=fs.batch();b2.update(ref('ledger/'+rec.id),SOFT());evt(b2,'acc',c?c.name:'',num(rec.amount),'حذف '+KIND[rec.kind].l+' '+(rec.no||''));commit(b2,'اتمسح')});return}
     if(m!=='save')return;
     const cSel=root.querySelector('#eC');if(cSel&&cSel.value!==cid){cid=cSel.value;warned=false}
     const no=root.querySelector('#eNo').value.trim(),date=root.querySelector('#eDt').value||today(),amount=Math.round(flt(root.querySelector('#eAm').value)*100)/100,notes=root.querySelector('#eNt').value.trim();
@@ -1402,10 +1464,10 @@ function importSheet(){
     try{
       let base=S.ledger;
       if(purge){const ids=prevImp.map(e=>e.id),cids=new Set(prevImp.map(e=>e.cid));
-        for(let i=0;i<ids.length;i+=400){const b=fs.batch();ids.slice(i,i+400).forEach(id=>b.delete(ref('ledger/'+id)));await b.commit()}
+        for(let i=0;i<ids.length;i+=400){const b=fs.batch();ids.slice(i,i+400).forEach(id=>b.update(ref('ledger/'+id),SOFT('imp'+Date.now())));await b.commit()}
         base=S.ledger.filter(e=>e.src!=='import');
         const keepNames=new Set(pick.map(x=>norm(x.name)));
-        for(const cid of cids){const c=S.companies.find(x=>x.id===cid);if(c&&!base.some(e=>e.cid===cid)&&!keepNames.has(norm(c.name))){await ref('companies/'+cid).delete();S.companies=S.companies.filter(x=>x.id!==cid)}}}
+        for(const cid of cids){const c=S.companies.find(x=>x.id===cid);if(c&&!base.some(e=>e.cid===cid)&&!keepNames.has(norm(c.name))){await ref('companies/'+cid).update(SOFT());S.companies=S.companies.filter(x=>x.id!==cid)}}}
       let added=0,skip=0;const made={};
       for(const x of pick){let c=S.companies.find(y=>norm(y.name)===norm(x.name)),cid=c?c.id:made[norm(x.name)];
         if(!cid){const cr=col('companies').doc();await cr.set({name:x.name,t:Date.now(),by:me()});cid=cr.id;made[norm(x.name)]=cid}
@@ -1440,8 +1502,8 @@ function moveSheet(c){
   r.addEventListener('change',e=>{if(!e.target.dataset.mv)return;const ch=l.filter(x=>r.querySelector(`[data-mv="${x.id}"]`).checked);sum.textContent=ch.length?`${ch.length} حركة متعلّم عليها — ${num(stats(ch).net)} ج`:'مفيش حاجة متعلّم عليها'});
 }
 function startAcc(){
-  col('companies').onSnapshot(snap=>{S.companies=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ar'));if(S.ready&&S.view==='acc')render()},e=>console.error(e));
-  col('ledger').onSnapshot(snap=>{S.ledger=snap.docs.map(d=>({id:d.id,...d.data()}));if(S.ready&&S.view==='acc')render()},e=>console.error(e));
+  col('companies').onSnapshot(snap=>{const all=snap.docs.map(d=>({id:d.id,...d.data()}));S.trash.companies=all.filter(x=>x.del);S.loaded.companies=1;S.companies=all.filter(x=>!x.del).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ar'));if(S.ready&&S.view==='acc')render()},e=>console.error(e));
+  col('ledger').onSnapshot(snap=>{const all=snap.docs.map(d=>({id:d.id,...d.data()}));S.trash.ledger=all.filter(x=>x.del);S.loaded.ledger=1;S.ledger=all.filter(x=>!x.del);if(S.ready&&S.view==='acc')render()},e=>console.error(e));
 }
 
 
@@ -1529,6 +1591,8 @@ $app.addEventListener('click',e=>{
   else if(act==='rep-acc')doReport(repAcc(),k);
   else if(act==='export')exportData();
   else if(act==='import')importData();
+  else if(act==='backups')backupsSheet();
+  else if(act==='trash')trashSheet();
   else if(act==='note-new')noteSheet();
   else if(act==='note-voice')voiceSheet('note');
   else if(act==='note-done')run(ref('notes/'+b.dataset.nid).update({done:true,doneBy:me(),doneT:Date.now()}),'اتعلّمت خلصت عند الكل');
@@ -1544,10 +1608,10 @@ $app.addEventListener('click',e=>{
   let lastErr='';
   const fail=e=>{console.error(e);lastErr=(e&&(e.code||e.message))||'';if(e&&e.code==='permission-denied'){S.error='Firebase رافض القراية — افتح Firestore ← Rules وخلّي المسار shops مسموح، ودوس Publish.';render()}};
   col('items').onSnapshot({includeMetadataChanges:true},snap=>{
-    S.offline=snap.metadata.fromCache;S.items=snap.docs.map(d=>({id:d.id,...d.data()}));
+    S.offline=snap.metadata.fromCache;const all=snap.docs.map(d=>({id:d.id,...d.data()}));S.items=all.filter(x=>!x.del);S.trash.items=all.filter(x=>x.del);S.loaded.items=1;
     if(!S.ready){S.ready=true;S.error=''}render();
   },fail);
-  col('sales').where('t','>=',winStart).orderBy('t','desc').onSnapshot(snap=>{S.sales=snap.docs.map(d=>({sid:d.id,...d.data()}));if(S.ready)render()},fail);
+  col('sales').where('t','>=',winStart).orderBy('t','desc').onSnapshot(snap=>{S.sales=snap.docs.map(d=>({sid:d.id,...d.data()})).filter(x=>!x.del);if(S.ready)render()},fail);
   col('alerts').orderBy('t','desc').limit(80).onSnapshot(snap=>{
     S.alerts=snap.docs.map(d=>({aid:d.id,...d.data()}));
     const fresh=S.alerts.filter(a=>!a.done&&a.t>seen&&a.dev!==DEV);
