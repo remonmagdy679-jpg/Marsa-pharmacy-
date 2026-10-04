@@ -1,5 +1,5 @@
 /* Dr. Corner — service worker: يخلّي الموقع تطبيق قابل للتثبيت ويفتح بسرعة */
-const CACHE='drcorner-v2';
+const CACHE='drcorner-v3';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
   for(const k of await caches.keys())if(k!==CACHE)await caches.delete(k);
@@ -10,7 +10,7 @@ self.addEventListener('fetch',e=>{
   const u=new URL(r.url);
   if(u.origin===location.origin){
     // الملفات بتاعتنا: من النت الأول (عشان التحديثات توصل)، ولو مفيش نت من الكاش
-    e.respondWith(fetch(r).then(res=>{if(res.ok){const cp=res.clone();caches.open(CACHE).then(c=>c.put(r,cp))}return res})
+    e.respondWith(fetch(r,{cache:'no-cache'}).then(res=>{if(res.ok){const cp=res.clone();caches.open(CACHE).then(c=>c.put(r,cp))}return res})
       .catch(()=>caches.match(r,{ignoreSearch:true})));
   }else if(/fonts\.googleapis\.com|fonts\.gstatic\.com|gstatic\.com\/firebasejs/.test(u.href)){
     e.respondWith(caches.match(r).then(m=>m||fetch(r).then(res=>{const cp=res.clone();caches.open(CACHE).then(c=>c.put(r,cp));return res})));
