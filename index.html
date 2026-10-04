@@ -297,6 +297,12 @@ a.btn.primary{color:#fff}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-3px;margin-inline-end:6px}
 @keyframes sp{to{transform:rotate(360deg)}}
 
+.cswitch{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;margin-bottom:4px;scrollbar-width:none}
+.cswitch .chip{flex:none;font-size:14px;padding:6px 12px}
+.cswitch .chip small{opacity:.75;font-size:11px;margin-inline-start:4px}
+.mvlist{max-height:40vh;overflow:auto;border:1px solid var(--line);border-radius:12px;margin-top:6px}
+.mvlist label.check{margin:0;padding:8px 10px;border-top:1px solid var(--line);font-size:14px}
+.mvlist label.check:first-child{border-top:0}
 #print{display:none}
 @media print{
   body>*:not(#print){display:none!important}
@@ -1167,12 +1173,13 @@ let oldData=null;
 function vAcc(){const c=S.acc&&S.companies.find(x=>x.id===S.acc);if(!c)return vAccList();
   const all=accList(c.id),list=all.filter(e=>matchQ([e.no,e.notes,KIND[e.kind].l,e.amount].join(' '))).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.t-a.t),st=stats(all);
   let h=`<div class="chead2"><button class="btn sm" data-act="acc-back">→ كل الشركات</button><h2>🏢 ${esc(c.name)}</h2><button class="icon" data-act="acc-menu" aria-label="إعدادات الشركة">⋯</button></div>
+  <div class="cswitch">${S.companies.map(x=>{const n=allStats(x.id).net;return `<button class="chip" data-act="acc-open" data-cid="${x.id}" aria-pressed="${x.id===c.id}">🏢 ${esc(x.name)} <small>${num(n)}</small></button>`}).join('')}<button class="chip" data-act="acc-newc">+ شركة</button></div>
   <div class="chips">${Object.entries(RANGES).map(([k,l])=>`<button class="chip" data-act="acc-range" data-k="${k}" aria-pressed="${S.accRange===k}">${l}</button>`).join('')}</div>
   <div class="stats"><div><small>عدد الفواتير</small><b>${st.n}</b></div><div><small>إجمالي الفواتير</small><b>${mon(st.inv)}</b></div><div><small>إجمالي المرتجعات</small><b>${mon(st.ret)}</b></div><div><small>المدفوع</small><b>${mon(st.pay)}</b></div>
   <div class="net ${st.net>0?'due':''}"><small>💰 الصافي المطلوب${S.accRange!=='all'?' ('+RANGES[S.accRange]+')':''}</small><b>${mon(st.net)}</b></div></div>
   <div class="toolbar"><button class="btn primary" data-act="acc-cam">📷 كاميرا</button><button class="btn" data-act="acc-gal">🖼️ من الجاليري</button><button class="btn" data-act="acc-add" data-k="inv">➕ فاتورة</button><button class="btn" data-act="acc-add" data-k="ret">↩️ مرتجع</button><button class="btn" data-act="acc-add" data-k="pay">💵 دفعة</button></div>
   ${all.length?`<div class="toolbar"><button class="btn" data-act="rep-acc" data-k="pdf">📄 PDF</button><button class="btn" data-act="rep-acc" data-k="copy">نسخ</button><button class="btn" data-act="rep-acc" data-k="wa">واتساب</button></div>`:''}`;
-  h+=list.length?`<p class="hint">📑 ${list.length} سجل — دوس على أي سطر للتعديل أو الحذف</p><div class="rows">${list.map(e=>`<div class="row slim"><span class="ti">${KIND[e.kind].i}</span><div class="kit"><button class="linkbtn" data-act="acc-edit" data-eid="${e.id}"><b>${KIND[e.kind].l}${e.no?' رقم '+esc(e.no):''}</b></button><div class="meta"><span>${e.date?fmtDay(e.date):'—'}</span>${e.notes?`<span>${esc(e.notes)}</span>`:''}${e.src==='scan'?'<span>📷</span>':''}</div></div><span class="amt ${KIND[e.kind].s<0?'minus':''}">${KIND[e.kind].s<0?'−':''}${num(e.amount)}</span></div>`).join('')}</div>`
+  h+=list.length?`<p class="hint">📑 ${list.length} سجل — دوس على أي سطر للتعديل أو الحذف</p><div class="rows">${list.map(e=>`<div class="row slim"><span class="ti">${KIND[e.kind].i}</span><div class="kit"><button class="linkbtn" data-act="acc-edit" data-eid="${e.id}"><b>${KIND[e.kind].l}${e.no?' رقم <bdi dir="ltr">'+esc(e.no)+'</bdi>':''}</b></button><div class="meta"><span>${e.date?fmtDay(e.date):'—'}</span>${e.notes?`<span>${esc(e.notes)}</span>`:''}${e.src==='scan'?'<span>📷</span>':''}</div></div><span class="amt ${KIND[e.kind].s<0?'minus':''}">${KIND[e.kind].s<0?'−':''}${num(e.amount)}</span></div>`).join('')}</div>`
     :`<div class="empty">🗂️ ${all.length?'مفيش نتايج':'لا توجد فواتير مسجلة بعد'}<br>صوّر الفاتورة بالكاميرا أو ضيفها يدوي</div>`;
   $app.innerHTML=h}
 function vAccList(){
@@ -1195,10 +1202,10 @@ function companySheet(c){
 }
 function accMenu(c){
   const n=S.ledger.filter(e=>e.cid===c.id).length;
-  openSheet(`<h4>🏢 ${esc(c.name)}</h4><div class="actions"><button class="btn" data-m="ren">تغيير الاسم</button></div>
+  openSheet(`<h4>🏢 ${esc(c.name)}</h4><div class="actions"><button class="btn" data-m="ren">تغيير الاسم</button><button class="btn" data-m="mv" ${n?'':'disabled'}>↔️ نقل حركات لشركة تانية</button></div>
   <div class="actions"><button class="btn danger" data-m="clr" ${n?'':'disabled'}>🗑️ مسح كل الحركات (${n})</button><button class="btn danger" data-m="del">حذف الشركة</button></div>
   <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
-  m=>{if(m==='ren')return companySheet(c);
+  m=>{if(m==='ren')return companySheet(c);if(m==='mv')return moveSheet(c);
     const what=m==='clr'?`مسح كل حركات «${esc(c.name)}» (${n})`:`حذف «${esc(c.name)}» وكل حركاتها (${n})`;
     openSheet(`<h4>⚠️ ${what}؟</h4><p class="hint" style="margin-top:0">هيتمسح من عند الكل ومفيش رجوع. اعمل PDF الأول لو محتاجه.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">أيوه امسح</button></div>`,
     async()=>{closeSheet();const ids=S.ledger.filter(e=>e.cid===c.id).map(e=>e.id);
@@ -1210,6 +1217,7 @@ function entrySheet(cid,kind,pre={},rec=null){
   const c=S.companies.find(x=>x.id===cid);let warned=false,k=rec?rec.kind:kind;
   const v=(f,d='')=>esc(rec?(rec[f]??d):(pre[f]??d));
   const r=openSheet(`<h4>${rec?'تعديل':'إضافة'} — ${esc(c?c.name:'')}</h4>${pre.scan?'<p class="heard">📷 اتقرت من الصورة — راجع الأرقام قبل الحفظ</p>':''}${pre.img?`<img class="scanimg sm" src="${pre.img}" alt="صورة الفاتورة">`:''}
+    ${S.companies.length>1?`<label for="eC">الشركة</label><select id="eC">${S.companies.map(x=>`<option value="${x.id}" ${x.id===cid?'selected':''}>🏢 ${esc(x.name)}</option>`).join('')}</select>`:''}
     <label>النوع</label><div class="seg">${Object.entries(KIND).map(([kk,x])=>`<button data-m="k:${kk}" aria-pressed="${kk===k}">${x.i} ${x.l}</button>`).join('')}</div>
     <div class="two"><div><label for="eNo">رقم الفاتورة / الأشعار</label><input id="eNo" value="${v('no')}"></div><div><label for="eDt">التاريخ</label><input id="eDt" type="date" value="${v('date',today())}"></div></div>
     <label for="eAm">المبلغ (جنيه)</label><input id="eAm" type="number" inputmode="decimal" step="0.01" value="${v('amount')}" placeholder="0.00">
@@ -1220,12 +1228,13 @@ function entrySheet(cid,kind,pre={},rec=null){
     if(m.startsWith('k:')){k=m.slice(2);root.querySelectorAll('[data-m^="k:"]').forEach(x=>x.setAttribute('aria-pressed',x===b));warned=false;return}
     if(m==='del'){openSheet(`<h4>تمسح ${KIND[rec.kind].l} ${esc(rec.no||'')} (${num(rec.amount)})؟</h4><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">امسح</button></div>`,()=>{closeSheet();const b2=fs.batch();b2.delete(ref('ledger/'+rec.id));evt(b2,'acc',c?c.name:'',num(rec.amount),'حذف '+KIND[rec.kind].l+' '+(rec.no||''));commit(b2,'اتمسح')});return}
     if(m!=='save')return;
+    const cSel=root.querySelector('#eC');if(cSel&&cSel.value!==cid){cid=cSel.value;warned=false}
     const no=root.querySelector('#eNo').value.trim(),date=root.querySelector('#eDt').value||today(),amount=Math.round(flt(root.querySelector('#eAm').value)*100)/100,notes=root.querySelector('#eNt').value.trim();
     if(!(amount>0)){toast('اكتب المبلغ');return}
     const dup=no&&S.ledger.find(e=>e.cid===cid&&e.kind===k&&norm(e.no||'')===norm(no)&&(!rec||e.id!==rec.id));
     if(dup&&!warned){warned=true;const w=root.querySelector('#eW');w.hidden=false;w.textContent=`⚠️ ${KIND[k].l} رقم ${no} متسجلة قبل كده (${fmtDay(dup.date)} — ${num(dup.amount)}). دوس حفظ تاني لو متأكد.`;return}
     closeSheet();const b2=fs.batch();
-    if(rec){b2.update(ref('ledger/'+rec.id),{kind:k,no,date,amount,notes});evt(b2,'acc',c?c.name:'',num(amount),'تعديل '+KIND[k].l+' '+no)}
+    if(rec){b2.update(ref('ledger/'+rec.id),{cid,kind:k,no,date,amount,notes});evt(b2,'acc',c?c.name:'',num(amount),'تعديل '+KIND[k].l+' '+no)}
     else{b2.set(col('ledger').doc(),{cid,kind:k,no,date,amount,notes,t:Date.now(),by:me(),src:pre.scan?'scan':'manual'});evt(b2,'acc',c?c.name:'',num(amount),KIND[k].l+' '+no)}
     commit(b2,rec?'اتعدل':`${KIND[k].l} اتسجلت — ${num(amount)} ج`)});
   return r}
@@ -1351,6 +1360,28 @@ function importSheet(){
       const b=fs.batch();evt(b,'acc','استيراد الفواتير القديمة',added,(purge?'بعد مسح الاستيراد القديم':'')+(skip?` — ${skip} مكرر`:''));await b.commit();
       toast(`اتستورد ${added} سجل في ${pick.length} شركة${skip?` (و${skip} مكرر اتجاهل)`:''}`);S.acc='';LS.set('drc.acc','');render();
     }catch(e){console.error(e);toast('حصلت مشكلة في الاستيراد — جرب تاني')}});
+}
+
+function moveSheet(c){
+  const l=S.ledger.filter(e=>e.cid===c.id).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.t-a.t),others=S.companies.filter(x=>x.id!==c.id);
+  openSheet(`<h4>↔️ نقل حركات من «${esc(c.name)}»</h4><p class="hint" style="margin-top:0">علّم على الحركات اللي تخص شركة تانية:</p>
+    <div class="mvlist">${l.map(e=>`<label class="check"><input type="checkbox" data-mv="${e.id}"> ${KIND[e.kind].i} ${KIND[e.kind].l}${e.no?' <bdi dir="ltr">'+esc(e.no)+'</bdi>':''} — ${e.date?fmtDay(e.date):'—'} — <b>${num(e.amount)}</b></label>`).join('')}</div>
+    <label for="mvTo">انقلهم لـ</label><select id="mvTo">${others.map(x=>`<option value="${x.id}">🏢 ${esc(x.name)}</option>`).join('')}<option value="__new">➕ شركة جديدة…</option></select>
+    <input id="mvNew" placeholder="اسم الشركة الجديدة (مثلاً: URP)" ${others.length?'hidden':''} style="margin-top:6px">
+    <p class="hint" id="mvSum">مفيش حاجة متعلّم عليها</p>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">↔️ انقل</button></div>`,
+  async(m,r)=>{if(m!=='ok')return;
+    const ids=[...r.querySelectorAll('[data-mv]:checked')].map(x=>x.dataset.mv);if(!ids.length){toast('علّم على حركة واحدة على الأقل');return}
+    let to=r.querySelector('#mvTo').value;
+    if(to==='__new'){const n=r.querySelector('#mvNew').value.trim();if(!n){toast('اكتب اسم الشركة الجديدة');return}
+      const ex=S.companies.find(x=>norm(x.name)===norm(n));if(ex)to=ex.id;else{const cr=col('companies').doc();await cr.set({name:n,t:Date.now(),by:me()});to=cr.id}}
+    closeSheet();const b=fs.batch();ids.forEach(id=>b.update(ref('ledger/'+id),{cid:to}));
+    const tn=(S.companies.find(x=>x.id===to)||{}).name||r.querySelector('#mvNew').value.trim();
+    evt(b,'acc',c.name,ids.length,'نقل حركات لـ '+tn);commit(b,`اتنقل ${ids.length} حركة لـ ${tn}`)});
+  const r=$modal.querySelector('.sheet'),sel=r.querySelector('#mvTo'),nw=r.querySelector('#mvNew'),sum=r.querySelector('#mvSum');
+  if(!others.length)sel.value='__new';
+  sel.addEventListener('change',()=>{nw.hidden=sel.value!=='__new';if(!nw.hidden)nw.focus()});
+  r.addEventListener('change',e=>{if(!e.target.dataset.mv)return;const ch=l.filter(x=>r.querySelector(`[data-mv="${x.id}"]`).checked);sum.textContent=ch.length?`${ch.length} حركة متعلّم عليها — ${num(stats(ch).net)} ج`:'مفيش حاجة متعلّم عليها'});
 }
 function startAcc(){
   col('companies').onSnapshot(snap=>{S.companies=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ar'));if(S.ready&&S.view==='acc')render()},e=>console.error(e));
