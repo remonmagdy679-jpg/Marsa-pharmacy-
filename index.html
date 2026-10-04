@@ -1667,6 +1667,25 @@ function accountSheet(){
   });
 }
 
+
+/* ---------- زرار الرجوع في أندرويد: يقفل اللي مفتوح بدل ما يخرج من التطبيق ---------- */
+let backGuard=false,lastBack=0;
+function pushGuard(){if(backGuard)return;try{history.pushState({drc:1},'');backGuard=true}catch(e){}}
+document.addEventListener('pointerdown',pushGuard,{capture:true,passive:true});
+addEventListener('popstate',()=>{
+  backGuard=false;let handled=true;
+  if(!$zoom.hidden)closeZoom();
+  else if($modal.innerHTML)closeSheet();
+  else if(!$('remind').hidden)$('remind').hidden=true;
+  else if(C.open)closeChat();
+  else if(!$login.hidden)handled=false;
+  else if(S.view==='acc'&&S.acc){S.acc='';LS.set('drc.acc','');render();scrollTo(0,0)}
+  else if(S.view!=='items')go('items');
+  else if(Date.now()-lastBack>2000){lastBack=Date.now();toast('دوس رجوع تاني عشان تخرج من التطبيق')}
+  else handled=false;
+  if(handled)pushGuard();else history.back();
+});
+
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
 $tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
