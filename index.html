@@ -376,6 +376,34 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 .group h3{font-size:12.5px;letter-spacing:.2px}
 .icon.clip{width:34px;height:34px;font-size:15px}
 
+/* ---------- simpler ---------- */
+.brand{padding:8px 14px 6px;gap:8px}
+.brand h1{font-size:16px;display:flex;align-items:center;gap:6px}
+.brand h1 small{font-size:11px}
+.bell{width:38px;height:38px;font-size:17px;border-radius:11px}
+.notesbtn{height:38px;padding:0 10px;font-size:13px;gap:4px}
+.notesbtn .ni{font-size:16px}
+.bell.wiggle{animation:wig .6s ease}
+.searchbar{flex-wrap:nowrap}
+.searchbar input{flex:1 1 auto;padding:9px 12px}
+.seg{flex:0 0 auto;min-height:38px}
+.seg button{padding:0 11px;font-size:13px}
+.addbtn{padding:10px 18px;font-weight:700}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.menu button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:start;border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:12px}
+.menu button span{font-size:24px}
+.menu button b{font-size:15px}
+.menu button small{font-size:11.5px;color:var(--muted)}
+.row{min-height:60px;padding:9px 12px}
+.kit b{font-size:14.5px}
+.meta{margin-top:2px}
+.ne{font-weight:600;direction:ltr;unicode-bidi:isolate}
+.ne small{color:var(--muted);font-weight:400}
+.ne.soon{color:var(--amber)} .ne.now{color:var(--red)}
+.group{margin-top:14px}
+.group h3{color:var(--muted);font-weight:600}
+.micfab{width:50px;height:50px;font-size:22px;opacity:.95}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -429,6 +457,7 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
   <div class="brand">
     <h1>Dr. Corner<small id="status">صيدلية وكوزماتكس</small></h1>
     <button class="notesbtn" id="notesBtn" aria-label="النوتس" hidden><span class="ni">📝</span><span class="nl">النوتس</span><span class="pill" id="notespill" hidden></span></button>
+    <button class="bell" id="chatBtn" aria-label="شات الفريق" hidden>💬<span class="pill" id="chatpill" hidden></span></button>
     <button class="bell" id="bell" aria-label="التنبيهات" hidden>🔔<span class="pill" id="bellpill" hidden></span></button>
   </div>
   <nav class="tabs" id="tabs"></nav>
@@ -465,7 +494,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '4-10 تبسيط';
+const APP_V = '4-10 تبسيط 2';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -536,9 +565,9 @@ function renderTop(){
   $tabs.innerHTML=show?tabs.map(([k,l,p])=>`<button data-tab="${k}" ${S.view===k?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TICON[k]}</svg><span>${l}</span>${p||''}</button>`).join(''):'';
   $sb.hidden=!show;
   $seg.hidden=['acc','log','notes'].includes(S.view);
-  $seg.innerHTML=[['all','الكل'],['med','💊 أدوية'],['cos','🧴 كوزماتكس']].map(([k,l])=>`<button data-type="${k}" aria-pressed="${S.type===k}">${l}</button>`).join('');
-  $st.className=S.offline?'off':'';$st.innerHTML=show?`<i></i>${S.offline?'مش متصل — هيتزامن لما النت يرجع':'متزامن مع الكل'}`:'صيدلية وكوزماتكس';
-  $bell.hidden=$('notesBtn').hidden=$mic.hidden=!show;$fab.hidden=!show||C.open;
+  $seg.innerHTML=[['all','الكل','الكل'],['med','💊','أدوية بس'],['cos','🧴','كوزماتكس بس']].map(([k,l,a])=>`<button data-type="${k}" aria-pressed="${S.type===k}" aria-label="${a}" title="${a}">${l}</button>`).join('');
+  $st.className=S.offline?'off':'';$st.innerHTML=show?`<i></i>${S.offline?'مش متصل':''}`:'';$st.title=S.offline?'مش متصل — هيتزامن لما النت يرجع':'متزامن مع الكل';
+  $bell.hidden=$('notesBtn').hidden=$mic.hidden=!show;$fab.hidden=true;$('chatBtn').hidden=!show;
   const on=S.notes.filter(n=>!n.done).length;$('notespill').hidden=!on;$('notespill').textContent=on;$('notesBtn').setAttribute('aria-pressed',S.view==='notes');
   const oa=openAlerts();$bp.hidden=!oa.length;$bp.textContent=oa.length;
   $ab.hidden=!show||!oa.length;
@@ -555,7 +584,7 @@ function render(){
 /* ---------- views ---------- */
 function rowItem(p){
   const q=good(p),sh=isShort(p),dq=deadQ(p);
-  return `<div class="row ${q===0?'out':sh?'low':''}">${ico(p)}<div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta">${p.price?`<span>${money(p.price)}</span>`:''}${dq?`<span class="rd">+${dq} منتهي</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.ordered?'<span class="ok">✓ اتطلب</span>':''}</div>${tags(p)}</div><div class="step"><span class="qty ${q===0?'zero':sh?'lowq':''}">${q}</span><button class="sell" data-act="sell" data-id="${p.id}">بيع</button></div></div>`;
+  return `<div class="row ${q===0?'out':sh?'low':''}">${ico(p)}<div class="kit"><button class="linkbtn" data-act="open" data-id="${p.id}"><b>${esc(p.name)}</b></button><div class="meta">${nearExp(p)}${q===0?'<span class="rd">خلصان</span>':''}${dq?`<span class="rd">+${dq} منتهي</span>`:''}${p.ordered?'<span class="ok">✓ اتطلب</span>':''}</div></div><div class="step"><span class="qty ${q===0?'zero':sh?'lowq':''}">${q}</span><button class="sell" data-act="sell" data-id="${p.id}">بيع</button></div></div>`;
 }
 function grouped(list,keyFn,rowFn){
   const g={};list.forEach(p=>{const k=keyFn(p);(g[k]=g[k]||[]).push(p)});
@@ -563,8 +592,8 @@ function grouped(list,keyFn,rowFn){
 }
 function vItems(){
   const list=S.items.filter(mItem).sort(byName);
-  let h=`<div class="toolbar"><button class="btn primary" data-act="add">+ صنف جديد</button><button class="btn" data-act="restock">📦 استلام</button><button class="btn" data-act="bulk">📋 بالجملة</button></div>`;
-  if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>ابدأ بـ «صنف جديد»، أو «إضافة بالجملة» لو عندك لستة جاهزة من إكسل.</div>`;
+  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button></div>`;
+  if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>دوس «＋ إضافة» وابدأ.</div>`;
   else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
   else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
   else h+=grouped(list,p=>p.grp||TYPES[tOf(p)].name,rowItem);
@@ -1001,7 +1030,7 @@ const av=n=>`<span class="av" style="background:${avColor(n)}">${esc(String(n||'
 const onlyEmoji=t=>t.length<=12&&/^(\p{Extended_Pictographic}|\p{Emoji_Component}|\u200d|\ufe0f|\s)+$/u.test(t)&&!/^[\d#*\s]+$/.test(t);
 const chatDay=k=>k===today()?'النهارده':k===dayKey(new Date(Date.now()-864e5))?'امبارح':`${dayName(k)} ${fmtDay(k)}`;
 function unread(){return C.msgs.filter(m=>m.t>C.seen&&m.dev!==DEV).length}
-function renderFab(){const n=unread();$fp.hidden=!n||C.open;$fp.textContent=n>99?'99+':n}
+function renderFab(){const n=unread(),cp=$('chatpill');$fp.hidden=!n||C.open;$fp.textContent=n>99?'99+':n;cp.hidden=!n;cp.textContent=n>99?'99+':n}
 function renderChatHead(){
   const now=Date.now(),on=C.pres.filter(p=>p.t>now-100000&&p.name),others=on.filter(p=>p.id!==DEV);
   const typing=C.pres.filter(p=>p.id!==DEV&&p.typing>now-5000&&p.name).map(p=>p.name);
@@ -1033,10 +1062,10 @@ function renderChat(){
 function markSeen(){if(!C.open||document.hidden)return;const mx=Math.max(C.seen,...C.msgs.map(m=>m.t));if(mx!==C.seen){C.seen=mx;LS.set('drc.chatSeen',mx)}renderFab()}
 function openChat(){
   if(!S.me){askName(false,openChat);return}
-  C.open=true;C.jump=true;$chat.hidden=false;$fab.hidden=true;document.body.style.overflow='hidden';$cQ();fitChat();renderChat();heartbeat();
+  C.open=true;C.jump=true;$chat.hidden=false;document.body.style.overflow='hidden';$cQ();fitChat();renderChat();heartbeat();
   if(matchMedia('(min-width:700px)').matches)setTimeout(()=>$cIn.focus(),50);
 }
-function closeChat(){C.open=false;$chat.hidden=true;$fab.hidden=false;document.body.style.overflow='';renderFab()}
+function closeChat(){C.open=false;$chat.hidden=true;document.body.style.overflow='';renderFab()}
 function $cQ(){$('cQuick').innerHTML=QUICK.map(q=>`<button data-q="${esc(q)}">${esc(q)}</button>`).join('')}
 function sendMsg(text){
   text=String(text||'').trim();if(!text)return;if(!S.me){askName(false,()=>sendMsg(text));return}
@@ -1056,7 +1085,7 @@ function chirp(){try{if(!actx)return;const o=actx.createOscillator(),g=actx.crea
 function onNewMsgs(list){
   if(C.open&&!document.hidden)return;
   chirp();try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}
-  $fab.classList.remove('wiggle');void $fab.offsetWidth;$fab.classList.add('wiggle');
+  const cb=$('chatBtn');cb.classList.remove('wiggle');void cb.offsetWidth;cb.classList.add('wiggle');
   if(!C.open){const m=list[list.length-1];toast(`💬 ${m.by}: ${String(m.text).slice(0,60)}`)}
   if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){const m=list[list.length-1];try{sysNote('💬 '+m.by,{body:m.text,tag:'drc-chat'})}catch(e){}}
 }
@@ -1064,7 +1093,7 @@ let lastHB=0,lastTyping=0;
 function heartbeat(){if(!fs||!S.me)return;lastHB=Date.now();ref('presence/'+DEV).set({name:S.me,t:Date.now()},{merge:true}).catch(()=>{})}
 function fitChat(){const vv=window.visualViewport;if(!vv||!C.open||matchMedia('(min-width:700px)').matches){$chat.style.height='';$chat.style.top='';return}$chat.style.height=vv.height+'px';$chat.style.top=vv.offsetTop+'px'}
 addEventListener('resize',fitChat);if(window.visualViewport){visualViewport.addEventListener('resize',fitChat);visualViewport.addEventListener('scroll',fitChat)}
-$fab.addEventListener('click',openChat);
+$fab.addEventListener('click',openChat);$('chatBtn').addEventListener('click',openChat);
 $('cClose').addEventListener('click',closeChat);
 $('cSend').addEventListener('click',()=>{sendMsg($cIn.value);$cIn.value='';$cIn.style.height='';$cIn.focus()});
 $cIn.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('cSend').click()}});
@@ -1787,6 +1816,18 @@ addEventListener('popstate',()=>{
   if(!handled)history.back();
 });
 
+
+function addMenu(){
+  openSheet(`<h4>＋ إضافة</h4><div class="menu">
+    <button data-m="add"><span>🆕</span><b>صنف جديد</b><small>اسم، صورة، كمية وتاريخ</small></button>
+    <button data-m="in"><span>📦</span><b>استلام بضاعة</b><small>زوّد كمية صنف موجود</small></button>
+    <button data-m="bulk"><span>📋</span><b>إضافة بالجملة</b><small>لستة من إكسل أو مكتوبة</small></button>
+    <button data-m="voice"><span>🎙️</span><b>بالصوت</b><small>قول اللي عايزه</small></button></div>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,
+  m=>{if(m==='add')itemForm(null);else if(m==='in')restockSheet(null);else if(m==='bulk')bulkSheet();else if(m==='voice'){closeSheet();voiceSheet()}});
+}
+function nearExp(p){const bl=bats(p).filter(([k])=>k!=='x'&&expCls(k)!=='dead');if(!bl.length)return '';const [k]=bl[0],c=expCls(k);return `<span class="ne ${c}">⏳ ${bkShort(k)}${bl.length>1?` <small>+${bl.length-1}</small>`:''}</span>`}
+
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
 $tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
@@ -1803,6 +1844,7 @@ $app.addEventListener('click',e=>{
   else if(act==='open'&&p)itemSheet(p);
   else if(act==='sell'&&p)sellSheet(p);
   else if(act==='add')itemForm(null);
+  else if(act==='addmenu')addMenu();
   else if(act==='restock')restockSheet(p||null);
   else if(act==='bulk')bulkSheet();
   else if(act==='ordered'&&p)toggleOrdered(p);
