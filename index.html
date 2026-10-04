@@ -1177,11 +1177,11 @@ function vAcc(){const c=S.acc&&S.companies.find(x=>x.id===S.acc);if(!c)return vA
   $app.innerHTML=h}
 function vAccList(){
   if(oldData===null)oldData=findOldData();
-  const oldN=pendingOld().reduce((a,g)=>a+g.l.length,0);
+  const oldN=oldData.reduce((a,g)=>a+(g.dup?0:g.l.length),0);
   const list=S.companies.filter(c=>matchQ(c.name)).map(c=>({c,st:allStats(c.id)})).sort((a,b)=>b.st.net-a.st.net||a.c.name.localeCompare(b.c.name,'ar'));
   const tot=S.companies.reduce((a,c)=>a+allStats(c.id).net,0);
   let h=`<div class="summary"><strong style="color:${tot>0?'var(--red)':'var(--green)'}">${mon(tot)}</strong><span>إجمالي المطلوب لكل الشركات</span></div>
-  <div class="toolbar"><button class="btn primary" data-act="acc-newc">+ شركة جديدة</button>${oldN?`<button class="btn" data-act="acc-import">📥 استيراد ${oldN} سجل من صفحة الفواتير القديمة</button>`:''}<button class="btn" data-act="acc-key">🔑 مفتاح المسح الضوئي</button></div>`;
+  <div class="toolbar"><button class="btn primary" data-act="acc-newc">+ شركة جديدة</button>${oldN?`<button class="btn" data-act="acc-import">📥 استيراد / تصحيح الفواتير القديمة</button>`:''}<button class="btn" data-act="acc-key">🔑 مفتاح المسح الضوئي</button></div>`;
   h+=list.length?`<div class="ccards">${list.map(({c,st})=>`<button class="ccard" data-act="acc-open" data-cid="${c.id}"><b>🏢 ${esc(c.name)}</b><small>${st.n} فاتورة${st.last?' — آخر حركة '+fmtDay(st.last):''}</small><strong class="${st.net>0?'':'zero'}">${mon(st.net)}</strong></button>`).join('')}</div>`
     :`<div class="empty">${S.companies.length?'مفيش شركة بالاسم ده':'كل شركة ليها سجل فواتير ومرتجعات منفصل.<br>ابدأ بـ «شركة جديدة» (مثلاً: المحبة).'}</div>`;
   $app.innerHTML=h}
@@ -1274,36 +1274,83 @@ function repAcc(){const c=S.companies.find(x=>x.id===S.acc);const l=accList(c.id
   return {title:'حساب '+c.name,sub:`${RANGES[S.accRange]} — عدد الفواتير ${st.n} — الصافي المطلوب ${mon(st.net)}`,text:t.trim(),
     head:['التاريخ','النوع','الرقم','ملاحظات','فاتورة','مرتجع / دفعة','الرصيد'],rows,foot:['','','','الإجمالي',num(st.inv),num(st.ret+st.pay),num(st.net)]}}
 /* استيراد من صفحة الفواتير القديمة (نفس الموقع github.io — بيقرا من نفس المتصفح) */
-function findOldData(){const found={},GEN=new Set(['invoices','records','items','data','list','entries','bills','history','rows','returns','transactions']);
-  const isRec=o=>o&&typeof o==='object'&&!Array.isArray(o)&&Object.keys(o).some(k=>/amount|total|value|مبلغ/i.test(k));
-  const walk=(v,name,depth)=>{if(depth>6||!v||typeof v!=='object')return;
-    if(Array.isArray(v)){const recs=v.filter(isRec);if(recs.length&&recs.length>=v.length*.6){(found[name]=found[name]||[]).push(...recs);return}v.forEach(x=>walk(x,(x&&typeof x==='object'&&(x.name||x.company||x.title))||name,depth+1));return}
-    const nm=(typeof v.name==='string'&&v.name)||(typeof v.company==='string'&&v.company)||name;
-    for(const k in v){const ch=v[k];if(!ch||typeof ch!=='object')continue;walk(ch,Array.isArray(ch)&&!GEN.has(k)&&!/^[\w-]{16,}$/.test(k)&&!/^\d+$/.test(k)?k:nm,depth+1)}};
-  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^drc\.|firestore|firebase/i.test(k))continue;let v;try{v=JSON.parse(localStorage.getItem(k))}catch(e){continue}walk(v,'المحبة',0)}}catch(e){}
-  return found}
-function oldRec(o){const pick=re=>{for(const k in o)if(re.test(k)&&o[k]!=null&&o[k]!=='')return o[k]};
-  const typ=String(pick(/^(type|kind|نوع)/i)||'');
-  return {kind:/ret|credit|return|مرتجع|اشعار|أشعار/i.test(typ)?'ret':/pay|سداد|دفع/i.test(typ)?'pay':'inv',
-    no:String(pick(/^(no|num|number|invoice_?no|invoiceNumber|inv_?no|رقم)/i)??pick(/num|number|no$/i)??''),
-    date:normDate(pick(/date|تاريخ/i))||today(),amount:Math.round(amt(pick(/amount|total|value|مبلغ/i))*100)/100,notes:String(pick(/note|ملاحظ/i)||'')}}
-function pendingOld(){return Object.entries(oldData||{}).map(([n,l])=>{const c=S.companies.find(x=>norm(x.name)===norm(n));
-    return {n,l:l.map(oldRec).filter(r=>r.amount>0&&!(c&&S.ledger.some(e=>e.cid===c.id&&e.kind===r.kind&&String(e.no)===r.no&&+e.amount===r.amount&&e.date===r.date)))}}).filter(g=>g.l.length)}
+const GENK=/^(invoices?|records?|items?|data|list|entries|bills?|history|rows?|returns?|transactions?|docs?|state|store|app|all|db)$/i;
+const COMPF=/^(company|companyid|company_id|cid|companyname|company_name|comp|supplier|supplierid|supplier_id|الشركة|شركة)$/i;
+const IDF=/^(id|_id|key|uid|cid|companyid|company_id)$/i,NAMEF=/^(name|title|companyname|company_name|label|اسم|الاسم)$/i;
+function lsJSON(){const out=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^drc\.|firestore|firebase|^_/i.test(k))continue;const raw=localStorage.getItem(k)||'';if(/sk-ant-/.test(raw))continue;let v;try{v=JSON.parse(raw)}catch(e){continue}if(v&&typeof v==='object')out.push([k,v])}}catch(e){}return out}
+const hasArrOfObj=o=>Object.values(o).some(x=>Array.isArray(x)&&x.length&&x[0]&&typeof x[0]==='object');
+const isRec=o=>o&&typeof o==='object'&&!Array.isArray(o)&&!hasArrOfObj(o)&&Object.keys(o).some(k=>/amount|total|value|مبلغ|net|price/i.test(k)&&o[k]!=null&&o[k]!==''&&typeof o[k]!=='object'&&!isNaN(amt(o[k])));
+const strF=(o,re)=>{for(const k in o)if(re.test(k)&&(typeof o[k]==='string'||typeof o[k]==='number')&&String(o[k]).trim())return String(o[k]).trim();return ''};
+function findOldData(){
+  const L=lsJSON(),dir={},sets=[];
+  const scanDir=(v,d)=>{if(d>6||!v||typeof v!=='object')return;
+    if(Array.isArray(v)){v.forEach(x=>scanDir(x,d+1));return}
+    if(!isRec(v)){const id=strF(v,IDF),nm=strF(v,NAMEF);if(id&&nm)dir[id]=nm}
+    for(const k in v){const c=v[k];if(c&&typeof c==='object'&&!Array.isArray(c)&&!isRec(c)){const nm=strF(c,NAMEF);if(nm&&!dir[k])dir[k]=nm}scanDir(c,d+1)}};
+  L.forEach(([,v])=>scanDir(v,0));
+  const walk=(v,path,nm,id,d)=>{if(d>7||!v||typeof v!=='object')return;
+    if(Array.isArray(v)){const recs=v.filter(isRec);if(recs.length&&recs.length>=v.length*.6){sets.push({path,nm,id,recs});return}
+      v.forEach((x,i)=>{if(x&&typeof x==='object'&&!Array.isArray(x))walk(x,path+'['+i+']',strF(x,NAMEF)||nm,strF(x,IDF)||id,d+1);else walk(x,path+'['+i+']',nm,id,d+1)});return}
+    const n2=strF(v,NAMEF)||nm,i2=strF(v,IDF)||id;
+    for(const k in v){const c=v[k];if(!c||typeof c!=='object')continue;
+      let cn=n2,ci=i2;if(dir[k]){cn=dir[k];ci=k}else if(Array.isArray(c)&&!GENK.test(k)&&!/^[\w-]{14,}$/.test(k)&&!/^\d+$/.test(k)&&!/invoice|record|item|data|list|return|bill/i.test(k))cn=k;
+      walk(c,path+'.'+k,cn,ci,d+1)}};
+  L.forEach(([k,v])=>walk(v,k,'','',0));
+  const keyName=key=>{const lk=key.toLowerCase();for(const id in dir)if(id.length>1&&lk.includes(String(id).toLowerCase()))return dir[id];for(const id in dir)if(lk.includes(dir[id].toLowerCase()))return dir[id];
+    const rest=key.split('.')[0].replace(/invoices?|records?|data|list|items?|bills?|returns?|mahabba|al-?mahabba|tracker|app|storage|store|v\d+|[_\-.:\d]+/gi,' ').trim();return rest.length>=2?rest:''};
+  const groups=[];
+  sets.forEach(st=>{const cf=Object.keys(st.recs[0]).find(k=>COMPF.test(k));
+    if(cf){const by={};st.recs.forEach(r=>{const v=String(r[cf]??'');(by[v]=by[v]||[]).push(r)});Object.entries(by).forEach(([v,rs])=>groups.push({src:st.path,name:dir[v]||v||st.nm||keyName(st.path)||'المحبة',recs:rs}))}
+    else groups.push({src:st.path,name:st.nm||(st.id&&dir[st.id])||keyName(st.path)||'المحبة',recs:st.recs})});
+  const seen=new Set();
+  return groups.map(g=>{const l=g.recs.map(oldRec).filter(r=>r.amount>0);const sig=l.map(r=>[r.kind,r.no,r.amount,r.date].join('|')).sort().join('#');const dup=seen.has(sig);seen.add(sig);return {...g,l,dup}}).filter(g=>g.l.length)}
+function oldRec(o){
+  const pick=(...res)=>{for(const re of res)for(const k in o)if(re.test(k)&&o[k]!=null&&o[k]!==''&&typeof o[k]!=='object')return o[k]};
+  let a=amt(pick(/^(amount|net|netamount|net_amount|المبلغ|مبلغ|الصافي)$/i,/^(total|value|grandtotal|grand_total|total_amount|totalamount)$/i,/amount|مبلغ/i,/total|value|net|price/i));
+  const typ=String(pick(/^(type|kind|doctype|doc_type|نوع|النوع)$/i,/type|kind|نوع/i)??'');
+  let kind=/ret|credit|return|مرتجع|اشعار|أشعار|إشعار/i.test(typ)?'ret':/pay|سداد|دفع/i.test(typ)?'pay':'inv';
+  if(Object.keys(o).some(k=>/return|مرتجع|credit/i.test(k)&&o[k]===true))kind='ret';
+  if(a<0){a=-a;if(kind==='inv')kind='ret'}
+  return {kind,no:String(pick(/^(no|num|number|invoice_?no|invoicenumber|inv_?no|docno|doc_no|رقم|الرقم)$/i,/num|number|رقم/i,/no$/i)??''),
+    date:normDate(pick(/^(date|التاريخ|تاريخ)$/i,/date|تاريخ/i))||today(),amount:Math.round(a*100)/100,notes:String(pick(/note|ملاحظ/i)??'')}}
+function oldDebug(){const L=lsJSON();return L.map(([k,v])=>{const s=JSON.stringify(v);return `${k} (${s.length} حرف):\n${s.slice(0,700)}`}).join('\n\n')||'مفيش بيانات'}
 function importSheet(){
-  const groups=pendingOld();
-  if(!groups.length){toast('مفيش بيانات قديمة على المتصفح ده');return}
-  openSheet(`<h4>📥 استيراد الفواتير القديمة</h4><p class="hint" style="margin-top:0">لقيت على المتصفح ده:</p><div class="rows">${groups.map(g=>{const st=stats(g.l);return `<div class="row slim"><div class="kit"><b>🏢 ${esc(g.n)}</b><div class="meta"><span>${g.l.length} سجل</span><span>الصافي ${mon(st.net)}</span></div></div></div>`}).join('')}</div>
-  <p class="hint">هيتضافوا للحسابات المشتركة وهيظهروا عند الكل. لو الشركة موجودة بنفس الاسم هيتضافوا عليها، والسجلات المكررة بتتجاهل.</p>
-  <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">📥 استورد</button></div>`,
-  async()=>{closeSheet();let added=0,skip=0;try{
-    for(const g of groups){let c=S.companies.find(x=>norm(x.name)===norm(g.n)),cid=c&&c.id;
-      if(!cid){const cr=col('companies').doc();await cr.set({name:g.n,t:Date.now(),by:me()});cid=cr.id}
-      let b=fs.batch(),n=0;
-      for(const r of g.l){if(S.ledger.some(e=>e.cid===cid&&e.kind===r.kind&&String(e.no)===r.no&&+e.amount===r.amount&&e.date===r.date)){skip++;continue}
-        b.set(col('ledger').doc(),{cid,...r,t:Date.now(),by:me(),src:'import'});n++;added++;if(n>=400){await b.commit();b=fs.batch();n=0}}
-      if(n)await b.commit()}
-    const b=fs.batch();evt(b,'acc','استيراد الفواتير القديمة',added,skip?`${skip} مكرر`:'');await b.commit();
-    toast(`اتستورد ${added} سجل${skip?` (و${skip} مكرر اتجاهل)`:''}`)}catch(e){console.error(e);toast('حصلت مشكلة في الاستيراد — جرب تاني')}});
+  oldData=findOldData();const groups=oldData;
+  const prevImp=S.ledger.filter(e=>e.src==='import');
+  if(!groups.length){openSheet(`<h4>📥 الفواتير القديمة</h4><p class="hint">مش لاقي فواتير قديمة على المتصفح ده. افتح التطبيق من نفس المتصفح اللي كنت بتفتح فيه صفحة المحبة.</p><div class="actions"><button class="btn" data-cancel>قفل</button><button class="btn" data-m="dbg">📋 نسخ تفاصيل التخزين</button></div>`,async m=>{if(m==='dbg')textSheet('تفاصيل التخزين القديم',oldDebug())});return}
+  const names=[...new Set([...S.companies.map(c=>c.name),...groups.map(g=>g.name)])];
+  openSheet(`<h4>📥 استيراد الفواتير القديمة</h4><p class="hint" style="margin-top:0">قارن الأرقام دي بالصفحة القديمة، وصحّح اسم الشركة لكل مجموعة لو غلط، وشيل علامة ✓ من أي مجموعة مش عايزها.</p>
+    <datalist id="cnames">${names.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+    ${groups.map((g,i)=>{const st=stats(g.l);return `<div class="astep"><label class="check" style="margin:0"><input type="checkbox" data-g="${i}" ${g.dup?'':'checked'}> <b>مجموعة ${i+1}${g.dup?' — ⚠️ نسخة مكررة من مجموعة قبلها':''}</b></label>
+      <label for="gN${i}">اسم الشركة</label><input id="gN${i}" list="cnames" value="${esc(g.name)}">
+      <div class="meta" style="margin-top:6px"><span>🧾 ${st.n} فاتورة = ${mon(st.inv)}</span><span>↩️ مرتجعات ${mon(st.ret)}</span>${st.pay?`<span>💵 ${mon(st.pay)}</span>`:''}<span><b>الصافي ${mon(st.net)}</b></span></div><div class="meta"><span class="ltr">${esc(g.src)}</span></div></div>`}).join('')}
+    ${prevImp.length?`<label class="check" style="margin-top:12px"><input type="checkbox" id="gPurge" checked> 🧹 امسح الاستيراد القديم الغلط الأول (${prevImp.length} سجل)</label>`:''}
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="dbg">📋 تفاصيل للمطور</button><button class="btn primary" data-m="ok">📥 استورد</button></div>`,
+  async(m,r)=>{
+    if(m==='dbg')return textSheet('تفاصيل التخزين القديم',oldDebug());
+    if(m!=='ok')return;
+    const pick=groups.map((g,i)=>({g,on:r.querySelector(`[data-g="${i}"]`).checked,name:r.querySelector('#gN'+i).value.trim()})).filter(x=>x.on);
+    if(pick.some(x=>!x.name)){toast('اكتب اسم الشركة لكل مجموعة');return}
+    const purge=!!(r.querySelector('#gPurge')&&r.querySelector('#gPurge').checked);
+    if(!pick.length&&!purge){closeSheet();return}
+    closeSheet();toast('جاري الاستيراد…');
+    try{
+      let base=S.ledger;
+      if(purge){const ids=prevImp.map(e=>e.id),cids=new Set(prevImp.map(e=>e.cid));
+        for(let i=0;i<ids.length;i+=400){const b=fs.batch();ids.slice(i,i+400).forEach(id=>b.delete(ref('ledger/'+id)));await b.commit()}
+        base=S.ledger.filter(e=>e.src!=='import');
+        const keepNames=new Set(pick.map(x=>norm(x.name)));
+        for(const cid of cids){const c=S.companies.find(x=>x.id===cid);if(c&&!base.some(e=>e.cid===cid)&&!keepNames.has(norm(c.name))){await ref('companies/'+cid).delete();S.companies=S.companies.filter(x=>x.id!==cid)}}}
+      let added=0,skip=0;const made={};
+      for(const x of pick){let c=S.companies.find(y=>norm(y.name)===norm(x.name)),cid=c?c.id:made[norm(x.name)];
+        if(!cid){const cr=col('companies').doc();await cr.set({name:x.name,t:Date.now(),by:me()});cid=cr.id;made[norm(x.name)]=cid}
+        let b=fs.batch(),n=0;
+        for(const rr of x.g.l){if(base.some(e=>e.cid===cid&&e.kind===rr.kind&&String(e.no)===rr.no&&+e.amount===rr.amount&&e.date===rr.date)){skip++;continue}
+          b.set(col('ledger').doc(),{cid,...rr,t:Date.now(),by:me(),src:'import'});n++;added++;if(n>=400){await b.commit();b=fs.batch();n=0}}
+        if(n)await b.commit()}
+      const b=fs.batch();evt(b,'acc','استيراد الفواتير القديمة',added,(purge?'بعد مسح الاستيراد القديم':'')+(skip?` — ${skip} مكرر`:''));await b.commit();
+      toast(`اتستورد ${added} سجل في ${pick.length} شركة${skip?` (و${skip} مكرر اتجاهل)`:''}`);S.acc='';LS.set('drc.acc','');render();
+    }catch(e){console.error(e);toast('حصلت مشكلة في الاستيراد — جرب تاني')}});
 }
 function startAcc(){
   col('companies').onSnapshot(snap=>{S.companies=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ar'));if(S.ready&&S.view==='acc')render()},e=>console.error(e));
