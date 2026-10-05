@@ -427,6 +427,9 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 .stock b{font-size:24px;font-weight:800}
 .stock b.lw{color:var(--amber)} .stock b.rd{color:var(--red)}
 .stock em{font-style:normal;font-size:12px;color:var(--red);margin-inline-start:6px}
+.stock .sx b{font-size:19px;direction:ltr;unicode-bidi:isolate;display:block}
+.stock .sx em{display:block;margin:0;color:var(--muted);font-size:11.5px}
+.stock div{min-width:0}
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -518,7 +521,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '4-10 إجمالي';
+const APP_V = '4-10 إكسباير البيع';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -795,7 +798,7 @@ function sellSheet(p,o={}){
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const tot=good(p),dq=deadQ(p);
   const r=openSheet(`<h4 class="withimg">${p.img?`<img src="${p.img}" alt="">`:''}بيع — ${esc(p.name)}</h4>
-    <div class="stock"><div><small>عندك إجمالي</small><b>${tot}</b>${dq?`<em>+${dq} منتهي</em>`:''}</div><div><small>هيفضل بعد البيع</small><b id="fLeft">${Math.max(0,tot-1)}</b></div></div>
+    <div class="stock"><div><small>عندك إجمالي</small><b>${tot}</b>${dq?`<em>+${dq} منتهي</em>`:''}</div><div><small>هيفضل بعد البيع</small><b id="fLeft">${Math.max(0,tot-1)}</b></div><div class="sx"><small>إكسباير عليه الدور</small><b id="fExp"></b><em id="fExpN"></em></div></div>
     ${bl.length>1?`<label>هيتخصم من أنهي تاريخ الأول؟</label><div class="chips">${bl.map(([k,v])=>`<button class="bt ${expCls(k)} ${k===def?'sel':''}" data-m="pk:${k}" data-n="${v}"><i>${bkShort(k)}</i></button>`).join('')}</div>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
     <label for="fN">العدد</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fN" type="number" inputmode="numeric" value="1" min="1"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
@@ -804,9 +807,13 @@ function sellSheet(p,o={}){
   (m,root,b)=>{const n=root.querySelector('#fN');
     if(m==='okn'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);setTimeout(scanSell,350);return}
     if(m==='inc'){n.value=int(n.value)+1;updLeft()}else if(m==='dec'){n.value=Math.max(1,int(n.value)-1);updLeft()}
-    else if(m.startsWith('pk:')){start=m.slice(3);root.querySelectorAll('button.bt').forEach(x=>x.classList.toggle('sel',x===b));root.querySelector('#dw').hidden=expCls(start)!=='dead'}
+    else if(m.startsWith('pk:')){start=m.slice(3);root.querySelectorAll('button.bt').forEach(x=>x.classList.toggle('sel',x===b));root.querySelector('#dw').hidden=expCls(start)!=='dead';updLeft()}
     else if(m==='ok'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);return}});
-  function updLeft(){const q=int(r.querySelector('#fN').value),left=tot-q,el=r.querySelector('#fLeft');el.textContent=Math.max(0,left);el.className=left<0?'rd':left<=minOf(p)?'lw':''}
+  function updLeft(){const q=int(r.querySelector('#fN').value),left=tot-q,el=r.querySelector('#fLeft');el.textContent=Math.max(0,left);el.className=left<0?'rd':left<=minOf(p)?'lw':'';
+    const ex=r.querySelector('#fExp'),en=r.querySelector('#fExpN');
+    if(!start){ex.textContent='—';ex.className='';en.textContent='';return}
+    const have=(p.b||{})[start]||0,c=expCls(start);ex.textContent=start==='x'?'بدون تاريخ':bkLabel(start);ex.className=c==='dead'||c==='now'?'rd':c==='soon'?'lw':'';
+    const next=bats(p).map(x=>x[0]).filter(k=>k!==start);en.textContent=`فيه ${have} قطعة`+(q>have&&next.length?` — والباقي من ${bkLabel(next[0])}`:'')}
   r.querySelector('#fN').addEventListener('input',updLeft);updLeft();
 }
 function restockSheet(p,pre={}){
