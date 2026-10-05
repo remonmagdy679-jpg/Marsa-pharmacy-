@@ -430,6 +430,19 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 .stock .sx b{font-size:19px;direction:ltr;unicode-bidi:isolate;display:block}
 .stock .sx em{display:block;margin:0;color:var(--muted);font-size:11.5px}
 .stock div{min-width:0}
+.stock .sx{cursor:pointer;position:relative}
+.stock .sx.on{border-color:var(--green);box-shadow:0 0 0 2px var(--green-soft)}
+.stock .sx .more{display:block;margin-top:3px;font-size:11.5px;font-weight:700;color:var(--green)}
+.bxl{border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:8px;margin:-2px 0 10px}
+.bxl p{margin:2px 4px 6px;font-size:12.5px;color:var(--muted)}
+.bxr{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 12px;margin-top:6px;text-align:start}
+.bxr .d{font-weight:800;font-size:16px;direction:ltr;unicode-bidi:isolate;min-width:76px}
+.bxr .d.soon{color:var(--amber)} .bxr .d.now,.bxr .d.dead{color:var(--red)} .bxr .d.dead{text-decoration:line-through}
+.bxr .n{flex:1;font-weight:600}
+.bxr .st{font-size:12px} .bxr .st.soon{color:var(--amber)} .bxr .st.now,.bxr .st.dead{color:var(--red)}
+.bxr .ck{visibility:hidden;color:var(--green);font-weight:800}
+.bxr.sel{border-color:var(--green);background:var(--green-soft)} .bxr.sel .ck{visibility:visible}
+.icon.edt{width:36px;height:36px;font-size:15px;margin-inline-start:auto}
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -521,7 +534,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '4-10 إكسباير البيع';
+const APP_V = '4-10 تواريخ البيع';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -797,23 +810,27 @@ function itemSheet(p){
 function sellSheet(p,o={}){
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const tot=good(p),dq=deadQ(p);
-  const r=openSheet(`<h4 class="withimg">${p.img?`<img src="${p.img}" alt="">`:''}بيع — ${esc(p.name)}</h4>
-    <div class="stock"><div><small>عندك إجمالي</small><b>${tot}</b>${dq?`<em>+${dq} منتهي</em>`:''}</div><div><small>هيفضل بعد البيع</small><b id="fLeft">${Math.max(0,tot-1)}</b></div><div class="sx"><small>إكسباير عليه الدور</small><b id="fExp"></b><em id="fExpN"></em></div></div>
-    ${bl.length>1?`<label>هيتخصم من أنهي تاريخ الأول؟</label><div class="chips">${bl.map(([k,v])=>`<button class="bt ${expCls(k)} ${k===def?'sel':''}" data-m="pk:${k}" data-n="${v}"><i>${bkShort(k)}</i></button>`).join('')}</div>`:''}
+  const r=openSheet(`<h4 class="withimg">${p.img?`<img src="${p.img}" alt="">`:''}<span style="flex:1">بيع — ${esc(p.name)}</span><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
+    <div class="stock"><div><small>عندك إجمالي</small><b>${tot}</b>${dq?`<em>+${dq} منتهي</em>`:''}</div><div><small>هيفضل بعد البيع</small><b id="fLeft">${Math.max(0,tot-1)}</b></div><div class="sx" data-m="bx" role="button" tabindex="0" aria-label="كل التواريخ"><small>إكسباير عليه الدور</small><b id="fExp"></b><em id="fExpN"></em><span class="more" id="fMore"></span></div></div>
+    <div class="bxl" id="bxl" hidden><p>📅 كل التواريخ اللي عندك — دوس على تاريخ تبيع منه</p>${bl.map(([k,v])=>{const c=expCls(k);return `<button class="bxr" data-m="pk:${k}"><span class="d ${c}">${k==='x'?'بدون تاريخ':bkLabel(k)}</span><span class="n">${v} قطعة</span><span class="st ${c}">${EXPW[c]||''}</span><span class="ck">✓</span></button>`}).join('')}${dq?`<p class="rd" style="margin-top:6px">فيهم ${dq} منتهي — مش بيتحسبوا في الإجمالي</p>`:''}</div>
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
     <label for="fN">العدد</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fN" type="number" inputmode="numeric" value="1" min="1"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
     ${o.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}
     <div class="actions"><button class="btn" data-cancel>إلغاء</button>${o.scan?'<button class="btn" data-m="okn">✓ وامسح التالي</button>':''}<button class="btn primary" data-m="ok">تأكيد البيع</button></div>`,
   (m,root,b)=>{const n=root.querySelector('#fN');
+    if(m==='edit')return itemForm(p);
+    if(m==='bx'){const l=root.querySelector('#bxl');l.hidden=!l.hidden;updLeft();return}
     if(m==='okn'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);setTimeout(scanSell,350);return}
     if(m==='inc'){n.value=int(n.value)+1;updLeft()}else if(m==='dec'){n.value=Math.max(1,int(n.value)-1);updLeft()}
-    else if(m.startsWith('pk:')){start=m.slice(3);root.querySelectorAll('button.bt').forEach(x=>x.classList.toggle('sel',x===b));root.querySelector('#dw').hidden=expCls(start)!=='dead';updLeft()}
+    else if(m.startsWith('pk:')){start=m.slice(3);root.querySelector('#dw').hidden=expCls(start)!=='dead';root.querySelector('#bxl').hidden=true;updLeft()}
     else if(m==='ok'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);return}});
   function updLeft(){const q=int(r.querySelector('#fN').value),left=tot-q,el=r.querySelector('#fLeft');el.textContent=Math.max(0,left);el.className=left<0?'rd':left<=minOf(p)?'lw':'';
     const ex=r.querySelector('#fExp'),en=r.querySelector('#fExpN');
     if(!start){ex.textContent='—';ex.className='';en.textContent='';return}
     const have=(p.b||{})[start]||0,c=expCls(start);ex.textContent=start==='x'?'بدون تاريخ':bkLabel(start);ex.className=c==='dead'||c==='now'?'rd':c==='soon'?'lw':'';
-    const next=bats(p).map(x=>x[0]).filter(k=>k!==start);en.textContent=`فيه ${have} قطعة`+(q>have&&next.length?` — والباقي من ${bkLabel(next[0])}`:'')}
+    const next=bats(p).map(x=>x[0]).filter(k=>k!==start);en.textContent=`فيه ${have} قطعة`+(q>have&&next.length?` — والباقي من ${bkLabel(next[0])}`:'');
+    r.querySelectorAll('.bxr').forEach(x=>x.classList.toggle('sel',x.dataset.m==='pk:'+start));
+    const op=!r.querySelector('#bxl').hidden;r.querySelector('#fMore').textContent=op?'▴ إخفاء':(bl.length>1?`▾ كل التواريخ (${bl.length})`:'▾ التفاصيل');r.querySelector('.sx').classList.toggle('on',op)}
   r.querySelector('#fN').addEventListener('input',updLeft);updLeft();
 }
 function restockSheet(p,pre={}){
@@ -1336,24 +1353,27 @@ function vNotes(){
   const open=S.notes.filter(n=>!n.done&&f(n)).sort((a,b)=>{const A=a.at&&a.at>now-36e5?a.at:9e15,B=b.at&&b.at>now-36e5?b.at:9e15;return A-B||b.t-a.t});
   const done=S.notes.filter(n=>n.done&&f(n)).slice(0,20);
   const card=n=>{const isNew=!notesFirst&&!shownNotes.has(n.id);shownNotes.add(n.id);
-    return `<article class="sticky ${n.done?'done':''} ${isNew?'new':''}" style="--nc:${ncol(n.id)}"><p>${esc(n.text)}</p>${n.at&&!n.done?`<span class="rem ${n.at<=now?'due':''}">⏰ ${fmtAt(n.at)}</span>`:''}<footer><span>${esc(n.by)} — ${fmtTime(n.t,1)}${n.done&&n.doneBy?`<br>✓ ${esc(n.doneBy)}`:''}</span>${n.done?`<button data-act="note-undo" data-nid="${n.id}" aria-label="رجّعها">↺</button>`:`<button data-act="note-done" data-nid="${n.id}" aria-label="خلصت">✓</button>`}${n.dev===DEV||n.done?`<button data-act="note-del" data-nid="${n.id}" aria-label="امسح">🗑</button>`:''}</footer></article>`};
+    return `<article class="sticky ${n.done?'done':''} ${isNew?'new':''}" style="--nc:${ncol(n.id)}"><p>${esc(n.text)}</p>${n.at&&!n.done?`<span class="rem ${n.at<=now?'due':''}">⏰ ${fmtAt(n.at)}</span>`:''}<footer><span>${esc(n.by)} — ${fmtTime(n.t,1)}${n.editT?`<br>✏️ ${esc(n.editBy||'')} ${fmtTime(n.editT,1)}`:''}${n.done&&n.doneBy?`<br>✓ ${esc(n.doneBy)}`:''}</span>${n.done?'':`<button data-act="note-edit" data-nid="${n.id}" aria-label="تعديل">✏️</button>`}${n.done?`<button data-act="note-undo" data-nid="${n.id}" aria-label="رجّعها">↺</button>`:`<button data-act="note-done" data-nid="${n.id}" aria-label="خلصت">✓</button>`}${n.dev===DEV||n.done?`<button data-act="note-del" data-nid="${n.id}" aria-label="امسح">🗑</button>`:''}</footer></article>`};
   let h=`<div class="toolbar"><button class="btn primary" data-act="note-new">+ نوت جديدة</button><button class="btn" data-act="note-voice">🎙️ قول النوت</button></div>`;
   h+=open.length?`<p class="hint">النوتس بتظهر عند كل اللي معاهم اللينك، واللي ليها تذكير بترن عند الكل في ميعادها.</p><div class="notes">${open.map(card).join('')}</div>`:`<div class="empty">مفيش نوتس مفتوحة 📝</div>`;
   if(done.length)h+=`<section class="group"><h3>خلصت</h3><div class="notes">${done.map(card).join('')}</div></section>`;
   $app.innerHTML=h;notesFirst=false;
 }
-function noteSheet(pre={}){
-  let at=pre.at||0;
-  const r=openSheet(`<h4>📝 نوت للكل</h4>
+function noteSheet(pre={},ed=null){
+  let at=ed?(ed.at||0):(pre.at||0);if(ed)pre={text:ed.text};
+  const r=openSheet(`<h4>${ed?'✏️ تعديل النوت':'📝 نوت للكل'}</h4>${ed?`<p class="hint" style="margin-top:0">كتبها ${esc(ed.by)} — ${fmtTime(ed.t,1)}</p>`:''}
     <div class="vrow"><textarea id="nTx" class="ntx" placeholder="مثلاً: المندوب جاي الساعة 5 — حضّروا المرتجع">${esc(pre.text||'')}</textarea><button class="icon mic" data-m="dict" aria-label="اكتب بصوتك">🎙️</button></div>
     <label>تذكير بصوت عند الكل</label>
     <div class="chips">${[['0','من غير'],['30','بعد نص ساعة'],['60','بعد ساعة'],['tm','بكرة 9 الصبح']].map(([k,l])=>`<button class="chip" data-m="at:${k}">${l}</button>`).join('')}</div>
     <input type="datetime-local" id="nAt" aria-label="ميعاد التذكير"><p class="hint" id="nAtL" style="margin:6px 2px 0"></p>
-    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">ثبّتها للكل</button></div>`,
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">${ed?'💾 حفظ التعديل':'ثبّتها للكل'}</button></div>`,
   (m,root,b)=>{
     if(m==='dict')return dictate(root.querySelector('#nTx'),b);
     if(m.startsWith('at:')){const v=m.slice(3);if(v==='0')at=0;else if(v==='tm'){const d=new Date();d.setDate(d.getDate()+1);d.setHours(9,0,0,0);at=d.getTime()}else at=Date.now()+v*6e4;show();return}
     if(m==='ok'){const text=root.querySelector('#nTx').value.trim();if(!text){toast('اكتب النوت');return}try{curRec&&curRec.abort()}catch(e){}
+      if(ed){closeSheet();const b2=fs.batch(),ch=at!==(ed.at||0);
+        b2.update(ref('notes/'+ed.id),{text,at:at||0,pushed:ch?(schedRem(text,ed.by,at)?at:0):(ed.pushed||0),editBy:S.me||'',editT:Date.now()});evt(b2,'note',text.slice(0,60),'','تعديل');
+        commit(b2,ch&&at?`اتعدلت — هترن عند الكل ${fmtAt(at)}`:'النوت اتعدلت عند الكل');return}
       closeSheet();needName(()=>{const b2=fs.batch(),nr=col('notes').doc();push('📝 '+S.me,text,{prio:4,tags:['memo']});const pushed=schedRem(text,S.me,at)?at:0;b2.set(nr,{t:Date.now(),by:S.me,dev:DEV,text,at:at||0,pushed,done:false});evt(b2,'note',text.slice(0,60),'');commit(b2,at?`النوت اتثبتت — هترن عند الكل ${fmtAt(at)}`:'النوت وصلت للكل');if(S.view!=='notes')go('notes')})}});
   const show=()=>{r.querySelector('#nAt').value=at?toLocalInput(at):'';r.querySelector('#nAtL').textContent=at?`⏰ هترن عند الكل ${fmtAt(at)}`:'من غير تذكير — هتوصل للكل دلوقتي بصوت';};
   r.querySelector('#nAt').addEventListener('change',e=>{at=e.target.value?new Date(e.target.value).getTime():0;show()});
@@ -1986,6 +2006,7 @@ $app.addEventListener('click',e=>{
   else if(act==='backups')backupsSheet();
   else if(act==='trash')trashSheet();
   else if(act==='note-new')noteSheet();
+  else if(act==='note-edit'){const n=S.notes.find(x=>x.id===b.dataset.nid);if(n)noteSheet({},n)}
   else if(act==='note-voice')voiceSheet('note');
   else if(act==='note-done')run(ref('notes/'+b.dataset.nid).update({done:true,doneBy:me(),doneT:Date.now()}),'اتعلّمت خلصت عند الكل');
   else if(act==='note-undo')run(ref('notes/'+b.dataset.nid).update({done:false}),'رجعت للنوتس المفتوحة');
