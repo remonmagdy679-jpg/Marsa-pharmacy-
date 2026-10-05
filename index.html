@@ -474,6 +474,9 @@ body.hasinv .wrap{padding-bottom:230px}
 .ipx b{font-size:16px;font-weight:800;color:var(--green);direction:ltr;unicode-bidi:isolate}
 .ipx small{font-size:10.5px;color:var(--muted)}
 
+.zimgbtn{position:relative;flex:none;padding:0;border:0;background:none;cursor:zoom-in;border-radius:12px}
+.zimgbtn img{width:64px!important;height:64px!important;border-radius:12px}
+.zimgbtn i{position:absolute;bottom:-4px;inset-inline-end:-4px;font-style:normal;font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -566,7 +569,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '5-10 فواتير الجيست';
+const APP_V = '5-10 تكبير الصورة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -849,7 +852,7 @@ function itemSheet(p){
 function sellSheet(p,o={}){
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty,0);
-  const r=openSheet(`<h4 class="withimg">${p.img?`<img src="${p.img}" alt="">`:''}<span style="flex:1">${esc(p.name)}</span><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
+  const r=openSheet(`<h4 class="withimg">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">${esc(p.name)}</span><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
     <div class="stock"><div><small>عندك إجمالي</small><b>${tot}</b>${dq?`<em>+${dq} منتهي</em>`:''}</div><div><small>هيفضل بعد البيع</small><b id="fLeft">${Math.max(0,tot-1)}</b></div><div class="sx" data-m="bx" role="button" tabindex="0" aria-label="كل التواريخ"><small>إكسباير عليه الدور</small><b id="fExp"></b><em id="fExpN"></em><span class="more" id="fMore"></span></div></div>
     <div class="bxl" id="bxl" hidden><p>📅 كل التواريخ اللي عندك — دوس على تاريخ تبيع منه</p>${bl.map(([k,v])=>{const c=expCls(k);return `<button class="bxr" data-m="pk:${k}"><span class="d ${c}">${k==='x'?'بدون تاريخ':bkLabel(k)}</span><span class="n">${v} قطعة</span><span class="st ${c}">${EXPW[c]||''}</span><span class="ck">✓</span></button>`}).join('')}${dq?`<p class="rd" style="margin-top:6px">فيهم ${dq} منتهي — مش بيتحسبوا في الإجمالي</p>`:''}</div>
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
@@ -862,6 +865,7 @@ function sellSheet(p,o={}){
     <div class="actions"><button class="btn" data-cancel>إلغاء</button>${o.scan?'<button class="btn" data-m="okn">➕ وامسح التالي</button>':''}<button class="btn primary" data-m="ok">🧾 أضف للفاتورة</button></div>`,
   (m,root,b)=>{const n=root.querySelector('#fN');
     if(m==='edit')return itemForm(p);
+    if(m==='zoom')return openZoom(p);
     if(m==='bx'){const l=root.querySelector('#bxl');l.hidden=!l.hidden;updLeft();return}
     if(m.startsWith('cur:')){setCur(m.slice(4));root.querySelector('#fCur').innerHTML=curBtns(CART.cur);fillPx(true);return}
     if(m==='ok'||m==='okn'){const q=int(n.value),px=flt(root.querySelector('#fPx').value);if(q<1){toast('اكتب العدد');return}if(!(px>0)){toast('اكتب سعر القطعة');root.querySelector('#fPx').focus();return}
@@ -2054,6 +2058,10 @@ function finishInvoice(){
   toast(`✓ فاتورة #${no} اتسجلت (${L.length} صنف)${al?' — واتبعت تنبيه للكل':''}`);go('sales');
 }
 $('invbar').addEventListener('click',invSheet);
+
+
+// تكبير صورة أي صنف من جوه أي نافذة (الفاتورة، اختيار صنف…)
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act="zoom"]');if(!b||$app.contains(b))return;e.stopPropagation();const p=S.items.find(x=>x.id===b.dataset.id);if(p)openZoom(p)},true);
 
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
