@@ -404,6 +404,23 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 .group h3{color:var(--muted);font-weight:600}
 .micfab{width:50px;height:50px;font-size:22px;opacity:.95}
 
+/* ---------- scanner ---------- */
+.scanbtn{flex:none;width:42px;border:1px solid var(--line);background:var(--card);border-radius:12px;color:var(--green);display:grid;place-items:center}
+.scanbtn svg{width:24px;height:24px}
+.scanner{position:fixed;inset:0;z-index:40;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scframe{position:relative;width:min(78vw,340px);height:min(48vw,210px);border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55)}
+.scframe::before{content:"";position:absolute;inset:0;border:3px solid #3CC2A0;border-radius:18px}
+.scframe i{position:absolute;left:8%;right:8%;top:50%;height:2px;background:#F0575C;box-shadow:0 0 8px #F0575C;animation:scl 1.6s ease-in-out infinite}
+@keyframes scl{0%,100%{transform:translateY(-70px)}50%{transform:translateY(70px)}}
+.sctop{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;align-items:center;gap:10px;color:#fff}
+.sctop b{flex:1;text-align:center;font-size:15px}
+.sctop .zx{position:static;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:20px}
+.sctop .zx.on{background:#FFE45C}
+.scbot{position:absolute;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#fff}
+.scbot p{margin:0 0 10px;font-size:14px;text-shadow:0 1px 3px #000}
+.scbot .btn{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -462,7 +479,7 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
   </div>
   <nav class="tabs" id="tabs"></nav>
   <div class="searchbar" id="searchbar" hidden>
-    <input id="q" type="search" placeholder="دوّر بالاسم… (بنادول، bioderma، صن بلوك)" autocomplete="off">
+    <button class="scanbtn" id="scanBtn" aria-label="امسح باركود أو QR"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M7 9v6M10 9v6M13 9v6M16.5 9v6"/></svg></button><input id="q" type="search" placeholder="دوّر بالاسم أو امسح الباركود…" autocomplete="off">
     <div class="seg" id="seg"></div>
   </div>
 </header>
@@ -479,6 +496,7 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 <div class="remind" id="remind" hidden></div>
 <div class="zoom" id="zoom" hidden><button class="zx" id="zx" aria-label="قفل">✕</button><img id="zimg" alt=""><div class="zc" id="zc"></div></div>
 <div class="login" id="login" hidden></div>
+<div class="scanner" id="scanner" hidden><video id="scVid" playsinline muted></video><div class="scframe"><i></i></div><div class="sctop"><button class="zx" id="scClose" aria-label="قفل">✕</button><b id="scTitle"></b><button class="zx" id="scTorch" aria-label="الفلاش" hidden>🔦</button></div><div class="scbot"><p id="scHint">وجّه الكاميرا على الباركود أو الـ QR</p><button class="btn" id="scType">⌨️ اكتب الكود</button></div></div>
 <div id="modal"></div>
 <div id="print"></div>
 
@@ -494,7 +512,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '4-10 تبسيط 2';
+const APP_V = '4-10 باركود';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -542,7 +560,7 @@ const tOf=p=>p.type==='med'?'med':'cos';
 const typeOk=t=>S.type==='all'||t===S.type;
 const norm=s=>toEn(s).toLowerCase().replace(/[\u064B-\u0652\u0640]/g,'').replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/\s+/g,' ').trim();
 const matchQ=text=>{if(!S.q)return true;const h=norm(text);return norm(S.q).split(' ').every(w=>h.includes(w))};
-const hay=p=>[p.name,p.alias,p.grp,TYPES[tOf(p)].name].join(' ');
+const hay=p=>[p.name,p.alias,p.grp,TYPES[tOf(p)].name,...(p.codes||[])].join(' ');
 const mItem=p=>typeOk(tOf(p))&&matchQ(hay(p));
 const byName=(a,b)=>String(a.name).localeCompare(String(b.name),'ar');
 const findByName=n=>S.items.find(x=>norm(x.name)===norm(n));
@@ -767,14 +785,16 @@ function itemSheet(p){
     else if(m==='ord'){closeSheet();toggleOrdered(x)}else if(m==='del')delSheet(x);else if(m.startsWith('out:'))outSheet(x,m.slice(4))});
   if(p.img)fullImg(p.id).then(d=>{const im=sh.querySelector('.hero img');if(d&&im)im.src=d});
 }
-function sellSheet(p){
-  const bl=bats(p),n0=nowIdx();const def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];let start=def;
+function sellSheet(p,o={}){
+  const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const r=openSheet(`<h4 class="withimg">${p.img?`<img src="${p.img}" alt="">`:''}بيع — ${esc(p.name)}</h4>
     ${bl.length>1?`<label>هيتخصم من أنهي تاريخ الأول؟</label><div class="chips">${bl.map(([k,v])=>`<button class="bt ${expCls(k)} ${k===def?'sel':''}" data-m="pk:${k}" data-n="${v}"><i>${bkShort(k)}</i></button>`).join('')}</div>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
     <label for="fN">العدد</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fN" type="number" inputmode="numeric" value="1" min="1"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
-    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">تأكيد البيع</button></div>`,
+    ${o.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button>${o.scan?'<button class="btn" data-m="okn">✓ وامسح التالي</button>':''}<button class="btn primary" data-m="ok">تأكيد البيع</button></div>`,
   (m,root,b)=>{const n=root.querySelector('#fN');
+    if(m==='okn'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);setTimeout(scanSell,350);return}
     if(m==='inc')n.value=int(n.value)+1;else if(m==='dec')n.value=Math.max(1,int(n.value)-1);
     else if(m.startsWith('pk:')){start=m.slice(3);root.querySelectorAll('button.bt').forEach(x=>x.classList.toggle('sel',x===b));root.querySelector('#dw').hidden=expCls(start)!=='dead'}
     else if(m==='ok'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);return}});
@@ -782,11 +802,15 @@ function sellSheet(p){
 function restockSheet(p,pre={}){
   const pick=!p,isMed=p?tOf(p)==='med':!!(pre.name&&findByName(pre.name)&&tOf(findByName(pre.name))==='med');
   openSheet(`<h4>استلام بضاعة${p?' — '+esc(p.name):''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}
-    ${pick?`<label for="fItem">الصنف</label><input id="fItem" list="ilist" value="${esc(pre.name||'')}" placeholder="اكتب اسم الصنف واختاره"><datalist id="ilist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`:`<p class="hint" style="margin:0">عندك دلوقتي ${qty(p)}</p>${tags(p)}`}
+    ${pick?`<label for="fItem">الصنف</label><div class="vrow"><input id="fItem" list="ilist" value="${esc(pre.name||'')}" placeholder="اكتب اسم الصنف أو امسحه"><button class="icon" data-m="scan" aria-label="امسح الباركود">🔳</button></div><datalist id="ilist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`:`<p class="hint" style="margin:0">عندك دلوقتي ${qty(p)}</p>${tags(p)}`}
     <div class="two"><div><label for="fQ">العدد اللي وصل</label><input id="fQ" type="number" inputmode="numeric" value="${pre.q||''}" placeholder="0"></div><div><label>الإكسباير (شهر / سنة)</label><div id="fE">${expSel(pre.k||'',isMed?'الشهر':null,p&&p.life)}</div></div></div>
     <label for="fPr">سعر البيع الجديد (لو اتغير)</label><input id="fPr" type="number" inputmode="decimal" placeholder="${p&&p.price?p.price:'اختياري'}">
-    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">إضافة للمخزن</button></div>`,
-  (m,r)=>{if(m!=='ok')return;const it=p||findByName(r.querySelector('#fItem').value);if(!it){toast('الصنف ده مش موجود — ضيفه من «صنف جديد» الأول');return}
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button>${p?'<button class="btn" data-m="scan2">🔳 اقرا الإكسباير من الكود</button>':''}<button class="btn primary" data-m="ok">إضافة للمخزن</button></div>`,
+  (m,r)=>{
+    if(m==='scan2'||m==='scan')return openScanner({title:'امسح باركود الصنف اللي وصل',onCode:(c,g)=>{
+      if(!p){const l=itemsByCode(c);if(!l.length){toast('الكود ده مش متسجل على أي صنف — اربطه من «صنف جديد» أو تعديل الصنف');return}r.querySelector('#fItem').value=l[0].name}
+      if(g&&g.y){const e=r.querySelector('#fE');e.querySelector('[data-x=m]').value=String(g.m);const ys=e.querySelector('[data-x=y]');if(![...ys.options].some(x=>x.value===String(g.y)))ys.insertAdjacentHTML('beforeend',`<option>${g.y}</option>`);ys.value=String(g.y);toast('الإكسباير اتقرا من الكود ✓')}}});
+    if(m!=='ok')return;const it=p||findByName(r.querySelector('#fItem').value);if(!it){toast('الصنف ده مش موجود — ضيفه من «صنف جديد» الأول');return}
     const q=int(r.querySelector('#fQ').value);if(q<1){toast('اكتب العدد اللي وصل');return}
     const k=readExp(r.querySelector('#fE'));if(k==='x'&&tOf(it)==='med'){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
     closeSheet();restock(it,q,k,flt(r.querySelector('#fPr').value),readLife(r.querySelector('#fE')))});
@@ -800,6 +824,7 @@ function itemForm(p,preset){
     <label for="fName">اسم الصنف</label><input id="fName" value="${esc(p?.name||preset?.name||'')}" placeholder="مثلاً: Panadol Extra 24 tab">
     <div class="two"><div><label for="fType">النوع</label><select id="fType"><option value="med" ${t==='med'?'selected':''}>💊 دوا</option><option value="cos" ${t==='cos'?'selected':''}>🧴 كوزماتكس</option></select></div>
     <div><label for="fGrp">القسم / الشركة</label><input id="fGrp" list="glist" value="${esc(p?.grp||'')}" placeholder="مثلاً: صن بلوك"><datalist id="glist">${grps.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div></div>
+    <label for="fCode">🔳 الباركود / QR (لو أكتر من واحد افصل بفاصلة)</label><div class="vrow"><input id="fCode" dir="ltr" value="${esc((p&&p.codes||preset&&preset.codes||[]).join(', '))}" placeholder="امسحه بالكاميرا أو اكتبه"><button class="icon" data-m="scode" aria-label="امسح بالكاميرا">🔳</button></div>
     <label for="fAl">اسم تاني للبحث (إنجليزي / عربي)</label><input id="fAl" value="${esc(p?.alias||'')}" placeholder="مثلاً: بنادول اكسترا">
     <div class="two"><div><label for="fPr">سعر البيع</label><input id="fPr" type="number" inputmode="decimal" value="${p?.price??''}" placeholder="0"></div>
     <div><label for="fMin">الحد الأدنى (ينزل نواقص)</label><input id="fMin" type="number" inputmode="numeric" value="${p?minOf(p):2}"></div></div>
@@ -809,6 +834,9 @@ function itemForm(p,preset){
     <button class="btn sm" data-m="addrow" style="margin-top:8px">+ تاريخ تاني</button>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="save">${p?'حفظ التعديل':'إضافة'}</button></div>`,
   (m,r,b)=>{
+    if(m==='scode')return openScanner({title:'امسح باركود الصنف',onCode:(c,g)=>{const i=r.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(c))l.push(c);i.value=l.join(', ');
+      if(g&&g.y){const row=r.querySelector('.brow');if(row&&!row.querySelector('[data-x=m]').value){row.querySelector('[data-x=m]').value=String(g.m);const ys=row.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(g.y)))ys.insertAdjacentHTML('beforeend',`<option>${g.y}</option>`);ys.value=String(g.y);toast('الإكسباير اتقرا من الكود: '+pad(g.m)+'/'+g.y)}}
+      const ex=S.items.find(x=>(x.codes||[]).includes(c)&&(!p||x.id!==p.id));if(ex)toast('⚠️ الكود ده متسجل على: '+ex.name)}});
     if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',d=>{pimg=d;const im=r.querySelector('#fImg');im.src=d;im.hidden=false;r.querySelector('[data-m=pdel]').hidden=false});
     if(m==='pdel'){pimg='del';r.querySelector('#fImg').hidden=true;b.hidden=true;return}
     if(m==='addrow'){r.querySelector('#fB').insertAdjacentHTML('beforeend',brow('',''));return}
@@ -819,7 +847,7 @@ function itemForm(p,preset){
     const type=r.querySelector('#fType').value,bm={};let noDate=false;
     r.querySelectorAll('.brow').forEach(row=>{const q=int(row.querySelector('.bq').value);if(q<=0)return;const k=readExp(row);if(k==='x'&&type==='med')noDate=true;bm[k]=(bm[k]||0)+q});
     if(noDate){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
-    const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked};const lf=readLife(r.querySelector('#fB'));if(lf)data.life=lf;
+    const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked};const lf=readLife(r.querySelector('#fB'));if(lf)data.life=lf;data.codes=[...new Set(r.querySelector('#fCode').value.split(/[,،\s]+/).map(normCode).filter(Boolean))];
     closeSheet();saveItem(p,data,bm,pimg);
   });
 }
@@ -1804,7 +1832,8 @@ document.addEventListener('click',pushGuard,{capture:true,passive:true});
 document.addEventListener('touchend',pushGuard,{capture:true,passive:true});
 addEventListener('popstate',()=>{
   backGuard=false;let handled=true;
-  if(!$zoom.hidden)closeZoom();
+  if(!$sc.hidden)stopScanner();
+  else if(!$zoom.hidden)closeZoom();
   else if($modal.innerHTML)closeSheet();
   else if(!$('remind').hidden)$('remind').hidden=true;
   else if(C.open)closeChat();
@@ -1827,6 +1856,64 @@ function addMenu(){
   m=>{if(m==='add')itemForm(null);else if(m==='in')restockSheet(null);else if(m==='bulk')bulkSheet();else if(m==='voice'){closeSheet();voiceSheet()}});
 }
 function nearExp(p){const bl=bats(p).filter(([k])=>k!=='x'&&expCls(k)!=='dead');if(!bl.length)return '';const [k]=bl[0],c=expCls(k);return `<span class="ne ${c}">⏳ ${bkShort(k)}${bl.length>1?` <small>+${bl.length-1}</small>`:''}</span>`}
+
+
+/* ---------- باركود / QR ---------- */
+function normCode(s){s=toEn(String(s||'')).trim();if(!s)return '';if(/^[\d\s\-]+$/.test(s)){s=s.replace(/\D/g,'');if(s.length===14&&s[0]==='0')s=s.slice(1);if(s.length===12)s='0'+s}return s}
+function parseGS1(raw){let s=String(raw||'').replace(/^\]([A-Za-z]\d)/,'');const GS='\x1d';const out={};
+  if(/\(\d{2,4}\)/.test(s)){const re=/\((\d{2,4})\)([^(]*)/g;let m;while((m=re.exec(s)))out[m[1]]=m[2].trim()}
+  else{let i=0;const fixed={'01':14,'17':6,'11':6,'15':6};while(i<s.length){const ai=s.slice(i,i+2);if(fixed[ai]){out[ai]=s.slice(i+2,i+2+fixed[ai]);i+=2+fixed[ai]}else if(ai==='10'||ai==='21'){let e=s.indexOf(GS,i+2);if(e<0)e=s.length;out[ai]=s.slice(i+2,e);i=e+1}else break}}
+  if(!out['01'])return null;const g={gtin:out['01']};
+  if(out['17']&&/^\d{6}$/.test(out['17'])){g.y=2000+ +out['17'].slice(0,2);g.m=+out['17'].slice(2,4)||12}
+  if(out['10'])g.batch=out['10'];return g}
+function codeOf(raw){const g=parseGS1(raw);return {code:normCode(g?g.gtin:raw),g}}
+const itemsByCode=c=>S.items.filter(x=>(x.codes||[]).includes(c));
+const $sc=$('scanner'),$scv=$('scVid');let scStream=null,scTimer=null,scReader=null,scCb=null,scBusy=false;
+function scBeep(){try{if(!actx)return;const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;o.frequency.value=1650;g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+.13)}catch(e){}}
+function stopScanner(){clearInterval(scTimer);scTimer=null;try{scReader&&scReader.reset()}catch(e){}scReader=null;if(scStream){scStream.getTracks().forEach(t=>t.stop());scStream=null}$scv.srcObject=null;$sc.hidden=true;scBusy=false}
+function scGot(raw){if(scBusy)return;scBusy=true;scBeep();try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}const cb=scCb;stopScanner();const {code,g}=codeOf(raw);if(code&&cb)cb(code,g)}
+function loadZXing(){return window.ZXing?Promise.resolve():new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+async function openScanner(o){
+  scCb=o.onCode;scBusy=false;$('scTitle').textContent=o.title||'امسح الكود';$('scHint').textContent='وجّه الكاميرا على الباركود أو الـ QR';$('scTorch').hidden=true;$sc.hidden=false;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('scHint').textContent='الكاميرا مش متاحة هنا — اكتب الكود بإيدك';return}
+  try{
+    if('BarcodeDetector' in window){
+      let fm=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code','data_matrix'];try{const sup=await BarcodeDetector.getSupportedFormats();fm=fm.filter(f=>sup.includes(f))}catch(e){}
+      const det=new BarcodeDetector({formats:fm});
+      scStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+      if($sc.hidden){stopScanner();return}
+      $scv.srcObject=scStream;await $scv.play();
+      const tr=scStream.getVideoTracks()[0];try{if(tr.getCapabilities&&tr.getCapabilities().torch)$('scTorch').hidden=false}catch(e){}
+      scTimer=setInterval(async()=>{if(scBusy||$scv.readyState<2)return;try{const r=await det.detect($scv);if(r&&r.length)scGot(r[0].rawValue)}catch(e){}},160);
+    }else{
+      $('scHint').textContent='جاري تشغيل الكاميرا…';await loadZXing();if($sc.hidden)return;
+      const hints=new Map();hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      scReader=new ZXing.BrowserMultiFormatReader(hints,150);
+      await scReader.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}},$scv,(res)=>{if(res)scGot(res.getText())});
+      scStream=$scv.srcObject;$('scHint').textContent='وجّه الكاميرا على الباركود أو الـ QR';
+    }
+  }catch(e){console.warn(e);$('scHint').textContent=/NotAllowed|Permission/i.test(e&&e.name||'')?'الكاميرا مقفولة — اسمح للكاميرا من إعدادات المتصفح':'مقدرتش أشغّل الكاميرا — اكتب الكود بإيدك'}
+}
+$('scClose').addEventListener('click',stopScanner);
+$('scTorch').addEventListener('click',async e=>{try{const tr=scStream.getVideoTracks()[0];const on=!e.currentTarget.classList.contains('on');await tr.applyConstraints({advanced:[{torch:on}]});e.currentTarget.classList.toggle('on',on)}catch(x){}});
+$('scType').addEventListener('click',()=>{const cb=scCb;stopScanner();openSheet(`<h4>⌨️ اكتب الكود</h4><input id="mc" dir="ltr" inputmode="numeric" placeholder="الأرقام اللي تحت الباركود"><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">تمام</button></div>`,(m,r)=>{const v=r.querySelector('#mc').value.trim();if(!v)return;closeSheet();const {code,g}=codeOf(v);if(cb)cb(code,g)})});
+function scanSell(){openScanner({title:'امسح الصنف عشان تبيعه',onCode:handleSellCode})}
+function handleSellCode(code,g){
+  const l=itemsByCode(code),start=g&&g.y?bk(g.y,g.m):null;
+  if(l.length===1)return sellSheet(l[0],{scan:true,start});
+  if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<button class="row linkbtn" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></button>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)sellSheet(p,{scan:true,start})});
+  unknownCode(code,g);
+}
+function unknownCode(code,g){
+  openSheet(`<h4>🔳 كود جديد</h4><p class="hint" style="margin-top:0">الكود <b class="ltr">${esc(code)}</b> مش متسجل على أي صنف لسه.</p>
+    <label for="ucI">اربطه بصنف موجود</label><input id="ucI" list="uclist" placeholder="اكتب اسم الصنف"><datalist id="uclist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>
+    <p class="hint">المرة الجاية لما تمسحه هيفتح الصنف على طول.</p>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="new">🆕 صنف جديد بالكود ده</button><button class="btn primary" data-m="link">🔗 اربط وبيع</button></div>`,
+  (m,r)=>{if(m==='new'){itemForm(null,{codes:[code],k:g&&g.y?bk(g.y,g.m):''});return}
+    if(m!=='link')return;const p=findByName(r.querySelector('#ucI').value);if(!p){toast('اختار الصنف من القايمة');return}
+    closeSheet();run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);setTimeout(()=>sellSheet({...p,codes:[...(p.codes||[]),code]},{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)});
+}
+$('scanBtn').addEventListener('click',scanSell);
 
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
