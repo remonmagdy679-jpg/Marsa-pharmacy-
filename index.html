@@ -421,6 +421,12 @@ h4.withimg img{width:52px;height:52px;object-fit:cover;border-radius:10px;border
 .scbot p{margin:0 0 10px;font-size:14px;text-shadow:0 1px 3px #000}
 .scbot .btn{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)}
 
+.stock{display:flex;gap:8px;margin:2px 0 10px}
+.stock div{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.stock small{display:block;font-size:12px;color:var(--muted)}
+.stock b{font-size:24px;font-weight:800}
+.stock b.lw{color:var(--amber)} .stock b.rd{color:var(--red)}
+.stock em{font-style:normal;font-size:12px;color:var(--red);margin-inline-start:6px}
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -512,7 +518,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '4-10 باركود';
+const APP_V = '4-10 إجمالي';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -787,7 +793,9 @@ function itemSheet(p){
 }
 function sellSheet(p,o={}){
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
+  const tot=good(p),dq=deadQ(p);
   const r=openSheet(`<h4 class="withimg">${p.img?`<img src="${p.img}" alt="">`:''}بيع — ${esc(p.name)}</h4>
+    <div class="stock"><div><small>عندك إجمالي</small><b>${tot}</b>${dq?`<em>+${dq} منتهي</em>`:''}</div><div><small>هيفضل بعد البيع</small><b id="fLeft">${Math.max(0,tot-1)}</b></div></div>
     ${bl.length>1?`<label>هيتخصم من أنهي تاريخ الأول؟</label><div class="chips">${bl.map(([k,v])=>`<button class="bt ${expCls(k)} ${k===def?'sel':''}" data-m="pk:${k}" data-n="${v}"><i>${bkShort(k)}</i></button>`).join('')}</div>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
     <label for="fN">العدد</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fN" type="number" inputmode="numeric" value="1" min="1"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
@@ -795,9 +803,11 @@ function sellSheet(p,o={}){
     <div class="actions"><button class="btn" data-cancel>إلغاء</button>${o.scan?'<button class="btn" data-m="okn">✓ وامسح التالي</button>':''}<button class="btn primary" data-m="ok">تأكيد البيع</button></div>`,
   (m,root,b)=>{const n=root.querySelector('#fN');
     if(m==='okn'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);setTimeout(scanSell,350);return}
-    if(m==='inc')n.value=int(n.value)+1;else if(m==='dec')n.value=Math.max(1,int(n.value)-1);
+    if(m==='inc'){n.value=int(n.value)+1;updLeft()}else if(m==='dec'){n.value=Math.max(1,int(n.value)-1);updLeft()}
     else if(m.startsWith('pk:')){start=m.slice(3);root.querySelectorAll('button.bt').forEach(x=>x.classList.toggle('sel',x===b));root.querySelector('#dw').hidden=expCls(start)!=='dead'}
     else if(m==='ok'){const q=int(n.value);if(q<1){toast('اكتب العدد');return}closeSheet();doSell(p,q,start);return}});
+  function updLeft(){const q=int(r.querySelector('#fN').value),left=tot-q,el=r.querySelector('#fLeft');el.textContent=Math.max(0,left);el.className=left<0?'rd':left<=minOf(p)?'lw':''}
+  r.querySelector('#fN').addEventListener('input',updLeft);updLeft();
 }
 function restockSheet(p,pre={}){
   const pick=!p,isMed=p?tOf(p)==='med':!!(pre.name&&findByName(pre.name)&&tOf(findByName(pre.name))==='med');
