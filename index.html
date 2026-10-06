@@ -604,7 +604,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '6-10 إرسال النواقص';
+const APP_V = '6-10 صورة النواقص';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -2238,28 +2238,42 @@ async function attachLedgerImg(e){pickPhoto(false,async d=>{const x=await shrink
 /* ---------- إرسال الناقص كصورة + الكمية المقترحة ---------- */
 function sold30(p){const from=Date.now()-30*864e5;return S.sales.filter(s=>s.id===p.id&&s.t>=from).reduce((a,s)=>a+(+s.qty||0),0)}
 function suggestTarget(p){if(p.target>0)return +p.target;const m=minOf(p);return Math.max(m*2,m+1,Math.ceil(sold30(p)*0.75))}
+function rrPath(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
 async function makeShortCard(p,target){
   try{await document.fonts.ready}catch(e){}
-  const W=1080,F0='Alexandria, Tahoma, Arial, sans-serif',mx=document.createElement('canvas').getContext('2d');mx.font=`800 54px ${F0}`;
-  let nl=1,ln='';for(const w of String(p.name).split(' ')){const t=ln?ln+' '+w:w;if(mx.measureText(t).width>W-120&&ln){nl++;ln=w}else ln=t}nl=Math.min(nl,2);
-  const H=820+100+nl*66+30+170+110,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
-  x.fillStyle='#ffffff';x.fillRect(0,0,W,H);
-  let src=p.img?(await fullImg(p.id))||p.img:'';
-  const IH=820;x.fillStyle='#EEF4F3';x.fillRect(0,0,W,IH);
-  if(src){const im=await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src});
-    if(im){const sc=Math.max(W/im.width,IH/im.height),w=im.width*sc,h=im.height*sc;x.drawImage(im,(W-w)/2,(IH-h)/2,w,h)}}
-  else{x.font='300px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(TYPES[tOf(p)].icon,W/2,IH/2)}
-  x.fillStyle='#0E7C66';x.fillRect(0,IH,W,14);
-  x.direction='rtl';x.textAlign='right';x.textBaseline='alphabetic';x.fillStyle='#102A2E';
-  const F='Alexandria, Tahoma, Arial, sans-serif';x.font=`800 54px ${F}`;
-  const words=String(p.name).split(' ');let line='',y=IH+100,lines=[];for(const w of words){const t=line?line+' '+w:w;if(x.measureText(t).width>W-120&&line){lines.push(line);line=w}else line=t}lines.push(line);
-  lines.slice(0,2).forEach((l,i)=>{x.direction='ltr';x.textAlign='left';x.fillText(l,60,y+i*66)});
-  y+=lines.slice(0,2).length*66+30;
-  const q=good(p),need=Math.max(0,target-q);
-  const box=(bx,label,val,col)=>{x.fillStyle='#F2F6F5';x.beginPath();x.roundRect?x.roundRect(bx,y,300,170,22):x.rect(bx,y,300,170);x.fill();x.direction='rtl';x.textAlign='center';x.fillStyle='#587074';x.font=`500 34px ${F}`;x.fillText(label,bx+150,y+52);x.fillStyle=col;x.font=`800 84px ${F}`;x.fillText(String(val),bx+150,y+145)};
-  box(W-60-300,'عندنا',q,q?'#A8650A':'#C62A2F');box(W/2-150,'المفروض يكون',target,'#102A2E');box(60,'نطلب',need,'#0E7C66');
-  x.direction='rtl';x.textAlign='right';x.fillStyle='#8a9a9c';x.font=`500 30px ${F}`;x.fillText(`${SHOP_NAME} — نواقص ${fmtDay(today())}`,W-60,H-40);
-  return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.88));
+  const F='Alexandria, Tahoma, Arial, sans-serif',W=1080,q=good(p),need=Math.max(0,target-q),out=!q;
+  const mx=document.createElement('canvas').getContext('2d');mx.font=`800 50px ${F}`;
+  const lines=[];let ln='';for(const w of String(p.name).split(' ')){const t=ln?ln+' '+w:w;if(mx.measureText(t).width>W-200&&ln){lines.push(ln);ln=w}else ln=t}lines.push(ln);const L=lines.slice(0,2);
+  const alias=p.alias&&/[\u0600-\u06FF]/.test(p.alias)?String(p.alias):'';
+  const PY=180,PH=720,NY=PY+PH+70,TY=NY+L.length*62+(alias?56:0)+30,TH=200,H=TY+TH+130;
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  // خلفية + كارت
+  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#E3F2EE');g.addColorStop(1,'#F4F8F7');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.save();x.shadowColor='rgba(16,42,46,.12)';x.shadowBlur=40;x.shadowOffsetY=12;x.fillStyle='#fff';rrPath(x,36,36,W-72,H-72,44);x.fill();x.restore();
+  // الهيدر
+  x.textBaseline='middle';x.direction='ltr';x.textAlign='left';x.fillStyle='#0E7C66';x.font=`800 40px ${F}`;x.fillText('Dr. Corner',86,108);
+  const pill=out?['خلصان','#C62A2F','#FDECEC']:['قرب يخلص','#A8650A','#FFF3DC'];
+  x.font=`800 32px ${F}`;x.direction='rtl';const pw=x.measureText(pill[0]).width+56;x.fillStyle=pill[2];rrPath(x,W-86-pw,82,pw,54,27);x.fill();x.fillStyle=pill[1];x.textAlign='center';x.fillText(pill[0],W-86-pw/2,110);
+  // صورة المنتج (بتتقص جوه الإطار)
+  x.save();rrPath(x,76,PY,W-152,PH,34);x.clip();x.fillStyle='#F2F6F5';x.fillRect(76,PY,W-152,PH);
+  const src=p.img?(await fullImg(p.id))||p.img:'';
+  const im=src?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src}):null;
+  if(im){const bw=W-152,bh=PH;let sc=Math.max(bw/im.width,bh/im.height),w=im.width*sc,h=im.height*sc;x.globalAlpha=.9;x.drawImage(im,76+(bw-w)/2,PY+(bh-h)/2,w,h);x.globalAlpha=1;x.fillStyle='rgba(242,246,245,.78)';x.fillRect(76,PY,bw,bh);
+    sc=Math.min((bw-40)/im.width,(bh-40)/im.height);w=im.width*sc;h=im.height*sc;x.save();x.shadowColor='rgba(0,0,0,.18)';x.shadowBlur=24;x.drawImage(im,76+(bw-w)/2,PY+(bh-h)/2,w,h);x.restore()}
+  else{x.font='260px sans-serif';x.textAlign='center';x.direction='ltr';x.fillText(TYPES[tOf(p)].icon,W/2,PY+PH/2)}
+  x.restore();
+  // الاسم
+  x.fillStyle='#102A2E';x.font=`800 50px ${F}`;x.textAlign='center';x.direction='ltr';x.textBaseline='alphabetic';L.forEach((l,i)=>x.fillText(i===1&&lines.length>2?l+'…':l,W/2,NY+i*62));
+  if(alias){x.direction='rtl';x.fillStyle='#587074';x.font=`500 36px ${F}`;x.fillText(alias,W/2,NY+L.length*62+8)}
+  // المربعات: عندنا | المفروض | نطلب
+  const tw=(W-152-2*24)/3,tile=(i,label,val,bg,fg,lab)=>{const tx=W-76-tw-i*(tw+24);x.fillStyle=bg;rrPath(x,tx,TY,tw,TH,30);x.fill();
+    x.textAlign='center';x.direction='rtl';x.fillStyle=lab;x.font=`600 32px ${F}`;x.fillText(label,tx+tw/2,TY+58);x.fillStyle=fg;x.font=`800 96px ${F}`;x.direction='ltr';x.fillText(String(val),tx+tw/2,TY+160)};
+  tile(0,'عندنا',q,out?'#FDECEC':'#FFF3DC',out?'#C62A2F':'#A8650A','#7a6a5a');
+  tile(1,'المفروض يكون',target,'#F2F6F5','#102A2E','#587074');
+  tile(2,'نطلب',need,'#0E7C66','#ffffff','#CDEFE5');
+  // الفوتر
+  x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 28px ${F}`;x.fillText(`نواقص ${fmtDay(today())}${S.me?' — '+S.me:''}`,W/2,H-80);
+  return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
 }
 const shortText=(p,target)=>{const q=good(p);return `${p.name}\nعندنا: ${q}\nالمطلوب: ${Math.max(0,target-q)} (عشان يبقى عندنا ${target})`};
 const fileName=n=>String(n).replace(/[^\w\u0600-\u06FF\- ]+/g,'').trim().slice(0,40)||'item';
