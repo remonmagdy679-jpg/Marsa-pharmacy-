@@ -498,6 +498,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .dq button{border:1px solid var(--line);background:var(--bg);border-radius:8px;font-size:12px;padding:3px 10px;color:var(--muted)}
 .icon.clip.add{opacity:.55}
 
+.verr{display:block;margin-top:4px;direction:ltr;text-align:left;font-size:11px;color:var(--muted);word-break:break-word;font-family:ui-monospace,monospace}
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -590,7 +591,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '6-10 مسح أسرع';
+const APP_V = '6-10 قراءة المنتج 2';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -984,7 +985,8 @@ function itemForm(p,preset){
       if(k&&k!=='x'){const row=fr.querySelector('.brow'),pp=bkParse(k);if(row&&pp&&!row.querySelector('[data-x=m]').value){row.querySelector('[data-x=m]').value=String(pp.m);const ys=row.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(pp.y)))ys.insertAdjacentHTML('beforeend',`<option>${pp.y}</option>`);ys.value=String(pp.y);row.querySelector('.ex').classList.add('aifill');n++}}
       const dup=j.name&&!p&&(findByName(j.name)||S.items.map(x=>({x,s:scoreItem(j.name,x)})).filter(o=>o.s>=.85).sort((a,b)=>b.s-a.s).map(o=>o.x)[0]);
       st.innerHTML=(n?`✓ اتملى ${n} خانة من الصورة${j.size?` — الحجم/الوزن: <b>${esc(j.size)}</b>`:''}${j.group?` — القسم: <b>${esc(j.group)}</b>`:''}${how?' — الإكسباير '+how:''}. راجعهم قبل الحفظ.`:'مفيش بيانات جديدة اتقرت — جرب صورة أوضح للعلبة من قدام')+(dup?`<br><b class="rd">⚠️ شكله موجود قبل كده: ${esc(dup.name)}</b>`:'');
-    }catch(e){if(!fr.isConnected)return;st.textContent=e==='key'?'🔑 المفتاح غلط أو خلص رصيده — غيّره من الحسابات ← 🔑':'مقدرتش أقرا المنتج — جرب صورة أوضح للعلبة من قدام'}
+    }catch(e){if(!fr.isConnected)return;
+      st.innerHTML=(e==='key'?'🔑 Google رافض المفتاح — اتأكد إن Vertex AI API متفعّل وإن المفتاح منسوخ صح':e==='quota'?'⏳ الحد المسموح للمفتاح خلص — استنى شوية أو فعّل الفوترة':e==='net'?'📶 مش قادر يوصل لخدمة الذكاء الاصطناعي — اتأكد من النت':e==='parse'?'الخدمة ردت بس الرد مش مفهوم — جرب تاني':'مقدرتش أقرا المنتج')+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')+' <button class="btn sm" data-m="ai">↻ جرب تاني</button>'}
   }
   if(preset&&preset.img){pimg=preset.img;const im=fr.querySelector('#fImg');im.src=pimg;im.hidden=false;fr.querySelector('[data-m=pdel]').hidden=false;fr.querySelector('[data-m=ai]').hidden=false;if(preset.auto)aiFill()}
 }
@@ -1692,7 +1694,7 @@ function keySheet(then){
     if(m==='test'){const st=r.querySelector('#kSt');st.innerHTML='<span class="spin"></span>جاري التجربة…';const old=LS.get('drc.akey');LS.set('drc.akey',k);
       try{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,64,64);x.fillStyle='#000';x.font='20px sans-serif';x.fillText('OK',14,40);
         await askVision(c.toDataURL('image/jpeg',.9),'Return ONLY this JSON: {"ok":true,"text":"<the text you see>"}',200);st.textContent='✓ المفتاح شغال'}
-      catch(e){st.textContent=e==='key'?'✗ المفتاح مرفوض — اتأكد إنه منسوخ صح وإن Vertex AI / Gemini API متفعّل':e==='quota'?'✗ المفتاح شغال بس الرصيد/الحد اليومي خلص':e==='net'?'✗ مش قادر يوصل للخدمة — اتأكد من النت':'✗ حصلت مشكلة — ابعتلي صورة'}
+      catch(e){st.innerHTML=(e==='key'?'✗ المفتاح مرفوض — اتأكد إنه منسوخ صح وإن Vertex AI API متفعّل':e==='quota'?'✗ المفتاح شغال بس الرصيد/الحد اليومي خلص':e==='net'?'✗ مش قادر يوصل للخدمة — اتأكد من النت':'✗ حصلت مشكلة — ابعتلي صورة من الرسالة دي')+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')}
       finally{if(old)LS.set('drc.akey',old);else localStorage.removeItem('drc.akey')}return}
     if(m!=='ok')return;LS.set('drc.akey',k);
     const team=r.querySelector('#kTeam');if(team){if(team.checked)run(ref('secrets/ai').set({key:k,by:me(),t:Date.now()}));else if(S.teamKey)run(ref('secrets/ai').set({key:'',by:me(),t:Date.now()}))}
@@ -1716,27 +1718,50 @@ function normDate(s){if(!s)return '';s=toEn(String(s)).trim();let m=/^(\d{4})-(\
 async function readInvoice(dataUrl){return askVision(dataUrl,SCAN_PROMPT,600)}
 const keyKind=k=>/^sk-ant-/.test(k)?'anthropic':/^AQ\./.test(k)?'vertex':/^AIza/.test(k)?'gemini':'';
 function parseJSONText(t){const j=String(t||'').replace(/```json|```/g,'').match(/\{[\s\S]*\}/);if(!j)throw 'parse';return JSON.parse(j[0])}
+let visionErr='';
+async function errText(r){try{const t=await r.text();try{const j=JSON.parse(t);const e=Array.isArray(j)?j[0]&&j[0].error:j.error;return (e&&(e.message||e.status))||t.slice(0,160)}catch(_){return t.slice(0,160)}}catch(e){return ''}}
 async function askVision(dataUrl,prompt,maxTok){
-  const key=getKey(),kind=keyKind(key),b64=dataUrl.split(',')[1];if(!key)throw 'key';
+  const key=getKey(),kind=keyKind(key),b64=dataUrl.split(',')[1];visionErr='';if(!key)throw 'key';
   if(kind==='anthropic'){let r=null;
     for(const model of ['claude-sonnet-5-5','claude-haiku-4-5-20251001']){
-      r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model,max_tokens:maxTok||600,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})});
+      try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model,max_tokens:maxTok||600,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})})}catch(e){visionErr='مش قادر يوصل لـ Anthropic';throw 'net'}
       if(r.status!==404)break}
-    if(r.status===401||r.status===403)throw 'key';if(r.status===429)throw 'quota';if(!r.ok)throw 'http';
-    const d=await r.json();return parseJSONText((d.content||[]).map(x=>x.text||'').join(''))}
-  // Google Gemini (Vertex AI express "AQ." key, or AI Studio "AIza" key)
-  const body={contents:[{role:'user',parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:4096,responseMimeType:'application/json'}};
-  const bases=kind==='gemini'?['https://generativelanguage.googleapis.com/v1beta/models/']:['https://aiplatform.googleapis.com/v1/publishers/google/models/','https://generativelanguage.googleapis.com/v1beta/models/'];
-  let last='http';
-  for(const base of bases)for(const model of ['gemini-2.5-flash','gemini-2.0-flash-001','gemini-2.5-flash-lite']){
-    let r;try{r=await fetch(`${base}${model}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})}catch(e){last='net';continue}
-    if(r.status===404){last='model';continue}
-    if(r.status===401||r.status===403){last='key';break}
-    if(r.status===429){throw 'quota'}
-    if(!r.ok){last='http';continue}
-    const d=await r.json(),t=((((d.candidates||[])[0]||{}).content||{}).parts||[]).map(x=>x.text||'').join('');return parseJSONText(t)}
-  throw last;
+    if(!r.ok){visionErr=r.status+' — '+await errText(r);throw r.status===401||r.status===403?'key':r.status===429?'quota':'http'}
+    const d=await r.json();try{return parseJSONText((d.content||[]).map(x=>x.text||'').join(''))}catch(e){visionErr='الرد مش مفهوم';throw 'parse'}}
+  // Google Gemini — Vertex AI express (AQ.) أو AI Studio (AIza)
+  const mk=json=>({contents:[{role:'user',parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:Object.assign({temperature:0.1,maxOutputTokens:4096},json?{responseMimeType:'application/json'}:{})});
+  const bases=kind==='gemini'?['https://generativelanguage.googleapis.com/v1beta/models/']:['https://aiplatform.googleapis.com/v1/publishers/google/models/','https://aiplatform.googleapis.com/v1beta1/publishers/google/models/'];
+  const models=['gemini-2.5-flash','gemini-2.0-flash-001','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-2.5-pro'];
+  const errs=[];let code='http';
+  for(const base of bases){let keyBad=false;
+    for(const model of models){
+      for(const json of [true,false]){
+        let r;try{r=await fetch(`${base}${model}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(mk(json))})}
+        catch(e){errs.push(`${model}: مش قادر يوصل (${e&&e.message||'network'})`);code='net';break}
+        if(r.ok){const d=await r.json(),c=(d.candidates||[])[0]||{},t=((c.content||{}).parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('');
+          try{return parseJSONText(t)}catch(e){errs.push(`${model}: رد مش مفهوم (${c.finishReason||'?'}) ${t.slice(0,80)}`);code='parse';break}}
+        const msg=await errText(r);errs.push(`${model} ${r.status}: ${msg}`);
+        if(r.status===429){visionErr=errs.slice(-2).join(' | ');throw 'quota'}
+        if(r.status===401||r.status===403){keyBad=true;code='key';break}
+        if(r.status===400&&json&&/mime|response_mime|responseMimeType|json/i.test(msg))continue;
+        if(r.status===400&&/API key|api_key|API_KEY/i.test(msg)){keyBad=true;code='key'}
+        break}
+      if(keyBad)break}
+  }
+  visionErr=errs.slice(0,3).join(' | ');throw code;
+}
+async function scanFile(f){
+  const cid=S.acc;if(!getKey()){keySheet(()=>scanFile(f));return}
+  const r=openSheet(`<h4>📷 قراءة الفاتورة</h4><img class="scanimg" id="scImg" alt="صورة الفاتورة"><p class="hint" id="scSt"><span class="spin"></span>جاري تحليل الفاتورة بالذكاء الاصطناعي…</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="man">إضافة يدوي</button></div>`,
+    m=>{if(m==='man')entrySheet(cid,'inv',{img:r.querySelector('#scImg').src||''});if(m==='key')keySheet(()=>scanFile(f))});
+  let img='';
+  try{img=await toJpeg(f);r.querySelector('#scImg').src=img;const j=await readInvoice(img);if(!r.isConnected)return;
+    const kind=/ret|credit|مرتجع|خصم/i.test(String(j.type||''))?'ret':'inv';
+    entrySheet(cid,kind,{no:j.number==null?'':String(j.number),date:normDate(j.date)||today(),amount:j.amount==null?'':amt(j.amount),notes:[j.supplier,j.items?j.items+' صنف':''].filter(Boolean).join(' — '),scan:true,img});
+  }catch(e){if(!r.isConnected)return;const st=r.querySelector('#scSt');
+    if(e==='key'){st.innerHTML='🔑 المفتاح مرفوض — غيّره وجرب تاني'+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'');r.querySelector('.actions').insertAdjacentHTML('beforeend','<button class="btn primary" data-m="key">تغيير المفتاح</button>')}
+    else st.innerHTML=(e==='img'?'الصورة دي مش مدعومة — جرب صورة تانية':e==='quota'?'⏳ الحد المسموح للمفتاح خلص — استنى شوية':e==='net'?'📶 مش قادر يوصل للخدمة — اتأكد من النت':'مقدرتش أقرا الفاتورة — جرب صورة أوضح أو ضيفها يدوي')+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')}
 }
 function repAcc(){const c=S.companies.find(x=>x.id===S.acc);const l=accList(c.id).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.t-b.t),st=stats(l);let bal=0;
   const rows=l.map(e=>{const a=+e.amount||0;bal+=KIND[e.kind].s*a;return [e.date?fmtDay(e.date):'—',KIND[e.kind].l,e.no||'—',e.notes||'',e.kind==='inv'?num(a):'',e.kind!=='inv'?num(a):'',num(bal)]});
