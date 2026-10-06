@@ -574,7 +574,7 @@ body.hasinv .wrap{padding-bottom:230px}
 <div class="remind" id="remind" hidden></div>
 <div class="zoom" id="zoom" hidden><button class="zx" id="zx" aria-label="قفل">✕</button><img id="zimg" alt=""><div class="zc" id="zc"></div></div>
 <div class="login" id="login" hidden></div>
-<div class="scanner" id="scanner" hidden><video id="scVid" playsinline muted></video><div id="scBox"></div><div id="scFile" hidden></div><div class="scframe"><i></i></div><div class="sctop"><button class="zx" id="scClose" aria-label="قفل">✕</button><b id="scTitle"></b><button class="zx" id="scTorch" aria-label="الفلاش" hidden>🔦</button></div><div class="scbot"><div class="seg scmode" id="scMode" hidden><button data-sm="sell">🧾 بيع</button><button data-sm="in">📦 استلام</button></div><p id="scHint">وجّه الكاميرا على الباركود أو الـ QR</p><div class="scbtns"><button class="btn" id="scPhoto">📸 صوّر الكود</button><button class="btn" id="scType">⌨️ اكتب الكود</button></div></div></div>
+<div class="scanner" id="scanner" hidden><video id="scVid" playsinline webkit-playsinline autoplay muted></video><div id="scBox"></div><div id="scFile" hidden></div><div class="scframe"><i></i></div><div class="sctop"><button class="zx" id="scClose" aria-label="قفل">✕</button><b id="scTitle"></b><button class="zx" id="scTorch" aria-label="الفلاش" hidden>🔦</button></div><div class="scbot"><div class="seg scmode" id="scMode" hidden><button data-sm="sell">🧾 بيع</button><button data-sm="in">📦 استلام</button></div><p id="scHint">وجّه الكاميرا على الباركود أو الـ QR</p><div class="scbtns"><button class="btn" id="scPhoto">📸 صوّر الكود</button><button class="btn" id="scType">⌨️ اكتب الكود</button></div></div></div>
 <div id="modal"></div>
 <div id="print"></div>
 
@@ -590,7 +590,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '6-10 بيع واستلام أسرع';
+const APP_V = '6-10 Gemini';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -971,9 +971,10 @@ function itemForm(p,preset){
     if(!img){toast('صوّر المنتج الأول');return}
     if(!getKey()){st.innerHTML='🔑 القراءة الأوتوماتيك محتاجة «مفتاح المسح الضوئي» — حطه مرة واحدة من الحسابات ← 🔑';return}
     st.innerHTML='<span class="spin"></span>🤖 جاري قراءة المنتج من الصورة…';
-    try{const j=await askVision(img,PRODUCT_PROMPT,500);if(!fr.isConnected)return;let n=0;
+    try{const j=await askVision(img,productPrompt(),700);if(!fr.isConnected)return;let n=0;
       const set=(sel,v)=>{const el=fr.querySelector(sel);if(el&&v&&String(v).trim()&&!el.value.trim()){el.value=String(v).trim();el.classList.add('aifill');n++}};
-      set('#fName',j.name);set('#fAl',j.alias);set('#fGrp',j.group);
+      let nm=j.name?String(j.name).trim():'';if(nm&&j.size&&!norm(nm).includes(norm(String(j.size))))nm+=' '+String(j.size).trim();
+      set('#fName',nm);set('#fAl',j.alias);set('#fGrp',j.group);
       if((j.type==='med'||j.type==='cos')&&!p){const ts=fr.querySelector('#fType');if(ts.value!==j.type){ts.value=j.type;ts.classList.add('aifill')}}
       if(j.barcode){const c=normCode(j.barcode),i=fr.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(c&&c.length>=8&&!l.includes(c)){l.push(c);i.value=l.join(', ');i.classList.add('aifill');n++}}
       let k=j.expiry?parseExp(String(j.expiry)):null,how='';
@@ -981,7 +982,7 @@ function itemForm(p,preset){
       else if(j.production&&j.shelf_life_months){const pp=bkParse(parseExp(String(j.production))||'');if(pp){const i=pp.y*12+pp.m-1+(+j.shelf_life_months);k=bk(Math.floor(i/12),i%12+1);how=`إنتاج ${pad(pp.m)}/${pp.y} + ${j.shelf_life_months} شهر`}}
       if(k&&k!=='x'){const row=fr.querySelector('.brow'),pp=bkParse(k);if(row&&pp&&!row.querySelector('[data-x=m]').value){row.querySelector('[data-x=m]').value=String(pp.m);const ys=row.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(pp.y)))ys.insertAdjacentHTML('beforeend',`<option>${pp.y}</option>`);ys.value=String(pp.y);row.querySelector('.ex').classList.add('aifill');n++}}
       const dup=j.name&&!p&&(findByName(j.name)||S.items.map(x=>({x,s:scoreItem(j.name,x)})).filter(o=>o.s>=.85).sort((a,b)=>b.s-a.s).map(o=>o.x)[0]);
-      st.innerHTML=(n?`✓ اتملى ${n} خانة من الصورة${how?' — الإكسباير '+how:''}. راجعهم قبل الحفظ.`:'مفيش بيانات جديدة اتقرت — جرب صورة أوضح للعلبة من قدام')+(dup?`<br><b class="rd">⚠️ شكله موجود قبل كده: ${esc(dup.name)}</b>`:'');
+      st.innerHTML=(n?`✓ اتملى ${n} خانة من الصورة${j.size?` — الحجم/الوزن: <b>${esc(j.size)}</b>`:''}${j.group?` — القسم: <b>${esc(j.group)}</b>`:''}${how?' — الإكسباير '+how:''}. راجعهم قبل الحفظ.`:'مفيش بيانات جديدة اتقرت — جرب صورة أوضح للعلبة من قدام')+(dup?`<br><b class="rd">⚠️ شكله موجود قبل كده: ${esc(dup.name)}</b>`:'');
     }catch(e){if(!fr.isConnected)return;st.textContent=e==='key'?'🔑 المفتاح غلط أو خلص رصيده — غيّره من الحسابات ← 🔑':'مقدرتش أقرا المنتج — جرب صورة أوضح للعلبة من قدام'}
   }
   if(preset&&preset.img){pimg=preset.img;const im=fr.querySelector('#fImg');im.src=pimg;im.hidden=false;fr.querySelector('[data-m=pdel]').hidden=false;fr.querySelector('[data-m=ai]').hidden=false;if(preset.auto)aiFill()}
@@ -1617,7 +1618,7 @@ function vAccList(){
   const list=S.companies.filter(c=>matchQ(c.name)).map(c=>({c,st:allStats(c.id)})).sort((a,b)=>b.st.net-a.st.net||a.c.name.localeCompare(b.c.name,'ar'));
   const tot=S.companies.reduce((a,c)=>a+allStats(c.id).net,0);
   let h=`<div class="summary"><strong style="color:${tot>0?'var(--red)':'var(--green)'}">${mon(tot)}</strong><span>إجمالي المطلوب لكل الشركات</span></div>
-  <div class="toolbar"><button class="btn primary" data-act="acc-newc">+ شركة جديدة</button>${oldN?`<button class="btn" data-act="acc-import">📥 استيراد / تصحيح الفواتير القديمة</button>`:''}<button class="btn" data-act="acc-key">🔑 مفتاح المسح الضوئي</button></div>`;
+  <div class="toolbar"><button class="btn primary" data-act="acc-newc">+ شركة جديدة</button>${oldN?`<button class="btn" data-act="acc-import">📥 استيراد / تصحيح الفواتير القديمة</button>`:''}<button class="btn" data-act="acc-key">🔑 مفتاح الذكاء الاصطناعي</button></div>`;
   h+=list.length?`<div class="ccards">${list.map(({c,st})=>`<button class="ccard" data-act="acc-open" data-cid="${c.id}"><b>🏢 ${esc(c.name)}</b><small>${st.n} فاتورة${st.last?' — آخر حركة '+fmtDay(st.last):''}</small><strong class="${st.net>0?'':'zero'}">${mon(st.net)}</strong></button>`).join('')}</div>`
     :`<div class="empty">${S.companies.length?'مفيش شركة بالاسم ده':'كل شركة ليها سجل فواتير ومرتجعات منفصل.<br>ابدأ بـ «شركة جديدة» (مثلاً: المحبة).'}</div>`;
   $app.innerHTML=h}
@@ -1676,21 +1677,35 @@ function entrySheet(cid,kind,pre={},rec=null){
   if(rec&&rec.img&&!pre.img)fullImg('L_'+rec.id).then(d=>{const im=r.querySelector('#eImg');if(d&&im&&limg!=='del'){im.src=d;im.hidden=false}});
   return r}
 /* المسح الضوئي بالذكاء الاصطناعي (مفتاح Anthropic على الجهاز ده بس) */
-function getKey(){let k=LS.get('drc.akey');if(k)return k;
+function getKey(){let k=LS.get('drc.akey');if(k)return k;if(S.teamKey)return S.teamKey;
   for(let i=0;i<localStorage.length;i++){const v=localStorage.getItem(localStorage.key(i))||'';const m=/sk-ant-[A-Za-z0-9_\-]{20,}/.exec(v);if(m){LS.set('drc.akey',m[0]);return m[0]}}return ''}
 function keySheet(then){
-  openSheet(`<h4>🔑 مفتاح المسح الضوئي</h4><p class="hint" style="margin-top:0">عشان قراءة الفاتورة من الصورة تشتغل، حط Anthropic API Key. تجيبه من <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
-  <input id="kK" type="password" value="${esc(LS.get('drc.akey')||'')}" placeholder="sk-ant-..." autocomplete="off" dir="ltr">
-  <p class="hint">🔒 المفتاح بيتحفظ على الجهاز ده بس، ومش بيتبعت لحد غير Anthropic. كل جهاز هيمسح فواتير محتاج يتحط عليه.</p>
-  <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">💾 حفظ</button></div>`,
-  (m,r)=>{const k=r.querySelector('#kK').value.trim();if(!/^sk-ant-/.test(k)){toast('المفتاح لازم يبدأ بـ sk-ant-');return}LS.set('drc.akey',k);closeSheet();toast('المفتاح اتحفظ');if(then)then()});
+  const cur=LS.get('drc.akey')||'',adm=S.role==='admin';
+  openSheet(`<h4>🔑 مفتاح الذكاء الاصطناعي</h4><p class="hint" style="margin-top:0">بيستخدم في قراءة الفواتير وقراءة اسم المنتج وتفاصيله من الصورة. ينفع مفتاح Google (Gemini) أو Anthropic.</p>
+  <input id="kK" type="password" value="${esc(cur)}" placeholder="AQ.… أو AIza… أو sk-ant-…" autocomplete="off" dir="ltr">
+  ${adm?`<label class="check" style="margin-top:10px"><input type="checkbox" id="kTeam" checked> استخدمه على كل أجهزة الفريق (من غير ما حد يكتبه)</label>`:''}
+  <p class="hint">🔒 ما بيتحطش في ملف الموقع على GitHub. ${adm?'لو اخترت «كل أجهزة الفريق» بيتحفظ في قاعدة البيانات، وبيشوفه بس اللي داخلين بحساب (بعد ما تحط القواعد).':'بيتحفظ على الجهاز ده بس.'}</p>
+  <p class="hint" id="kSt"></p>
+  <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="test">🧪 جرّب</button><button class="btn primary" data-m="ok">💾 حفظ</button></div>`,
+  async(m,r,b)=>{const k=r.querySelector('#kK').value.trim();if(!keyKind(k)){toast('المفتاح ده شكله مش مظبوط — لازم يبدأ بـ AQ. أو AIza أو sk-ant-');return}
+    if(m==='test'){const st=r.querySelector('#kSt');st.innerHTML='<span class="spin"></span>جاري التجربة…';const old=LS.get('drc.akey');LS.set('drc.akey',k);
+      try{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,64,64);x.fillStyle='#000';x.font='20px sans-serif';x.fillText('OK',14,40);
+        await askVision(c.toDataURL('image/jpeg',.9),'Return ONLY this JSON: {"ok":true,"text":"<the text you see>"}',200);st.textContent='✓ المفتاح شغال'}
+      catch(e){st.textContent=e==='key'?'✗ المفتاح مرفوض — اتأكد إنه منسوخ صح وإن Vertex AI / Gemini API متفعّل':e==='quota'?'✗ المفتاح شغال بس الرصيد/الحد اليومي خلص':e==='net'?'✗ مش قادر يوصل للخدمة — اتأكد من النت':'✗ حصلت مشكلة — ابعتلي صورة'}
+      finally{if(old)LS.set('drc.akey',old);else localStorage.removeItem('drc.akey')}return}
+    if(m!=='ok')return;LS.set('drc.akey',k);
+    const team=r.querySelector('#kTeam');if(team){if(team.checked)run(ref('secrets/ai').set({key:k,by:me(),t:Date.now()}));else if(S.teamKey)run(ref('secrets/ai').set({key:'',by:me(),t:Date.now()}))}
+    closeSheet();toast('المفتاح اتحفظ ✓');if(then)then()});
 }
 function pickImage(cam){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');inp.onchange=()=>{const f=inp.files&&inp.files[0];if(f)scanFile(f)};inp.click()}
 function toJpeg(file,max=1600,q=.85){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',q))};im.onerror=()=>rej('img');im.src=u})}
-const PRODUCT_PROMPT=`This is a photo of a pharmacy or cosmetics product package sold in Egypt (tourist resort pharmacy).
+const PRODUCT_PROMPT_BASE=`This is a photo of a pharmacy or cosmetics product package sold in Egypt (tourist resort pharmacy).
 Return ONLY one JSON object, no markdown, no other text:
-{"name":"product name in English as printed: brand + product + variant + size (e.g. \"Signal Sensitive Expert Toothpaste 75ml\")","alias":"short Arabic name an Egyptian pharmacist would say (e.g. \"معجون سيجنال سينسيتف\")","type":"med" for medicines (tablets, capsules, syrups, drops, creams registered as drugs) or "cos" for cosmetics, personal care, baby care, medical supplies,"group":"short English category: Teeth, Hair, Skin, Sun care, Baby, Bandage, Vitamins, Pain relief, Cold & flu, Stomach, Eye, Women, Men, etc.","expiry":"MM/YYYY only if an expiry date (EXP) is clearly printed, else null","production":"MM/YYYY only if a production/manufacturing date (P., MFG, PD) is printed, else null","shelf_life_months":number if a shelf life is printed (e.g. 30 months) else null,"barcode":"EAN digits under the barcode if clearly readable, else null"}
+{"name":"product name in English as printed: brand + product + variant + size (e.g. \"Signal Sensitive Expert Toothpaste 75ml\")","alias":"short Arabic name an Egyptian pharmacist would say (e.g. \"معجون سيجنال سينسيتف\")","type":"med" for medicines (tablets, capsules, syrups, drops, creams registered as drugs) or "cos" for cosmetics, personal care, baby care, medical supplies,"group":"CATEGORY","size":"net weight / volume / count exactly as printed, e.g. \"100ml\", \"50g\", \"48 pcs\", \"20 tabs\", else null","expiry":"MM/YYYY only if an expiry date (EXP) is clearly printed, else null","production":"MM/YYYY only if a production/manufacturing date (P., MFG, PD) is printed, else null","shelf_life_months":number if a shelf life is printed (e.g. 30 months) else null,"barcode":"EAN digits under the barcode if clearly readable, else null"}
 Never guess dates or barcode digits. Use null when not visible.`;
+function productPrompt(){const ex=[...new Set(S.items.map(x=>x.grp).filter(Boolean))].slice(0,40);
+  return PRODUCT_PROMPT_BASE.replace('"CATEGORY"','"the shop section for this product. '+(ex.length?'Use EXACTLY one of these existing sections if any fits: '+ex.map(x=>JSON.stringify(x)).join(', ')+'. Otherwise give':'Give')+' a short Arabic section name like أطفال، شعر، بشرة، أسنان، صن بلوك، جسم، رجالي، حريمي، فيتامينات، مسكنات، برد وكحة، معدة، عيون، إسعافات"')}
+
 const SCAN_PROMPT=`This is a photo of an Egyptian pharmacy supplier document: a sales invoice (فاتورة) or a return / credit note (اشعار مرتجع / اشعار خصم).
 Return ONLY one JSON object, no markdown, no other text:
 {"type":"invoice" or "return","number":"document number exactly as printed","date":"YYYY-MM-DD","amount":final net total payable as a plain number (the grand total after discounts: الصافي / الإجمالي المستحق / صافي الفاتورة),"supplier":"distributor or company name","items":number of line items or null}
@@ -1698,25 +1713,29 @@ Use "return" for any return or credit note. Dates on Egyptian documents are day/
 function normDate(s){if(!s)return '';s=toEn(String(s)).trim();let m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);if(m)return `${m[1]}-${pad(+m[2])}-${pad(+m[3])}`;m=/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/.exec(s);if(m){let y=+m[3];if(y<100)y+=2000;return `${y}-${pad(+m[2])}-${pad(+m[1])}`}
   if(/^\d{10,13}$/.test(s)){const n=+s;return dayKey(new Date(n<1e12?n*1000:n))}const d=new Date(s);return isNaN(d)?'':dayKey(d)}
 async function readInvoice(dataUrl){return askVision(dataUrl,SCAN_PROMPT,600)}
+const keyKind=k=>/^sk-ant-/.test(k)?'anthropic':/^AQ\./.test(k)?'vertex':/^AIza/.test(k)?'gemini':'';
+function parseJSONText(t){const j=String(t||'').replace(/```json|```/g,'').match(/\{[\s\S]*\}/);if(!j)throw 'parse';return JSON.parse(j[0])}
 async function askVision(dataUrl,prompt,maxTok){
-  const key=getKey();let r=null;
-  for(const model of ['claude-sonnet-5-5','claude-haiku-4-5-20251001']){
-    r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model,max_tokens:maxTok||600,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:dataUrl.split(',')[1]}},{type:'text',text:prompt}]}]})});
-    if(r.status!==404)break}
-  if(r.status===401||r.status===403)throw 'key';if(!r.ok)throw 'http';
-  const d=await r.json(),t=(d.content||[]).map(x=>x.text||'').join(''),j=t.replace(/```json|```/g,'').match(/\{[\s\S]*\}/);if(!j)throw 'parse';return JSON.parse(j[0])}
-async function scanFile(f){
-  const cid=S.acc;if(!getKey()){keySheet(()=>scanFile(f));return}
-  const r=openSheet(`<h4>📷 قراءة الفاتورة</h4><img class="scanimg" id="scImg" alt="صورة الفاتورة"><p class="hint" id="scSt"><span class="spin"></span>جاري تحليل الفاتورة بالذكاء الاصطناعي…</p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="man">إضافة يدوي</button></div>`,
-    m=>{if(m==='man')entrySheet(cid,'inv',{img:r.querySelector('#scImg').src||''});if(m==='key')keySheet(()=>scanFile(f))});
-  let img='';
-  try{img=await toJpeg(f);r.querySelector('#scImg').src=img;const j=await readInvoice(img);if(!r.isConnected)return;
-    const kind=/ret|credit|مرتجع|خصم/i.test(String(j.type||''))?'ret':'inv';
-    entrySheet(cid,kind,{no:j.number==null?'':String(j.number),date:normDate(j.date)||today(),amount:j.amount==null?'':amt(j.amount),notes:[j.supplier,j.items?j.items+' صنف':''].filter(Boolean).join(' — '),scan:true,img});
-  }catch(e){if(!r.isConnected)return;const st=r.querySelector('#scSt');
-    if(e==='key'){st.innerHTML='🔑 المفتاح غلط أو خلص رصيده — غيّره وجرب تاني';r.querySelector('.actions').insertAdjacentHTML('beforeend','<button class="btn primary" data-m="key">تغيير المفتاح</button>')}
-    else st.textContent=e==='img'?'الصورة دي مش مدعومة — جرب صورة تانية':'مقدرتش أقرا الفاتورة — جرب صورة أوضح أو ضيفها يدوي'}
+  const key=getKey(),kind=keyKind(key),b64=dataUrl.split(',')[1];if(!key)throw 'key';
+  if(kind==='anthropic'){let r=null;
+    for(const model of ['claude-sonnet-5-5','claude-haiku-4-5-20251001']){
+      r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model,max_tokens:maxTok||600,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})});
+      if(r.status!==404)break}
+    if(r.status===401||r.status===403)throw 'key';if(r.status===429)throw 'quota';if(!r.ok)throw 'http';
+    const d=await r.json();return parseJSONText((d.content||[]).map(x=>x.text||'').join(''))}
+  // Google Gemini (Vertex AI express "AQ." key, or AI Studio "AIza" key)
+  const body={contents:[{role:'user',parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:4096,responseMimeType:'application/json'}};
+  const bases=kind==='gemini'?['https://generativelanguage.googleapis.com/v1beta/models/']:['https://aiplatform.googleapis.com/v1/publishers/google/models/','https://generativelanguage.googleapis.com/v1beta/models/'];
+  let last='http';
+  for(const base of bases)for(const model of ['gemini-2.5-flash','gemini-2.0-flash-001','gemini-2.5-flash-lite']){
+    let r;try{r=await fetch(`${base}${model}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})}catch(e){last='net';continue}
+    if(r.status===404){last='model';continue}
+    if(r.status===401||r.status===403){last='key';break}
+    if(r.status===429){throw 'quota'}
+    if(!r.ok){last='http';continue}
+    const d=await r.json(),t=((((d.candidates||[])[0]||{}).content||{}).parts||[]).map(x=>x.text||'').join('');return parseJSONText(t)}
+  throw last;
 }
 function repAcc(){const c=S.companies.find(x=>x.id===S.acc);const l=accList(c.id).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.t-b.t),st=stats(l);let bal=0;
   const rows=l.map(e=>{const a=+e.amount||0;bal+=KIND[e.kind].s*a;return [e.date?fmtDay(e.date):'—',KIND[e.kind].l,e.no||'—',e.notes||'',e.kind==='inv'?num(a):'',e.kind!=='inv'?num(a):'',num(bal)]});
@@ -2027,29 +2046,32 @@ function scGot(raw){if(scBusy)return;scBusy=true;scBeep();try{navigator.vibrate&
 function loadZXing(){return window.ZXing?Promise.resolve():new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
 function loadH5(){return window.__Html5QrcodeLibrary__?Promise.resolve():new Promise((res,rej)=>{const urls=['https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js','https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'];let i=0;const nx=()=>{if(i>=urls.length)return rej('load');const sc=document.createElement('script');sc.src=urls[i++];sc.onload=res;sc.onerror=nx;document.head.appendChild(sc)};nx()})}
 const H5F=()=>{const F=window.__Html5QrcodeLibrary__.Html5QrcodeSupportedFormats;return ['QR_CODE','EAN_13','EAN_8','UPC_A','UPC_E','CODE_128','CODE_39','ITF','DATA_MATRIX'].map(k=>F[k]).filter(v=>v!=null)};
+function loadScript(urls){return new Promise((res,rej)=>{let i=0;const nx=()=>{if(i>=urls.length)return rej('load');const sc=document.createElement('script');sc.src=urls[i++];sc.onload=res;sc.onerror=nx;document.head.appendChild(sc)};nx()})}
+function loadZX(){return window.ZXing&&window.ZXing.MultiFormatReader?Promise.resolve():loadScript(['https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js','https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'])}
+let zxReader=null;
+function zxDecodeCanvas(cv){const Z=window.ZXing;if(!zxReader){const h=new Map(),F=Z.BarcodeFormat;h.set(Z.DecodeHintType.POSSIBLE_FORMATS,[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39,F.ITF,F.QR_CODE,F.DATA_MATRIX]);h.set(Z.DecodeHintType.TRY_HARDER,true);zxReader=new Z.MultiFormatReader();zxReader.setHints(h)}
+  try{return zxReader.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText()}catch(e){return null}finally{try{zxReader.reset()}catch(e){}}}
 async function openScanner(o){
-  scCb=o.onCode;scBusy=false;scModes=!!o.modes;$('scTitle').textContent=o.title||'امسح الكود';$('scHint').textContent='وجّه الكاميرا على الباركود أو الـ QR';$('scTorch').hidden=true;$sc.hidden=false;
+  scCb=o.onCode;scBusy=false;scModes=!!o.modes;$('scTitle').textContent=o.title||'امسح الكود';$('scHint').textContent='جاري تشغيل الكاميرا…';$('scTorch').hidden=true;$sc.hidden=false;
   $('scMode').hidden=!o.modes;if(o.modes)$('scMode').querySelectorAll('[data-sm]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sm===scMode()));
-  $scv.hidden=false;$('scBox').innerHTML='';
+  $scv.hidden=false;$scv.muted=true;$scv.setAttribute('playsinline','');$('scBox').innerHTML='';
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('scHint').textContent='الكاميرا المباشرة مش متاحة هنا — دوس «📸 صوّر الكود»';return}
   try{
-    if('BarcodeDetector' in window){
-      let fm=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code','data_matrix'];try{const sup=await BarcodeDetector.getSupportedFormats();fm=fm.filter(f=>sup.includes(f))}catch(e){}
-      const det=new BarcodeDetector({formats:fm});
-      scStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-      if($sc.hidden){stopScanner();return}
-      $scv.srcObject=scStream;await $scv.play();
-      const tr=scStream.getVideoTracks()[0];try{if(tr.getCapabilities&&tr.getCapabilities().torch)$('scTorch').hidden=false}catch(e){}
-      scTimer=setInterval(async()=>{if(scBusy||$scv.readyState<2)return;try{const r=await det.detect($scv);if(r&&r.length)scGot(r[0].rawValue)}catch(e){}},160);
-    }else{
-      // آيفون/آيباد: مكتبة html5-qrcode
-      $('scHint').textContent='جاري تشغيل الكاميرا…';await loadH5();if($sc.hidden)return;
-      $scv.hidden=true;const L=window.__Html5QrcodeLibrary__;
-      scH5=new L.Html5Qrcode('scBox',{formatsToSupport:H5F(),verbose:false,experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
-      await scH5.start({facingMode:'environment'},{fps:12,qrbox:(w,h)=>({width:Math.max(60,Math.floor(Math.min(w*.85,380))),height:Math.max(60,Math.floor(Math.min(h*.4,230)))}),disableFlip:false},txt=>scGot(txt),()=>{});
-      if($sc.hidden){stopScanner();return}
-      $('scHint').textContent='وجّه الكاميرا على الباركود أو الـ QR';
-    }
+    scStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+    if($sc.hidden){stopScanner();return}
+    $scv.srcObject=scStream;try{await $scv.play()}catch(e){}
+    const tr=scStream.getVideoTracks()[0];try{if(tr.getCapabilities&&tr.getCapabilities().torch)$('scTorch').hidden=false}catch(e){}
+    let det=null;
+    if('BarcodeDetector' in window){try{let fm=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code','data_matrix'];const sup=await BarcodeDetector.getSupportedFormats();fm=fm.filter(f=>sup.includes(f));if(fm.length)det=new BarcodeDetector({formats:fm})}catch(e){det=null}}
+    if(!det){await loadZX();if($sc.hidden)return}
+    const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true}),t0=Date.now();let warned=false;
+    $('scHint').textContent='وجّه الكاميرا على الباركود أو الـ QR';
+    scTimer=setInterval(async()=>{
+      if(scBusy)return;
+      if(!$scv.videoWidth){if(Date.now()-t0>1500){try{$scv.play()}catch(e){}}if(!warned&&Date.now()-t0>5000){warned=true;$('scHint').textContent='الكاميرا مش بتعرض صورة — دوس «📸 صوّر الكود»'}return}
+      try{if(det){const r=await det.detect($scv);if(r&&r.length)scGot(r[0].rawValue)}
+        else{const w=Math.min(1000,$scv.videoWidth),h=Math.round($scv.videoHeight*w/$scv.videoWidth);if(cv.width!==w){cv.width=w;cv.height=h}cx.drawImage($scv,0,0,w,h);const t=zxDecodeCanvas(cv);if(t)scGot(t)}}catch(e){}
+    },det?160:260);
   }catch(e){console.warn(e);$('scHint').textContent=/NotAllowed|Permission/i.test(String(e&&e.name||e))?'الكاميرا مقفولة — اسمح للكاميرا من الإعدادات، أو دوس «📸 صوّر الكود»':'الكاميرا المباشرة مش شغالة هنا — دوس «📸 صوّر الكود»'}
 }
 $('scClose').addEventListener('click',stopScanner);
@@ -2059,6 +2081,9 @@ const scMode=()=>LS.get('drc.scmode')||'sell';
 $('scMode').addEventListener('click',e=>{const b=e.target.closest('[data-sm]');if(!b)return;LS.set('drc.scmode',b.dataset.sm);$('scMode').querySelectorAll('[data-sm]').forEach(x=>x.setAttribute('aria-pressed',x===b));$('scTitle').textContent=b.dataset.sm==='in'?'امسح الصنف اللي وصل':'امسح الصنف عشان تبيعه'});
 async function decodeImageFile(f){
   if('BarcodeDetector' in window){try{const det=new BarcodeDetector();const bmp=await createImageBitmap(f);const r=await det.detect(bmp);if(r&&r.length)return r[0].rawValue}catch(e){}}
+  try{await loadZX();const u=URL.createObjectURL(f),im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=u});
+    for(const W of [1400,1000,700,2000]){const w=Math.min(W,im.width),h=Math.round(im.height*w/im.width),cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d',{willReadFrequently:true}).drawImage(im,0,0,w,h);const t=zxDecodeCanvas(cv);if(t){URL.revokeObjectURL(u);return t}}
+    URL.revokeObjectURL(u)}catch(e){}
   await loadH5();const L=window.__Html5QrcodeLibrary__;const h=new L.Html5Qrcode('scFile',{formatsToSupport:H5F(),verbose:false});
   try{return await h.scanFile(f,false)}finally{try{h.clear()}catch(e){}}
 }
@@ -2236,6 +2261,7 @@ function startData(){
   },e=>console.error(e));
   col('events').orderBy('t','desc').limit(400).onSnapshot(snap=>{S.events=snap.docs.map(d=>d.data());if(S.view==='log')render()},e=>console.error(e));
   startChat();startNotes();startAcc();
+  ref('secrets/ai').onSnapshot(d=>{S.teamKey=(d.data()||{}).key||''},()=>{});
   ref('settings/app').onSnapshot({includeMetadataChanges:true},d=>{S.cfg={cur:'ج.م',...(d.data()||{})};if(!d.metadata.fromCache&&!S.cfg.topic)ensureTopic();if(S.ready)render()},e=>console.error(e));
   setTimeout(()=>{if(S.ready||S.error)return;
     S.error=`الموقع مش قادر يوصل للبيانات.<br><br>1) اقفل أي تاب تاني مفتوح فيه الموقع.<br>2) اتأكد إن النت شغال.${lastErr?`<br><br><small style="direction:ltr;display:block">${esc(lastErr)}</small>`:''}<div class="toolbar" style="margin-top:14px"><button class="btn primary" onclick="location.reload()">إعادة المحاولة</button></div>`;render();
