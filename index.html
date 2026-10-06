@@ -591,7 +591,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '6-10 قراءة المنتج 2';
+const APP_V = '6-10 قراءة المنتج 3';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1731,17 +1731,20 @@ async function askVision(dataUrl,prompt,maxTok){
     const d=await r.json();try{return parseJSONText((d.content||[]).map(x=>x.text||'').join(''))}catch(e){visionErr='الرد مش مفهوم';throw 'parse'}}
   // Google Gemini — Vertex AI express (AQ.) أو AI Studio (AIza)
   const mk=json=>({contents:[{role:'user',parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:Object.assign({temperature:0.1,maxOutputTokens:4096},json?{responseMimeType:'application/json'}:{})});
-  const bases=kind==='gemini'?['https://generativelanguage.googleapis.com/v1beta/models/']:['https://aiplatform.googleapis.com/v1/publishers/google/models/','https://aiplatform.googleapis.com/v1beta1/publishers/google/models/'];
+  const GL='https://generativelanguage.googleapis.com/v1beta/models/',VX='https://aiplatform.googleapis.com/v1/publishers/google/models/';
+  // مفاتيح AI Studio ممكن تبدأ بـ AQ. برضه، فبنجرب الخدمتين لأي مفتاح
+  const bases=kind==='gemini'?[GL]:[GL,VX];
+  const hostOf=b=>b.includes('generativelanguage')?'AI Studio':'Vertex';
   const models=['gemini-2.5-flash','gemini-2.0-flash-001','gemini-2.5-flash-lite','gemini-2.0-flash','gemini-2.5-pro'];
   const errs=[];let code='http';
   for(const base of bases){let keyBad=false;
     for(const model of models){
       for(const json of [true,false]){
         let r;try{r=await fetch(`${base}${model}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(mk(json))})}
-        catch(e){errs.push(`${model}: مش قادر يوصل (${e&&e.message||'network'})`);code='net';break}
+        catch(e){errs.push(`${hostOf(base)} · ${model}: مش قادر يوصل (${e&&e.message||'network'})`);code='net';break}
         if(r.ok){const d=await r.json(),c=(d.candidates||[])[0]||{},t=((c.content||{}).parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('');
           try{return parseJSONText(t)}catch(e){errs.push(`${model}: رد مش مفهوم (${c.finishReason||'?'}) ${t.slice(0,80)}`);code='parse';break}}
-        const msg=await errText(r);errs.push(`${model} ${r.status}: ${msg}`);
+        const msg=await errText(r);errs.push(`${hostOf(base)} · ${model} ${r.status}: ${msg}`);
         if(r.status===429){visionErr=errs.slice(-2).join(' | ');throw 'quota'}
         if(r.status===401||r.status===403){keyBad=true;code='key';break}
         if(r.status===400&&json&&/mime|response_mime|responseMimeType|json/i.test(msg))continue;
@@ -1749,7 +1752,7 @@ async function askVision(dataUrl,prompt,maxTok){
         break}
       if(keyBad)break}
   }
-  visionErr=errs.slice(0,3).join(' | ');throw code;
+  const seen=new Set();visionErr=errs.filter(e=>{const k=e.split(' · ')[0];if(seen.has(k))return false;seen.add(k);return true}).join(' | ');throw code;
 }
 async function scanFile(f){
   const cid=S.acc;if(!getKey()){keySheet(()=>scanFile(f));return}
