@@ -576,6 +576,10 @@ body.hasinv .wrap{padding-bottom:230px}
 .sbd{margin-top:6px}
 .sbd .dq{display:none}
 
+.audsel{min-height:54px;margin:2px 0 8px}
+.audsel button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:14px;font-weight:700}
+.audsel button small{font-size:11px;font-weight:500;opacity:.8}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -668,7 +672,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '7-10 طلبية للشركة';
+const APP_V = '7-10 مدير وشركة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -844,14 +848,14 @@ function shMore(p){openSheet(`<h4>${esc(p.name)}</h4><div class="menu">
   m=>{if(m==='in')return restockSheet(p);closeSheet();if(m==='ord')toggleOrdered(p);if(m==='urg')urgent(p);if(m==='one')shareShortSheet(p)})}
 function shSelected(){return shortList().filter(shSel).map(p=>({p,boxes:shQty(p),need:shQty(p)*spb(p)}))}
 function shText(sel){return `📋 طلبية ${SHOP_NAME} — ${fmtDay(today())}\n${TYPES[S.shortTab].icon} ${TYPES[S.shortTab].name}\n\n`+sel.map((x,i)=>`${i+1}. ${x.p.name} — المطلوب ${fmtQ(x.p,x.need)}`).join('\n')}
-async function makeShortList(sel,pi,pn){
+async function makeShortList(sel,pi,pn,aud){aud=aud||'co';
   try{await document.fonts.ready}catch(e){}
   const F='Alexandria, Tahoma, Arial, sans-serif',W=1080,M=40,RH=176,HH=150,H=HH+sel.length*RH+80;
   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
   x.fillStyle='#F2F7F6';x.fillRect(0,0,W,H);
   // الهيدر
   x.fillStyle='#0E7C66';x.fillRect(0,0,W,HH-24);x.textBaseline='middle';
-  x.direction='rtl';x.textAlign='right';x.fillStyle='#fff';x.font=`800 44px ${F}`;x.fillText(`طلبية ${TYPES[S.shortTab].icon} ${TYPES[S.shortTab].name}`,W-M,52);
+  x.direction='rtl';x.textAlign='right';x.fillStyle='#fff';x.font=`800 44px ${F}`;x.fillText(`${aud==='mgr'?'نواقص':'طلبية'} ${TYPES[S.shortTab].icon} ${TYPES[S.shortTab].name}`,W-M,52);
   x.font=`500 26px ${F}`;x.fillStyle='#CDEFE5';x.fillText(`${fmtDay(today())} — ${sel.length} صنف${pn>1?` — صفحة ${pi+1} من ${pn}`:''}`,W-M,96);
   x.direction='ltr';x.textAlign='left';x.fillStyle='#fff';x.font=`800 34px ${F}`;x.fillText('Dr. Corner',M,74);
   const ims=await Promise.all(sel.map(s_=>s_.p.img?new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=s_.p.img}):null));
@@ -861,9 +865,9 @@ async function makeShortList(sel,pi,pn){
     const im=ims[k];if(im){const sc=Math.max(140/im.width,140/im.height),w=im.width*sc,h=im.height*sc;x.drawImage(im,tx+(140-w)/2,ty+(140-h)/2,w,h)}else{x.font='80px sans-serif';x.textAlign='center';x.direction='ltr';x.fillText(TYPES[tOf(p)].icon,tx+70,ty+74)}x.restore();
     // الأرقام (شمال)
     const bw=150,bh=RH-46,by=y+15,box=(bx,label,val,bg,fg,lc)=>{x.fillStyle=bg;rrPath(x,bx,by,bw,bh,18);x.fill();x.textAlign='center';x.direction='rtl';x.fillStyle=lc;x.font=`600 24px ${F}`;x.fillText(label,bx+bw/2,by+30);const sv=String(val);x.fillStyle=fg;x.font=`800 ${sv.length>6?34:sv.length>3?46:62}px ${F}`;x.direction=/[\u0600-\u06FF]/.test(sv)?'rtl':'ltr';x.fillText(sv,bx+bw/2,by+bh/2+20)};
-    box(M+14,'المطلوب',fmtQs(p,s_.need),'#0E7C66','#fff','#CDEFE5');
+    box(M+14,'عايزين',fmtQs(p,s_.need),'#0E7C66','#fff','#CDEFE5');if(aud==='mgr')box(M+14+bw+12,'عندنا',fmtQs(p,q),q?'#F2F6F5':'#FDECEC',q?'#102A2E':'#C62A2F','#587074');
     // الاسم (في النص)
-    const nx=tx-22,nw=nx-(M+14+bw+24);x.direction='ltr';x.textAlign='right';x.fillStyle='#102A2E';x.font=`700 34px ${F}`;
+    const nx=tx-22,nw=nx-(M+14+bw*(aud==='mgr'?2:1)+(aud==='mgr'?12:0)+24);x.direction='ltr';x.textAlign='right';x.fillStyle='#102A2E';x.font=`700 34px ${F}`;
     const words=String(p.name).split(' '),lines=[];let ln='';for(const w of words){const t=ln?ln+' '+w:w;if(x.measureText(t).width>nw&&ln){lines.push(ln);ln=w}else ln=t}lines.push(ln);
     const L=lines.slice(0,2);if(lines.length>2)L[1]=L[1]+'…';const cy=y+(RH-16)/2-(L.length-1)*21;L.forEach((l,i)=>x.fillText(l,nx,cy+i*42));
     const sub=[p.alias&&/[\u0600-\u06FF]/.test(p.alias)?p.alias:'',medInfo(p)].filter(Boolean).join(' · ');if(sub&&L.length<2){x.direction='rtl';x.font=`500 24px ${F}`;x.fillStyle='#6b7f82';x.fillText(sub,nx,cy+42)}
@@ -873,20 +877,23 @@ async function makeShortList(sel,pi,pn){
 }
 async function shSend(){
   const sel=shSelected();if(!sel.length){toast('علّم على صنف واحد على الأقل');return}
-  const PER=12,pn=Math.ceil(sel.length/PER);
-  const r=openSheet(`<h4>📤 ابعت ${sel.length} صنف</h4><img id="saPrev" class="scanimg" alt="" hidden><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصورة…</p><label class="check"><input type="checkbox" id="saOrd" checked> علّمهم «اتطلب» بعد الإرسال</label>
-    <button class="btn primary" data-m="list" id="saGo" disabled style="width:100%;padding:13px">📤 ابعت ${pn>1?pn+' صور فيها':'صورة واحدة فيها'} كل الأصناف</button>
-    <div class="actions"><button class="btn" data-m="each">🖼️ صورة لكل صنف</button><button class="btn" data-m="txt">📋 نص بس</button><button class="btn" data-cancel>قفل</button></div>`,
-  async m=>{const mark=()=>{if(r.querySelector('#saOrd')&&r.querySelector('#saOrd').checked){const b=fs.batch();sel.forEach(x=>{if(!x.p.ordered)b.update(ref('items/'+x.p.id),{ordered:{by:me(),t:Date.now()}})});commit(b)}};
-    if(m==='txt'){mark();return wa(shText(sel))}
-    if(m==='list'){await shareFiles(files,shText(sel));mark();return}
-    if(m==='each'){r.querySelector('#saSt').innerHTML='<span class="spin"></span>جاري تجهيز صورة لكل صنف…';const fl=[];for(const x of sel){const b=await makeShortCard(x.p,good(x.p)+x.need);fl.push(new File([b],fileName(x.p.name)+'.jpg',{type:'image/jpeg'}))}
-      r.querySelector('#saSt').textContent=`✓ ${fl.length} صورة جاهزة`;const box=r.querySelector('.actions');let h='';for(let i=0;i<fl.length;i+=10)h+=`<button class="btn primary" data-m="e:${i}">📤 ابعت ${fl.length>10?`${i+1}–${Math.min(i+10,fl.length)}`:'الصور'}</button>`;box.insertAdjacentHTML('afterbegin',h);each=fl;return}
+  const PER=12,pn=Math.ceil(sel.length/PER);let aud=LS.get('drc.aud')||'co';
+  const r=openSheet(`<h4>📤 ابعت ${sel.length} صنف</h4>
+    <div class="seg audsel"><button data-m="a:mgr" aria-pressed="${aud==='mgr'}">👔 للمدير<small>عندنا + عايزين</small></button><button data-m="a:co" aria-pressed="${aud==='co'}">🏭 للشركة<small>عايزين بس</small></button></div>
+    <img id="saPrev" class="scanimg" alt="" hidden><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصور…</p><label class="check"><input type="checkbox" id="saOrd" checked> علّمهم «اتطلب» بعد الإرسال للشركة</label>
+    <button class="btn primary" data-m="list" id="saGo" disabled style="width:100%;padding:13px"></button>
+    <div class="actions"><button class="btn" data-m="each">🖼️ صورة لكل صنف</button><button class="btn" data-cancel>قفل</button></div>`,
+  async m=>{const mark=()=>{if(aud==='co'&&r.querySelector('#saOrd')&&r.querySelector('#saOrd').checked){const b=fs.batch();sel.forEach(x=>{if(!x.p.ordered)b.update(ref('items/'+x.p.id),{ordered:{by:me(),t:Date.now()}})});commit(b)}};
+    if(m.startsWith('a:')){aud=m.slice(2);LS.set('drc.aud',aud);r.querySelectorAll('.audsel button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));show();return}
+    if(m==='list'){await shareFiles(files[aud],'');mark();return}
+    if(m==='each'){r.querySelector('#saSt').innerHTML='<span class="spin"></span>جاري تجهيز صورة لكل صنف…';const fl=[];for(const x of sel){const b=await makeShortCard(x.p,good(x.p)+x.need,aud);fl.push(new File([b],fileName(x.p.name)+'.jpg',{type:'image/jpeg'}))}
+      r.querySelector('#saSt').textContent=`✓ ${fl.length} صورة جاهزة (${aud==='mgr'?'للمدير':'للشركة'})`;const box=r.querySelector('.actions');box.querySelectorAll('[data-m^="e:"]').forEach(x=>x.remove());let h='';for(let i=0;i<fl.length;i+=10)h+=`<button class="btn primary" data-m="e:${i}">📤 ابعت ${fl.length>10?`${i+1}–${Math.min(i+10,fl.length)}`:'الصور'}</button>`;box.insertAdjacentHTML('afterbegin',h);each=fl;return}
     if(m.startsWith('e:')){const i=+m.slice(2);await shareFiles(each.slice(i,i+10),'');if(i+10>=each.length)mark()}});
-  let each=[];const files=[];
-  for(let i=0;i<pn;i++){if(!r.isConnected)return;const b=await makeShortList(sel.slice(i*PER,(i+1)*PER),i,pn);files.push(new File([b],`طلبية ${TYPES[S.shortTab].name} ${today()}${pn>1?' - '+(i+1):''}.jpg`,{type:'image/jpeg'}))}
-  const pv=r.querySelector('#saPrev');pv.src=URL.createObjectURL(files[0]);pv.hidden=false;
-  r.querySelector('#saSt').textContent=pn>1?`✓ ${pn} صور جاهزين — كل صورة فيها لحد ${PER} صنف`:'✓ الصورة جاهزة';r.querySelector('#saGo').disabled=false;
+  let each=[];const files={mgr:[],co:[]},urls={};
+  const show=()=>{if(!files[aud].length)return;const pv=r.querySelector('#saPrev');if(!urls[aud])urls[aud]=URL.createObjectURL(files[aud][0]);pv.src=urls[aud];pv.hidden=false;
+    r.querySelector('#saGo').textContent=`📤 ابعت ${aud==='mgr'?'للمدير':'للشركة'} — ${pn>1?pn+' صور':'صورة واحدة'}`;r.querySelector('#saGo').disabled=false;r.querySelector('#saOrd').parentElement.hidden=aud!=='co'};
+  for(const a of ['co','mgr'])for(let i=0;i<pn;i++){if(!r.isConnected)return;const b=await makeShortList(sel.slice(i*PER,(i+1)*PER),i,pn,a);files[a].push(new File([b],`${a==='mgr'?'نواقص':'طلبية'} ${TYPES[S.shortTab].name} ${today()}${pn>1?' - '+(i+1):''}.jpg`,{type:'image/jpeg'}))}
+  r.querySelector('#saSt').textContent=pn>1?`✓ ${pn} صور — كل صورة فيها لحد ${PER} صنف`:'✓ الصورة جاهزة';show();
 }
 const mStart=i=>dayKey(new Date(Math.floor(i/12),i%12,1));
 const mEnd=i=>dayKey(new Date(Math.floor(i/12),i%12+1,0));
@@ -2387,7 +2394,7 @@ async function attachLedgerImg(e){pickPhoto(false,async d=>{const x=await shrink
 function sold30(p){const from=Date.now()-30*864e5;return S.sales.filter(s=>s.id===p.id&&s.t>=from).reduce((a,s)=>a+(+(s.units!=null?s.units:s.qty)||0),0)}
 function suggestTarget(p){const K=spb(p);if(p.target>0)return +p.target*K;const m=minOf(p)*K;return Math.max(m*2,m+K,Math.ceil(sold30(p)*0.75))}
 function rrPath(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
-async function makeShortCard(p,target){
+async function makeShortCard(p,target,aud){aud=aud||'co';
   try{await document.fonts.ready}catch(e){}
   const F='Alexandria, Tahoma, Arial, sans-serif',W=1080,q=good(p),need=Math.max(0,target-q),out=!q;
   const mx=document.createElement('canvas').getContext('2d');mx.font=`800 50px ${F}`;
@@ -2412,9 +2419,10 @@ async function makeShortCard(p,target){
   x.fillStyle='#102A2E';x.font=`800 50px ${F}`;x.textAlign='center';x.direction='ltr';x.textBaseline='alphabetic';L.forEach((l,i)=>x.fillText(i===1&&lines.length>2?l+'…':l,W/2,NY+i*62));
   if(alias){x.direction='rtl';x.fillStyle='#587074';x.font=`500 36px ${F}`;x.fillText(alias,W/2,NY+L.length*62+8)}
   // المربعات: عندنا | المفروض | نطلب
-  const tw=W-152,tile=(i,label,val,bg,fg,lab)=>{const tx=W-76-tw-i*(tw+24);x.fillStyle=bg;rrPath(x,tx,TY,tw,TH,30);x.fill();
+  const tw=aud==='mgr'?(W-152-24)/2:W-152,tile=(i,label,val,bg,fg,lab)=>{const tx=W-76-tw-i*(tw+24);x.fillStyle=bg;rrPath(x,tx,TY,tw,TH,30);x.fill();
     x.textAlign='center';x.direction='rtl';x.fillStyle=lab;x.font=`600 32px ${F}`;x.fillText(label,tx+tw/2,TY+58);x.fillStyle=fg;const sv=String(val);x.font=`800 ${sv.length>8?60:sv.length>5?80:110}px ${F}`;x.direction=/[\u0600-\u06FF]/.test(sv)?'rtl':'ltr';x.fillText(sv,tx+tw/2,TY+160)};
-  tile(0,'المطلوب',fmtQ(p,need),'#0E7C66','#ffffff','#CDEFE5');
+  if(aud==='mgr'){tile(0,'عندنا',fmtQs(p,q),out?'#FDECEC':'#F2F6F5',out?'#C62A2F':'#102A2E','#587074');tile(1,'عايزين',fmtQs(p,need),'#0E7C66','#ffffff','#CDEFE5')}
+  else tile(0,'عايزين',fmtQ(p,need),'#0E7C66','#ffffff','#CDEFE5');
   // الفوتر
   x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 28px ${F}`;x.fillText(`طلبية ${fmtDay(today())}`,W/2,H-80);
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
@@ -2422,7 +2430,8 @@ async function makeShortCard(p,target){
 const shortText=(p,target)=>{const q=good(p);return `${p.name}\nالمطلوب: ${fmtQ(p,Math.max(0,target-q))}`};
 const fileName=n=>String(n).replace(/[^\w\u0600-\u06FF\- ]+/g,'').trim().slice(0,40)||'item';
 async function shareFiles(files,text){
-  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,text});return true}catch(e){if(e&&e.name==='AbortError')return true}}
+  const img=files.every(f=>/^image\//.test(f.type));if(img)text='';
+  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share(text?{files,text}:{files});return true}catch(e){if(e&&e.name==='AbortError')return true}}
   files.forEach(f=>{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove()});
   toast('الصور اتنزلت على الجهاز — ابعتها من الجاليري');if(text)setTimeout(()=>wa(text),600);return false}
 function shareShortSheet(p){
@@ -2431,19 +2440,19 @@ function shareShortSheet(p){
     <div class="two"><div><label>عندنا دلوقتي</label><div class="facts"><span><b>${fmtQ(p,good(p))}</b></span></div></div><div><label for="ssT">المفروض يكون موجود${spb(p)>1?' (علب)':''}</label><input id="ssT" type="number" inputmode="numeric" value="${Math.ceil(target/spb(p))}"></div></div>
     <p class="hint">${sold30(p)?`اتباع منه ${fmtQ(p,sold30(p))} في آخر 30 يوم — `:''}المطلوب: <b id="ssN">${fmtQ(p,Math.max(0,target-good(p)))}</b></p>
     <label class="check"><input type="checkbox" id="ssSave" ${p.target?'checked':''}> احفظ الرقم ده للصنف ده</label>
-    <div class="actions"><button class="btn" data-cancel>قفل</button><button class="btn primary" data-m="go">📤 ابعت</button></div>`,
-  async m=>{if(m!=='go')return;const t=Math.max(0,int(r.querySelector('#ssT').value))*spb(p);
+    <div class="actions"><button class="btn" data-cancel>قفل</button><button class="btn" data-m="go:mgr">👔 للمدير</button><button class="btn primary" data-m="go:co">🏭 للشركة</button></div>`,
+  async m=>{if(!m.startsWith('go'))return;const aud=m.split(':')[1]||'co';const t=Math.max(0,int(r.querySelector('#ssT').value))*spb(p);
     if(r.querySelector('#ssSave').checked&&t/spb(p)!==p.target)run(ref('items/'+p.id).update({target:t/spb(p)}));else if(!r.querySelector('#ssSave').checked&&p.target)run(ref('items/'+p.id).update({target:FV().delete()}));
-    if(!blob||t!==target){target=t;blob=await makeShortCard(p,target)}
-    await shareFiles([new File([blob],fileName(p.name)+'.jpg',{type:'image/jpeg'})],shortText(p,target))});
-  const draw=async()=>{blob=await makeShortCard(p,target);if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(blob);const im=r.querySelector('#ssImg');if(im){im.src=url;r.querySelector('#ssSt').textContent=''}};
+    target=t;const bl=await makeShortCard(p,target,aud);
+    await shareFiles([new File([bl],fileName(p.name)+'.jpg',{type:'image/jpeg'})],'')});
+  const draw=async()=>{blob=await makeShortCard(p,target,'mgr');if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(blob);const im=r.querySelector('#ssImg');if(im){im.src=url;r.querySelector('#ssSt').textContent=''}};
   r.querySelector('#ssT').addEventListener('change',e=>{target=Math.max(0,int(e.target.value))*spb(p);r.querySelector('#ssN').textContent=fmtQ(p,Math.max(0,target-good(p)));draw()});
   draw();
 }
 async function shareAllShort(){
   const list=shortList();if(!list.length)return;
   const r=openSheet(`<h4>📤 ابعت كل النواقص صور</h4><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز ${list.length} صورة…</p><div class="actions" id="saBtns"></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
-  async m=>{if(!m.startsWith('b:'))return;const i=+m.slice(2),part=files.slice(i,i+10);await shareFiles(part,i===0?txt:'')});
+  async m=>{if(!m.startsWith('b:'))return;const i=+m.slice(2),part=files.slice(i,i+10);await shareFiles(part,'')});
   const files=[];for(const p of list){if(!r.isConnected)return;const b=await makeShortCard(p,suggestTarget(p));files.push(new File([b],fileName(p.name)+'.jpg',{type:'image/jpeg'}));r.querySelector('#saSt').innerHTML=`<span class="spin"></span>جاري تجهيز ${files.length} من ${list.length}…`}
   const txt=`📋 نواقص ${SHOP_NAME} — ${fmtDay(today())}\n`+list.map((p,i)=>`${i+1}. ${p.name} — المطلوب ${Math.max(0,suggestTarget(p)-good(p))}`).join('\n');
   r.querySelector('#saSt').textContent=`✓ ${files.length} صورة جاهزة${files.length>10?' — بتتبعت كل 10 مع بعض':''}`;
