@@ -617,7 +617,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '7-10 أسهل وأدوية';
+const APP_V = '7-10 المبيعات';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -691,7 +691,7 @@ function renderTop(){
   const tabs=[['items','الأصناف'],['sales','المبيعات'],['short','النواقص',sc?`<span class="pill">${sc}</span>`:''],['exp','الإكسباير',ec?`<span class="pill amber">${ec}</span>`:''],['acc','الحسابات'],['log','السجل']];
   $tabs.innerHTML=show?tabs.map(([k,l,p])=>`<button data-tab="${k}" ${S.view===k?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TICON[k]}</svg><span>${l}</span>${p||''}</button>`).join(''):'';
   $sb.hidden=!show;
-  $seg.hidden=['acc','log','notes'].includes(S.view);
+  $seg.hidden=['acc','log','notes','sales'].includes(S.view);
   $seg.innerHTML=[['all','الكل','الكل'],['med','💊','أدوية بس'],['cos','🧴','كوزماتكس بس']].map(([k,l,a])=>`<button data-type="${k}" aria-pressed="${S.type===k}" aria-label="${a}" title="${a}">${l}</button>`).join('');
   $st.className=S.offline?'off':'';$st.innerHTML=show?`<i></i>${S.offline?'مش متصل':''}`:'';$st.title=S.offline?'مش متصل — هيتزامن لما النت يرجع':'متزامن مع الكل';
   $bell.hidden=$('notesBtn').hidden=$mic.hidden=!show;$fab.hidden=true;$('chatBtn').hidden=!show;
@@ -736,7 +736,7 @@ function vSales(){
   let h=`<div class="dayhead"><button class="btn sm" data-act="day-prev">‹ قبله</button><input type="date" id="dayIn" value="${d}" max="${today()}"><button class="btn sm" data-act="day-next" ${isT?'disabled':''}>بعده ›</button></div><p class="hint" style="margin-top:6px"><b>${isT?'النهارده':dayName(d)}</b> ${fmtDay(d)}</p>`;
   h+=`<div class="toolbar"><button class="btn primary" data-act="inv-open">${CART.lines.length?'🧾 الفاتورة المفتوحة ('+CART.lines.length+')':'🛒 بيع جديد'}</button></div>`;
   if(raw===null){$app.innerHTML=h+'<p class="hint">جاري تحميل اليوم ده…</p>';return}
-  const list=raw.filter(s=>typeOk(s.type||'cos')&&matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))).sort((a,b)=>b.t-a.t);
+  const list=raw.filter(s=>matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))).sort((a,b)=>b.t-a.t);
   if(list.length){
     h+=`<div class="chips"><button class="chip" data-act="smode2" data-k="inv" aria-pressed="${mode==='inv'}">🧾 بالفواتير</button><button class="chip" data-act="smode2" data-k="item" aria-pressed="${mode==='item'}">📦 حسب الصنف</button></div>
       <div class="toolbar"><button class="btn" data-act="rep-sales" data-k="copy">نسخ</button><button class="btn" data-act="rep-sales" data-k="pdf">PDF</button><button class="btn" data-act="rep-sales" data-k="wa">واتساب</button></div>`;
@@ -744,7 +744,8 @@ function vSales(){
       ${g.lines.map(s=>`<div class="row slim">${ico(S.items.find(i=>i.id===s.id)||{type:s.type})}<div class="kit"><b>${esc(s.name)}</b><div class="meta">${Object.keys(s.alloc||{}).filter(k=>k!=='x').map(k=>`<span>⏳ ${bkShort(k)}${s.alloc[k]>1?' ×'+s.alloc[k]:''}</span>`).join('')}${s.short?`<span class="rd">${s.short} مكانوش في المخزن</span>`:''}</div></div><div class="ipx"><span class="q">× ${s.qty}${s.unit==="strip"?" شريط":(spb(S.items.find(i=>i.id===s.id))>1?" علبة":"")}</span><b>${fmtPx(s.price,s.cur)}</b><small>${s.price?(s.unit==='strip'?'للشريط':spb(S.items.find(i=>i.id===s.id))>1?'للعلبة':'للقطعة'):''}</small></div><button class="icon" data-act="undo-sale" data-sid="${s.sid}" aria-label="إلغاء الصنف ده">↶</button></div>`).join('')}</section>`).join('');
     else{const agg=aggSales(list);h+=`<div class="rows">${agg.map(a=>`<div class="row">${ico(S.items.find(i=>i.id===a.id)||{type:a.type})}<div class="kit"><b>${esc(a.name)}</b>${Object.keys(a.d).length?`<div class="bts">${dChips(a.d)}</div>`:''}</div><span class="qty">${fmtQs(S.items.find(i=>i.id===a.id),a.qty)}</span><button class="icon" data-act="undo-sale" data-sid="${a.last.sid}" aria-label="تراجع عن آخر تسجيل">↶</button></div>`).join('')}</div>`}
     h+=`<p class="hint">↶ بيلغي الصنف ده بس، و⋯ بيلغي الفاتورة كلها — والكمية بترجع للمخزن.</p>`;
-  }else h+=`<div class="empty">${S.q?'مفيش مبيعات بالاسم ده':'مفيش مبيعات في اليوم ده'}</div>`;
+  }else h+=raw.length?`<div class="empty">فيه ${raw.length} بيعة في اليوم ده بس مش ظاهرين بسبب البحث «${esc(S.q)}»<br><button class="btn sm primary" data-act="clearq" style="margin-top:8px">✕ امسح البحث</button></div>`
+    :`<div class="empty">مفيش مبيعات في اليوم ده${CART.lines.length?`<br><b>🧾 عندك فاتورة مفتوحة لسه ما خلصتش (${CART.lines.length} صنف)</b><br><button class="btn sm primary" data-act="inv-open" style="margin-top:8px">افتحها وأنهيها</button>`:''}</div>`;
   $app.innerHTML=h;
 }
 function shortList(){
@@ -817,7 +818,7 @@ function repShort(){
     sum:[['إجمالي النواقص',list.length,''],['خلصان خالص',out,'red'],['قرب يخلص',list.length-out,'amb'],['اتطلب من المورد',ord,'grn']]};
 }
 function repSales(){
-  const d=S.day,list=(salesOf(d)||[]).filter(s=>typeOk(s.type||'cos')&&matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))).sort((a,b)=>a.t-b.t);
+  const d=S.day,list=(salesOf(d)||[]).filter(s=>matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))).sort((a,b)=>a.t-b.t);
   if((S.salesMode||'inv')!=='item'){
     const G=invGroups(list).sort((a,b)=>a.t-b.t);
     let t=`*🧾 مبيعات ${SHOP_NAME}*\n${dayName(d)} ${fmtDay(d)} — ${G.filter(g=>g.inv).length} فاتورة\n`;
@@ -2415,6 +2416,7 @@ $app.addEventListener('click',e=>{
   else if(act==='alert-out')alertAllOut();
   else if(act==='out'&&p)outSheet(p,k);
   else if(act==='smode'){S.shortMode=k;render()}
+  else if(act==='clearq'){S.q='';$q.value='';render()}
   else if(act==='inv-open'){if(CART.lines.length)invSheet();else pickItemSheet()}
   else if(act==='smode2'){S.salesMode=k;LS.set('drc.smode',k);render()}
   else if(act==='epre'){S.expPreset=k;render()}
