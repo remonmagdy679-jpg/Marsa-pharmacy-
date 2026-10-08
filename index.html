@@ -625,6 +625,11 @@ body.hasinv .wrap{padding-bottom:230px}
 .sheet>h4,.sheet>.sbwrap>h4{padding-left:44px}
 .sheetcalc{position:absolute;top:12px;left:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:16px;z-index:2;opacity:.85}
 
+.vsr .vsc{font-size:12.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.vsr.best{border-color:var(--green);background:var(--green-soft)}
+.vsr.best .vsc{color:var(--green)}
+#scAI{background:rgba(60,194,160,.35);border-color:#3CC2A0}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -702,7 +707,7 @@ body.hasinv .wrap{padding-bottom:230px}
 <div class="remind" id="remind" hidden></div>
 <div class="zoom" id="zoom" hidden><button class="zx" id="zx" aria-label="قفل">✕</button><img id="zimg" alt=""><div class="zc" id="zc"></div></div>
 <div class="login" id="login" hidden></div>
-<div class="scanner" id="scanner" hidden><video id="scVid" playsinline webkit-playsinline autoplay muted></video><div id="scBox"></div><div id="scFile" hidden></div><div class="scframe"><i></i></div><div class="sctop"><button class="zx" id="scClose" aria-label="قفل">✕</button><b id="scTitle"></b><button class="zx" id="scTorch" aria-label="الفلاش" hidden>🔦</button></div><div class="scbot"><div class="seg scmode" id="scMode" hidden><button data-sm="sell">🧾 بيع</button><button data-sm="in">📦 استلام</button></div><p id="scHint">وجّه الكاميرا على الباركود أو الـ QR</p><div class="scbtns"><button class="btn" id="scPhoto">📸 صوّر الكود</button><button class="btn" id="scType">⌨️ اكتب الكود</button></div></div></div>
+<div class="scanner" id="scanner" hidden><video id="scVid" playsinline webkit-playsinline autoplay muted></video><div id="scBox"></div><div id="scFile" hidden></div><div class="scframe"><i></i></div><div class="sctop"><button class="zx" id="scClose" aria-label="قفل">✕</button><b id="scTitle"></b><button class="zx" id="scTorch" aria-label="الفلاش" hidden>🔦</button></div><div class="scbot"><div class="seg scmode" id="scMode" hidden><button data-sm="sell">🧾 بيع</button><button data-sm="in">📦 استلام</button></div><p id="scHint">وجّه الكاميرا على الباركود أو الـ QR</p><div class="scbtns"><button class="btn" id="scPhoto">📸 صوّر الكود</button><button class="btn" id="scAI" hidden>🤖 ابحث بالصورة</button><button class="btn" id="scType">⌨️ اكتب الكود</button></div></div></div>
 <div id="modal"></div>
 <div class="calc" id="calc" hidden role="dialog" aria-label="الآلة الحاسبة"><div class="cpanel">
   <div class="ctop"><b>🧮 الآلة الحاسبة</b><button class="cx" data-c="hist" aria-label="السجل">🕘</button><button class="cx" data-c="close" aria-label="قفل">✕</button></div>
@@ -731,7 +736,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 آلة حاسبة';
+const APP_V = '8-10 بحث بالصورة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1954,8 +1959,11 @@ function keySheet(then){
     const team=r.querySelector('#kTeam');if(team){if(team.checked)run(ref('secrets/ai').set({key:k,by:me(),t:Date.now()}));else if(S.teamKey)run(ref('secrets/ai').set({key:'',by:me(),t:Date.now()}))}
     closeSheet();toast('المفتاح اتحفظ ✓');if(then)then()});
 }
-function pickImage(cam){const cid=SB?SB.cid:S.acc,inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');else inp.multiple=true;inp.onchange=()=>{const fs_=[...(inp.files||[])];if(fs_.length)scanBatch(fs_,cid)};inp.click()}
-function toJpeg(file,max=1600,q=.85){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',q))};im.onerror=()=>rej('img');im.src=u})}
+function pickImage(cam){const cid=SB?SB.cid:S.acc;pickFiles({cam,multiple:!cam},fs_=>scanBatch(fs_,cid))}
+async function toJpeg(file,max=1600,q=.85){
+  if(window.createImageBitmap){try{const b0=await createImageBitmap(file,{imageOrientation:'from-image'});const sc=Math.min(1,max/Math.max(b0.width,b0.height)),c=document.createElement('canvas');c.width=Math.round(b0.width*sc);c.height=Math.round(b0.height*sc);c.getContext('2d').drawImage(b0,0,0,c.width,c.height);b0.close&&b0.close();const d=c.toDataURL('image/jpeg',q);c.width=c.height=0;if(d.length>100)return d}catch(e){}}
+  return toJpegOld(file,max,q)}
+function toJpegOld(file,max=1600,q=.85){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',q))};im.onerror=()=>rej('img');im.src=u})}
 const PRODUCT_PROMPT_BASE=`This is a photo of a pharmacy or cosmetics product package sold in Egypt (tourist resort pharmacy).
 Return ONLY one JSON object, no markdown, no other text:
 {"name":"product name in English as printed: brand + product + variant + size (e.g. \"Signal Sensitive Expert Toothpaste 75ml\")","alias":"short Arabic name an Egyptian pharmacist would say (e.g. \"معجون سيجنال سينسيتف\")","type":"med" for medicines (tablets, capsules, syrups, drops, creams registered as drugs) or "cos" for cosmetics, personal care, baby care, medical supplies,"group":"CATEGORY","size":"net weight / volume / count exactly as printed, e.g. \"100ml\", \"50g\", \"48 pcs\", \"20 tabs\", else null","expiry":"MM/YYYY only if an expiry date (EXP) is clearly printed, else null","production":"MM/YYYY only if a production/manufacturing date (P., MFG, PD) is printed, else null","shelf_life_months":number if a shelf life is printed (e.g. 30 months) else null,"barcode":"EAN digits under the barcode if clearly readable, else null","strength":"medicines only: strength per tablet/dose as printed, e.g. \"500 mg\", \"10 mg/5 ml\", else null","tablets":medicines only: number of tablets/capsules in the box, else null,"strips":medicines only: number of blister strips in the box if printed (e.g. 2x10 tablets = 2), else null}
@@ -2153,8 +2161,16 @@ function startAcc(){
 /* ---------- product photos + zoom ---------- */
 function ico(p){return p&&p.img?`<button class="thumb" data-act="zoom" data-id="${p.id}" aria-label="كبّر صورة ${esc(p.name)}"><img src="${p.img}" alt="" loading="lazy"></button>`:`<span class="ti">${TYPES[p&&p.type==='med'?'med':'cos'].icon}</span>`}
 function thumbOf(dataUrl){return new Promise(res=>{const im=new Image();im.onload=()=>{const n=160,c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d'),s=Math.min(im.width,im.height);x.fillStyle='#fff';x.fillRect(0,0,n,n);x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,n,n);res(c.toDataURL('image/jpeg',.7))};im.onerror=()=>res('');im.src=dataUrl})}
-function pickPhoto(cam,cb,max=1000,q=.75){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';if(cam)inp.setAttribute('capture','environment');
-  inp.onchange=async()=>{const f=inp.files&&inp.files[0];if(!f)return;try{toast('جاري تجهيز الصورة…');cb(await toJpeg(f,max,q))}catch(e){toast('الصورة دي مش مدعومة — جرب صورة تانية')}};inp.click()}
+
+/* ---------- اختيار صورة/ملف: input ثابت في الصفحة عشان الموبايل ما يضيّعش الصورة بعد الكاميرا ---------- */
+let _pickCb=null,_pickT=0;
+function pickFiles(o,cb){let inp=document.getElementById('filePick');
+  if(!inp){inp=document.createElement('input');inp.type='file';inp.id='filePick';inp.style.cssText='position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';document.body.appendChild(inp);
+    const fire=()=>{const fl=[...(inp.files||[])];if(!fl.length||!_pickCb)return;const f=_pickCb;_pickCb=null;inp.value='';f(fl)};
+    inp.addEventListener('change',fire);inp.addEventListener('input',fire)}
+  inp.value='';inp.accept=o.accept||'image/*';inp.multiple=!!o.multiple;if(o.cam)inp.setAttribute('capture','environment');else inp.removeAttribute('capture');
+  _pickCb=cb;_pickT=Date.now();inp.click()}
+function pickPhoto(cam,cb,max=1000,q=.75){pickFiles({cam},async fl=>{const f=fl[0];try{toast('جاري تجهيز الصورة…');cb(await toJpeg(f,max,q))}catch(e){toast('الصورة دي مش مدعومة — جرب صورة تانية')}})}
 async function setItemImage(id,d){const th=await thumbOf(d);const b=fs.batch();b.set(ref('imgs/'+id),{d,t:Date.now()});b.update(ref('items/'+id),{img:th});const p=S.items.find(x=>x.id===id);evt(b,'edit',p?p.name:'','','صورة المنتج');await b.commit().catch(e=>{console.error(e);toast('الصورة ما اتحفظتش — جرب تاني')})}
 const imgCache={};
 async function fullImg(id){if(imgCache[id])return imgCache[id];try{const d=await ref('imgs/'+id).get();const v=d.exists?(d.data()||{}).d:'';if(v)imgCache[id]=v;return v}catch(e){return ''}}
@@ -2342,7 +2358,7 @@ function parseGS1(raw){let s=String(raw||'').replace(/^\]([A-Za-z]\d)/,'');const
   if(out['10'])g.batch=out['10'];return g}
 function codeOf(raw){const g=parseGS1(raw);return {code:normCode(g?g.gtin:raw),g}}
 const itemsByCode=c=>S.items.filter(x=>(x.codes||[]).includes(c));
-const $sc=$('scanner'),$scv=$('scVid');let scStream=null,scTimer=null,scReader=null,scCb=null,scBusy=false,scH5=null,scModes=false;
+const $sc=$('scanner'),$scv=$('scVid');let scItem=null,scStream=null,scTimer=null,scReader=null,scCb=null,scBusy=false,scH5=null,scModes=false;
 function scBeep(){try{if(!actx)return;const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;o.frequency.value=1650;g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+.13)}catch(e){}}
 function stopScanner(){clearInterval(scTimer);clearTimeout(scTimer);scTimer=null;try{scReader&&scReader.reset()}catch(e){}scReader=null;if(scH5){const h=scH5;scH5=null;h.stop().catch(()=>{}).then(()=>{try{h.clear()}catch(e){}})}if(scStream){scStream.getTracks().forEach(t=>t.stop());scStream=null}$scv.srcObject=null;$sc.hidden=true;scBusy=false}
 function scGot(raw){if(scBusy)return;scBusy=true;scBeep();try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}const cb=scCb;stopScanner();const {code,g}=codeOf(raw);if(code&&cb)cb(code,g)}
@@ -2356,7 +2372,7 @@ function zxMake(fast){const Z=window.ZXing,h=new Map(),F=Z.BarcodeFormat;h.set(Z
 function zxDecodeCanvas(cv,fast){const Z=window.ZXing;let rd;if(fast){if(!zxFast)zxFast=zxMake(true);rd=zxFast}else{if(!zxReader)zxReader=zxMake(false);rd=zxReader}
   try{return rd.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText()}catch(e){return null}finally{try{rd.reset()}catch(e){}}}
 async function openScanner(o){
-  scCb=o.onCode;scBusy=false;scModes=!!o.modes;$('scTitle').textContent=o.title||'امسح الكود';$('scHint').textContent='جاري تشغيل الكاميرا…';$('scTorch').hidden=true;$sc.hidden=false;
+  scCb=o.onCode;scItem=o.onItem||null;$('scAI').hidden=!scItem;scBusy=false;scModes=!!o.modes;$('scTitle').textContent=o.title||'امسح الكود';$('scHint').textContent='جاري تشغيل الكاميرا…';$('scTorch').hidden=true;$sc.hidden=false;
   $('scMode').hidden=!o.modes;if(o.modes)$('scMode').querySelectorAll('[data-sm]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sm===scMode()));
   $scv.hidden=false;$scv.muted=true;$scv.setAttribute('playsinline','');$('scBox').innerHTML='';
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('scHint').textContent='الكاميرا المباشرة مش متاحة هنا — دوس «📸 صوّر الكود»';return}
@@ -2388,6 +2404,7 @@ async function openScanner(o){
   }catch(e){console.warn(e);$('scHint').textContent=/NotAllowed|Permission/i.test(String(e&&e.name||e))?'الكاميرا مقفولة — اسمح للكاميرا من الإعدادات، أو دوس «📸 صوّر الكود»':'الكاميرا المباشرة مش شغالة هنا — دوس «📸 صوّر الكود»'}
 }
 $('scClose').addEventListener('click',stopScanner);
+$('scAI').addEventListener('click',()=>{const f=scItem;stopScanner();if(f)visualSearch(f,'لقيت الصنف بالصورة')});
 $('scTorch').addEventListener('click',async e=>{try{const tr=scStream.getVideoTracks()[0];const on=!e.currentTarget.classList.contains('on');await tr.applyConstraints({advanced:[{torch:on}]});e.currentTarget.classList.toggle('on',on)}catch(x){}});
 $('scType').addEventListener('click',()=>{const cb=scCb;stopScanner();openSheet(`<h4>⌨️ اكتب الكود</h4><input id="mc" dir="ltr" inputmode="numeric" placeholder="الأرقام اللي تحت الباركود"><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">تمام</button></div>`,(m,r)=>{const v=r.querySelector('#mc').value.trim();if(!v)return;closeSheet();const {code,g}=codeOf(v);if(cb)cb(code,g)})});
 const scMode=()=>LS.get('drc.scmode')||'sell';
@@ -2400,12 +2417,10 @@ async function decodeImageFile(f){
   await loadH5();const L=window.__Html5QrcodeLibrary__;const h=new L.Html5Qrcode('scFile',{formatsToSupport:H5F(),verbose:false});
   try{return await h.scanFile(f,false)}finally{try{h.clear()}catch(e){}}
 }
-$('scPhoto').addEventListener('click',()=>{const cb=scCb;const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.setAttribute('capture','environment');
-  inp.onchange=async()=>{const f=inp.files&&inp.files[0];if(!f)return;$('scHint').innerHTML='<span class="spin"></span>جاري قراية الكود من الصورة…';
-    try{const raw=await decodeImageFile(f);if(!raw)throw 0;scCb=cb;scGot(raw)}catch(e){$('scHint').textContent='مقدرتش أقرا الكود — قرّب الكاميرا وخلي الباركود واضح، أو اكتبه بإيدك'}};
-  inp.click()});
+$('scPhoto').addEventListener('click',()=>{const cb=scCb;pickFiles({cam:true},async fl=>{const f=fl[0];$('scHint').innerHTML='<span class="spin"></span>جاري قراية الكود من الصورة…';
+    try{const raw=await decodeImageFile(f);if(!raw)throw 0;scCb=cb;scGot(raw)}catch(e){$('scHint').textContent='مقدرتش أقرا الكود — قرّب الكاميرا وخلي الباركود واضح، أو اكتبه بإيدك'}})});
 
-function scanSell(){openScanner({modes:true,title:scMode()==='in'?'امسح الصنف اللي وصل':'امسح الصنف عشان تبيعه',onCode:(c,g)=>scMode()==='in'?handleInCode(c,g):handleSellCode(c,g)})}
+function scanSell(){openScanner({modes:true,title:scMode()==='in'?'امسح الصنف اللي وصل':'امسح الصنف عشان تبيعه',onCode:(c,g)=>scMode()==='in'?handleInCode(c,g):handleSellCode(c,g),onItem:p=>scMode()==='in'?restockSheet(p):sellSheet(p)})}
 function handleInCode(code,g){const l=itemsByCode(code),k=g&&g.y?bk(g.y,g.m):'';if(l.length===1)return restockSheet(l[0],{k,scan:true});if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<button class="row linkbtn" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></button>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)restockSheet(p,{k,scan:true})});unknownCode(code,g,'in')}
 function handleSellCode(code,g){
   const l=itemsByCode(code),start=g&&g.y?bk(g.y,g.m):null;
@@ -2417,8 +2432,9 @@ function unknownCode(code,g,mode){
   openSheet(`<h4>🔳 كود جديد</h4><p class="hint" style="margin-top:0">الكود <b class="ltr">${esc(code)}</b> مش متسجل على أي صنف لسه.</p>
     <label for="ucI">اربطه بصنف موجود</label><input id="ucI" list="uclist" placeholder="اكتب اسم الصنف"><datalist id="uclist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>
     <p class="hint">المرة الجاية لما تمسحه هيفتح الصنف على طول.</p>
-    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="new">🆕 صنف جديد بالكود ده</button><button class="btn primary" data-m="link">🔗 اربط و${mode==='in'?'استلم':'بيع'}</button></div>`,
-  (m,r)=>{if(m==='new'){itemForm(null,{codes:[code],k:g&&g.y?bk(g.y,g.m):'',q:mode==='in'?'':undefined});return}
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="vs">🤖 لاقيه بالصورة</button><button class="btn" data-m="new">🆕 صنف جديد بالكود ده</button><button class="btn primary" data-m="link">🔗 اربط و${mode==='in'?'استلم':'بيع'}</button></div>`,
+  (m,r)=>{if(m==='vs')return visualSearch(p=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},'لاقي الصنف واربط الكود');
+    if(m==='new'){itemForm(null,{codes:[code],k:g&&g.y?bk(g.y,g.m):'',q:mode==='in'?'':undefined});return}
     if(m!=='link')return;const p=findByName(r.querySelector('#ucI').value);if(!p){toast('اختار الصنف من القايمة');return}
     closeSheet();run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)});
 }
@@ -2778,6 +2794,32 @@ $calc.addEventListener('click',e=>{if(e.target===$calc)return calcClose();const 
 $('calcBtn').addEventListener('click',calcOpen);
 document.addEventListener('click',e=>{if(e.target.closest('[data-calc]')){e.preventDefault();e.stopPropagation();calcOpen()}},true);
 document.addEventListener('keydown',e=>{if($calc.hidden)return;const m={Enter:'=',Backspace:'back',Escape:'close',Delete:'C'}[e.key]||(/^[0-9.+\-*/%()]$/.test(e.key)?e.key:null);if(m){e.preventDefault();calcKey(m==='('||m===')'?'(':m)}});
+
+
+/* ---------- البحث بالصورة (بديل الباركود) ---------- */
+function visualSearch(onPick,title){
+  if(!getKey()){keySheet(()=>visualSearch(onPick,title));return}
+  pickPhoto(true,async d=>{
+    const r=openSheet(`<h4>🤖 ${esc(title||'بحث بالصورة')}</h4><div class="cntbox"><img src="${d}" alt=""><div><span class="spin"></span>بيدوّر على المنتج ده في الأصناف…</div></div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`);
+    const live=S.items.filter(x=>!x.del),cat=live.slice().sort(byName).slice(0,600);
+    const prompt=`This is a photo of a product in a pharmacy / cosmetics shop. Identify it and find it in the shop catalog below.
+Catalog (index: name | alias):
+${cat.map((x,i)=>`${i}: ${String(x.name).slice(0,70)}${x.alias?' | '+String(x.alias).slice(0,40):''}`).join('\n')}
+Match by brand, product line, variant/flavour, colour of pack and size. Return ONLY JSON, no markdown:
+{"read":"product name as printed on the pack (brand + product + variant + size)","matches":[{"i":catalog index,"score":0-100}],"note":"very short Arabic note"}
+List up to 5 matches, best first; only include real candidates (score ≥ 40). Use [] if nothing in the catalog matches.`;
+    let j;try{j=await askVision(d,prompt,500)}catch(e){if(!r.isConnected)return;r.querySelector('.cntbox div').innerHTML=`<span class="rd">مقدرتش أدوّر بالصورة</span>${visionErr?`<small class="verr">${esc(visionErr)}</small>`:''}`;return}
+    if(!r.isConnected)return;
+    const seen=new Set(),list=[];(j.matches||[]).forEach(m=>{const p=cat[+m.i];if(p&&!seen.has(p.id)){seen.add(p.id);list.push({p,s:+m.score||0})}});
+    if(j.read){live.map(p=>({p,s:Math.round(scoreItem(j.read,p)*100)})).filter(o=>o.s>=60&&!seen.has(o.p.id)).sort((a,b)=>b.s-a.s).slice(0,3).forEach(o=>{seen.add(o.p.id);list.push({p:o.p,s:Math.min(o.s,list.length?60:75)})})}
+    list.sort((a,b)=>b.s-a.s);
+    openSheet(`<h4>🤖 ${esc(title||'بحث بالصورة')}</h4><div class="cntbox"><img src="${d}" alt=""><div>اتقرا: <b>${esc(j.read||'—')}</b>${j.note?`<br><small class="mu">${esc(j.note)}</small>`:''}</div></div>
+      ${list.length?`<label>اختار الصنف</label><div class="rows">${list.map(({p,s},k)=>`<button class="row linkbtn vsr ${k===0&&s>=80?'best':''}" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta"><span>عندك ${fmtQs(p,good(p))}</span>${nearExp(p)}</div></div><span class="vsc">${s>=80?'✓ ':''}${s}%</span></button>`).join('')}</div>`
+        :'<div class="empty">مالقتش المنتج ده في الأصناف</div>'}
+      <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="again">📷 صورة تانية</button></div>`,
+    m=>{if(m==='again'){closeSheet();return visualSearch(onPick,title)}if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p){closeSheet();onPick(p)}}});
+  },1024,.82);
+}
 
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
