@@ -640,6 +640,25 @@ body.hasinv .wrap{padding-bottom:230px}
 .igl{font-weight:700!important;font-size:13.5px!important}
 .igl.ok{color:var(--green)!important}.igl.lw{color:var(--amber)!important}
 
+.coachsum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 6px}
+.coachsum div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px}
+.coachsum small{display:block;font-size:11px;color:var(--muted)}.coachsum b{font-size:15px}
+.pcobj{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:13.5px;line-height:1.7;margin-top:8px}
+.pl{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:6px}
+.pl p{margin:0;font-size:15.5px;font-weight:600;line-height:1.5}
+.pl small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.pl[role=button]{cursor:pointer}.pl.used{border-color:var(--green);background:var(--green-soft)}.pl.best{border-color:var(--amber)}
+.hkw .hst,.hkw .ok{display:inline-block;font-size:11.5px;margin:3px 6px 0;color:var(--muted)}
+.showc{position:fixed;inset:0;z-index:70;background:#F4FAF8;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.scard{position:relative;max-width:520px;width:100%;text-align:center;color:#102A2E;padding-top:64px}
+.scard img{max-width:80%;max-height:42vh;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(0,0,0,.15));margin:30px 0 10px}
+.scard h2{font-size:clamp(28px,7vw,44px);margin:6px 0;line-height:1.15}
+.scard p{font-size:clamp(17px,4.5vw,22px);color:#3d5457;margin:6px 0 12px}
+.scard .sname{font-weight:700;color:#0E7C66}.scard .sprice{font-size:40px;font-weight:800;color:#0E7C66;margin:6px 0 14px}
+.sbadge{position:absolute;top:0;right:0;background:#0E7C66;color:#fff;border-radius:20px;padding:5px 14px;font-weight:800}
+.scx{position:absolute;top:0;left:0;width:42px;height:42px;border-radius:50%;border:1px solid #cfe0dc;background:#fff;font-size:18px}
+.showc .btn{color:#102A2E;background:#fff;border-color:#cfe0dc}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -746,7 +765,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 مميزات خاصة';
+const APP_V = '8-10 مساعد البيع';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -849,7 +868,7 @@ function grouped(list,keyFn,rowFn){
 }
 function vItems(){
   const list=S.items.filter(mItem).sort(byName);
-  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${S.type!=='cos'&&can('ing')?'<button class="btn" data-act="ing">💊 بحث بالمادة الفعالة</button>':''}</div>`;
+  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${S.type!=='cos'&&can('ing')?'<button class="btn" data-act="ing">💊 بحث بالمادة الفعالة</button>':''}${can('coach')?'<button class="btn" data-act="coach">🚀 مساعد البيع</button>':''}</div>`;
   if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>دوس «＋ إضافة» وابدأ.</div>`;
   else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
   else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
@@ -1105,8 +1124,8 @@ function itemSheet(p){
   <label>التواريخ اللي في المخزن</label><div class="rows">${bl.length?bl.map(([k,v])=>`<div class="row slim"><span class="bt ${expCls(k)}" data-n="${fmtQs(p,v)}"><i>${bkLabel(k)}</i></span><span class="grow">${EXPW[expCls(k)]}</span><button class="btn sm" data-m="out:${k}">شيل</button></div>`).join(''):'<div class="empty">مفيش حاجة في المخزن</div>'}</div>
   <div class="actions"><button class="btn primary" data-m="sell">بيع</button><button class="btn" data-m="in">استلام</button><button class="btn" data-m="edit">تعديل</button></div>
   <div class="actions"><button class="btn" data-m="urgent">🔔 عاجل للكل</button><button class="btn" data-m="ord">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn danger" data-m="del">حذف</button></div>
-  <div class="actions"><button class="btn" data-m="photo">📷 ${p.img?'غيّر صورة المنتج':'ضيف صورة للمنتج'}</button></div>`,
-  m=>{const x=S.items.find(i=>i.id===p.id);if(!x){closeSheet();return}
+  <div class="actions"><button class="btn" data-m="photo">📷 ${p.img?'غيّر صورة المنتج':'ضيف صورة للمنتج'}</button>${can('coach')?'<button class="btn" data-m="pitch">🎯 إزاي أبيعه</button>':''}</div>`,
+  m=>{if(m==='pitch')return pitchSheet(p);const x=S.items.find(i=>i.id===p.id);if(!x){closeSheet();return}
     if(m==='zoom')return openZoom(x);if(m==='photo')return pickPhoto(false,async d=>{closeSheet();await setItemImage(x.id,d);toast('الصورة اتحفظت عند الكل')});
     if(m==='sell')sellSheet(x);else if(m==='in')restockSheet(x);else if(m==='edit')itemForm(x);else if(m==='urgent'){closeSheet();urgent(x)}
     else if(m==='ord'){closeSheet();toggleOrdered(x)}else if(m==='del')delSheet(x);else if(m.startsWith('out:'))outSheet(x,m.slice(4))});
@@ -1115,7 +1134,7 @@ function itemSheet(p){
 function sellSheet(p,o={}){
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const K=spb(p),tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty*(l.unit==='strip'?1:K),0);let unit='box';const mul=()=>unit==='strip'?1:K;
-  const r=openSheet(`<h4 class="withimg">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">${esc(p.name)}</span><button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
+  const r=openSheet(`<h4 class="withimg">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">${esc(p.name)}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
     <div class="stock"><div><small>عندك إجمالي</small><b>${fmtQs(p,tot)}</b>${dq?`<em>+${fmtQs(p,dq)} منتهي</em>`:''}</div><div><small>هيفضل بعد البيع</small><b id="fLeft">${fmtQs(p,Math.max(0,tot-K))}</b></div><div class="sx" data-m="bx" role="button" tabindex="0" aria-label="كل التواريخ"><small>إكسباير عليه الدور</small><b id="fExp"></b><em id="fExpN"></em><span class="more" id="fMore"></span></div></div>
     <div class="bxl" id="bxl" hidden><p>📅 كل التواريخ اللي عندك — دوس على تاريخ تبيع منه</p>${bl.map(([k,v])=>{const c=expCls(k);return `<button class="bxr" data-m="pk:${k}"><span class="d ${c}">${k==='x'?'بدون تاريخ':bkLabel(k)}</span><span class="n">${v} قطعة</span><span class="st ${c}">${EXPW[c]||''}</span><span class="ck">✓</span></button>`}).join('')}${dq?`<p class="rd" style="margin-top:6px">فيهم ${dq} منتهي — مش بيتحسبوا في الإجمالي</p>`:''}</div>
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
@@ -1127,10 +1146,12 @@ function sellSheet(p,o={}){
     <p class="hint" id="fLast" style="margin:6px 2px 0"></p>
     ${o.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}
     <button class="btn primary sellbig" data-m="now">${CART.lines.length||o.back==='inv'?`✓ بيع وأنهي الفاتورة (${CART.lines.length+1} صنف)`:'✓ بيع'}</button>
-    <div class="actions minor"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="ok">${CART.lines.length||o.back==='inv'?'🧾 أضف وكمّل':'＋ معاه صنف تاني'}</button></div>
+    <div class="actions minor"><button class="btn" data-cancel>إلغاء</button>${can('coach')?'<button class="btn" data-m="nobuy">😕 ماشتراش</button>':''}<button class="btn" data-m="ok">${CART.lines.length||o.back==='inv'?'🧾 أضف وكمّل':'＋ معاه صنف تاني'}</button></div>
     ${o.scan?'<button class="btn" data-m="okn" style="width:100%;margin-top:8px">➕ ضيف وامسح التالي</button>':''}`,
   (m,root,b)=>{const n=root.querySelector('#fN');
     if(m==='edit')return itemForm(p,{after:np=>sellSheet(np,o)});
+    if(m==='pitch')return pitchSheet(p);
+    if(m==='nobuy')return noBuySheet(p,()=>sellSheet(p,o));
     if(m.startsWith('u:')){unit=m.slice(2);root.querySelectorAll('#fUnit button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));root.querySelector('#fPxL').textContent=unit==='strip'?'سعر الشريط':'سعر العلبة';fillPx(true);updLeft();return}
     if(m==='restock')return restockSheet(p);
     if(m==='zoom')return openZoom(p);
@@ -1315,6 +1336,7 @@ function doSell(p,n,start,quiet,extra){
   if(p.b){const nb={...p.b};for(const k in alloc)nb[k]=(nb[k]||0)-alloc[k];p.b=nb}
   const b=fs.batch();
   if(Object.keys(upd).length)b.set(ref('items/'+p.id),{b:upd},{merge:true});
+  const _pu=PU[p.id]&&Date.now()-PU[p.id].t<20*6e4?PU[p.id]:null;if(_pu){extra={...(extra||{}),hook:_pu.h,lang:_pu.lang};delete PU[p.id]}
   b.set(col('sales').doc(),{t:Date.now(),day:today(),by:me(),id:p.id,name:p.name,type:tOf(p),qty:n,units:n,alloc,short:rem,...(extra||{})});
   if(extra&&extra.cur&&extra.price>0)b.set(ref('items/'+p.id),{px:{[extra.cur+(extra.unit==='strip'?'_s':'')]:extra.price}},{merge:true});
   evt(b,'sale',p.name,n,Object.keys(alloc).filter(k=>k!=='x').map(bkLabel).join('، '));
@@ -2332,7 +2354,8 @@ document.addEventListener('click',pushGuard,{capture:true,passive:true});
 document.addEventListener('touchend',pushGuard,{capture:true,passive:true});
 addEventListener('popstate',()=>{
   backGuard=false;let handled=true;
-  if(!$calc.hidden)calcClose();
+  if($('showc')&&!$('showc').hidden)$('showc').hidden=true;
+  else if(!$calc.hidden)calcClose();
   else if(!$sc.hidden)stopScanner();
   else if(!$zoom.hidden)closeZoom();
   else if($modal.innerHTML)closeSheet();
@@ -2885,6 +2908,7 @@ ${part.map((x,i)=>`${i}: ${x.name}${x.str?' ('+x.str+')':''}`).join('\n')}`,2500
 // أي ميزة جديدة خاصة: ضيفها هنا بـ def:'owner' واستخدم can('key')
 const FEATURES={
   ing:{l:'💊 بحث بالمادة الفعالة',d:'البحث عن بديل بنفس المادة الفعالة وتكميل المادة الفعالة للأدوية',def:'owner'},
+  coach:{l:'🚀 مساعد البيع',d:'المنتج البطل، اعتراضات الجيست، كلام البيع بلغته (3:2:2) والكارت المطابق',def:'owner'},
 };
 const isOwner=()=>!!(S.member&&S.member.owner);
 function can(f){if(isOwner())return true;const F=FEATURES[f];if(!F)return true;const lv=((S.cfg&&S.cfg.perm)||{})[f]||F.def;return lv==='all'||(lv==='admin'&&S.role==='admin')}
@@ -2894,6 +2918,100 @@ function permSheet(){if(!isOwner()){toast('الصفحة دي لصاحب التط
   const r=openSheet(`<h4>🔒 مميزات خاصة</h4><p class="hint" style="margin-top:0">إنت بس (صاحب التطبيق) اللي بتشوف الصفحة دي. اختار مين يقدر يستخدم كل ميزة — الموظفين مش هيشوفوا زرار الميزة خالص.</p><div id="pmL">${draw()}</div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
   m=>{const [k,v]=m.split(':');if(!FEATURES[k])return;perm[k]=v;r.querySelector('#pmL').innerHTML=draw();run(ref('settings/app').set({perm},{merge:true}),'اتحفظ ✓')});
 }
+
+
+/* ================= 🚀 مساعد البيع: بيانات → المنتج البطل → اعتراضات الجيست → كلام 3:2:2 → كارت مطابق ================= */
+const LANGS={de:'🇩🇪 Deutsch',pl:'🇵🇱 Polski',it:'🇮🇹 Italiano',cs:'🇨🇿 Čeština',nl:'🇧🇪 Nederlands',fr:'🇧🇪 Français',en:'🇬🇧 English'};
+const OBJ={price:'💸 غالي',trust:'🤔 مش مصدّق إنه شغال',know:'❓ مش عارفه / أول مرة يشوفه',home:'🏠 عنده زيه في بلده',later:'⏳ هيفكر / هيرجع',size:'📦 الحجم مش مناسب',lang:'🗣️ مش فاهم المكتوب على العلبة',other:'✍️ حاجة تانية'};
+const WHY={result:'✨ النتيجة / إنه شغال',price:'💰 السعر أرخص من أوروبا',natural:'🌿 طبيعي / مصري',gift:'🎁 هدية',need:'🩹 محتاجه ضروري',rec:'👍 حد رشّحهوله'};
+const PU={};const pitchCache={};
+function wilson(k,n,z=1.96){if(!n)return 0;const p=k/n,z2=z*z;return (p+z2/(2*n)-z*Math.sqrt(p*(1-p)/n+z2/(4*n*n)))/(1+z2/n)}
+function startFb(){col('feedback').where('t','>=',winStart).onSnapshot(q=>{S.fb=q.docs.map(d=>({fid:d.id,...d.data()}))},()=>{S.fb=[]})}
+function heroStats(days=30){
+  const from=Date.now()-days*864e5,sales=S.sales.filter(x=>x.t>=from&&!x.del),fb=(S.fb||[]).filter(x=>x.t>=from);
+  const invs=new Set(sales.map(x=>x.inv||('s'+x.sid))),N=invs.size,M={};
+  const g=id=>M[id]=M[id]||{inv:new Set(),wins:0,loss:0,obj:{},why:{},nat:{}};
+  sales.forEach(x=>{const o=g(x.id);o.inv.add(x.inv||('s'+x.sid));o.wins++;if(x.why)o.why[x.why]=(o.why[x.why]||0)+1;if(x.nat)o.nat[x.nat]=(o.nat[x.nat]||0)+1});
+  fb.forEach(f=>{const o=g(f.id);if(f.kind==='no'){o.loss++;if(f.reason)o.obj[f.reason]=(o.obj[f.reason]||0)+1}if(f.nat)o.nat[f.nat]=(o.nat[f.nat]||0)+1});
+  return Object.entries(M).map(([id,o])=>{const p=S.items.find(x=>x.id===id);if(!p)return null;const k=o.inv.size,off=o.wins+o.loss;
+    return {p,k,N,pop:wilson(k,N),off,conv:off>=3?wilson(o.wins,off):null,obj:o.obj,why:o.why,nat:o.nat,loss:o.loss}}).filter(Boolean).sort((a,b)=>b.pop-a.pop)}
+const topK=o=>Object.entries(o||{}).sort((a,b)=>b[1]-a[1]);
+function sellCoach(){if(!can('coach'))return toast('الميزة دي مقفولة');
+  const H=heroStats(),noBuy=(S.fb||[]).filter(f=>f.kind==='no'&&f.t>=Date.now()-30*864e5),allObj={};noBuy.forEach(f=>allObj[f.reason]=(allObj[f.reason]||0)+1);
+  openSheet(`<h4>🚀 مساعد البيع</h4><p class="hint" style="margin-top:0">من بيانات البيع بتاعتك: إيه المنتج البطل، والجيست بيتردد ليه، وتقول له إيه بلغته.</p>
+    <div class="coachsum"><div><small>فواتير آخر 30 يوم</small><b>${H.length?H[0].N:0}</b></div><div><small>«ماشتراش» متسجلة</small><b>${noBuy.length}</b></div><div><small>أكتر اعتراض</small><b>${topK(allObj)[0]?esc(OBJ[topK(allObj)[0][0]]||''):'—'}</b></div></div>
+    <label>⭐ المنتجات البطلة (ترتيب Wilson — الأكتر ثقة مش بس الأكتر بيع)</label>
+    ${H.length?`<div class="rows">${H.slice(0,15).map((h,i)=>`<button class="row linkbtn" data-m="p:${h.p.id}">${ico(h.p)}<div class="kit"><b>${i<3?['🥇','🥈','🥉'][i]+' ':''}${esc(h.p.name)}</b><div class="meta"><span>في ${h.k} من ${h.N} فاتورة</span>${h.conv!=null?`<span>نسبة الشراء ≥ ${Math.round(h.conv*100)}%</span>`:''}${topK(h.obj)[0]?`<span class="rd">${esc(OBJ[topK(h.obj)[0][0]]||'')}</span>`:''}</div></div><span class="qty">${Math.round(h.pop*100)}</span></button>`).join('')}</div>`:'<div class="empty">لسه مفيش مبيعات كفاية — ابدأ بيع بالفواتير والمساعد هيتعلم</div>'}
+    <p class="hint">💡 كل ما تسجّل «😕 ماشتراش» من شاشة البيع، المساعد بيفهم أكتر الجيست بيتردد ليه.</p>
+    <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  m=>{if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)pitchSheet(p)}});
+}
+function noBuySheet(p,back){
+  let nat=LS.get('drc.nat')||'de',reason='';
+  const r=openSheet(`<h4>😕 ماشتراش — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">دوسة واحدة — ده اللي بيعلّم المساعد يرد على تردد الجيست.</p>
+    <label>الجيست منين؟</label><div class="chips">${Object.entries(LANGS).map(([k,l])=>`<button class="chip" data-m="n:${k}" aria-pressed="${k===nat}">${l.split(' ')[0]} ${k.toUpperCase()}</button>`).join('')}</div>
+    <label>ليه ما اشتراش؟</label><div class="chips">${Object.entries(OBJ).map(([k,l])=>`<button class="chip" data-m="r:${k}">${l}</button>`).join('')}</div>
+    <input id="nbT" placeholder="كلامه بالظبط لو قال حاجة (اختياري)" style="margin-top:8px">
+    <div class="actions"><button class="btn" data-m="back">↩ رجوع</button><button class="btn primary" data-m="save">💾 سجّل</button></div>`,
+  m=>{if(m.startsWith('n:')){nat=m.slice(2);LS.set('drc.nat',nat);r.querySelectorAll('[data-m^="n:"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));return}
+    if(m.startsWith('r:')){reason=m.slice(2);r.querySelectorAll('[data-m^="r:"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));return}
+    if(m==='back'){closeSheet();return back&&back()}
+    if(m==='save'){if(!reason){toast('اختار السبب');return}const pu=PU[p.id]&&Date.now()-PU[p.id].t<20*6e4?PU[p.id]:null;
+      run(col('feedback').doc().set({t:Date.now(),kind:'no',id:p.id,name:p.name,reason,nat,text:r.querySelector('#nbT').value.trim(),by:me(),...(pu?{hook:pu.h,lang:pu.lang}:{})}),'اتسجل — شكراً 🙏');if(pu)delete PU[p.id];closeSheet()}});
+}
+async function pitchSheet(p,lang){
+  lang=lang||LS.get('drc.nat')||'de';
+  const h=heroStats().find(x=>x.p.id===p.id)||{obj:{},why:{},nat:{},k:0,N:0};
+  const key=p.id+'_'+lang;
+  const r=openSheet(`<h4>🎯 إزاي أبيع ${esc(p.name)}</h4>
+    <div class="chips">${Object.entries(LANGS).map(([k,l])=>`<button class="chip" data-m="l:${k}" aria-pressed="${k===lang}">${l}</button>`).join('')}</div>
+    <div id="pcB"><p class="hint"><span class="spin"></span>بيجهز الكلام…</p></div>`,
+  m=>{if(m.startsWith('l:')){LS.set('drc.nat',m.slice(2));return pitchSheet(p,m.slice(2))}
+    if(m==='regen'){delete pitchCache[key];run(ref('pitches/'+key).delete());return pitchSheet(p,lang)}
+    if(m==='card')return showCard(p,pitchCache[key],lang);
+    if(m==='nobuy')return noBuySheet(p,()=>pitchSheet(p,lang));
+    if(m==='sell'){closeSheet();return sellSheet(p)}
+    if(m.startsWith('h:')){const i=+m.slice(2);PU[p.id]={h:i,lang,t:Date.now()};r.querySelectorAll('.hk').forEach((x,k)=>x.classList.toggle('used',k===i));toast('تمام — البيعة الجاية لـ '+p.name+' هتتحسب للجملة دي')}});
+  let P=pitchCache[key];
+  if(!P){try{const d=await ref('pitches/'+key).get();if(d.exists)P=d.data()}catch(e){}}
+  if(!P){if(!getKey()){r.querySelector('#pcB').innerHTML='<p class="warn">🔑 محتاج مفتاح الذكاء الاصطناعي — من السجل ← 🔑</p>';return}
+    const fbT=(S.fb||[]).filter(f=>f.id===p.id&&f.text).slice(0,15).map(f=>`- (${f.nat||'?'}) ${f.text}`).join('\n');
+    const prompt=`You are a sales coach for a small pharmacy/cosmetics shop inside a beach resort in Marsa Alam, Egypt. Staff sell face-to-face to European tourists (German, Polish, Italian, Czech, Belgian).
+Product: ${p.name}${p.alias?' ('+p.alias+')':''} — section: ${p.grp||tOf(p)} — type: ${tOf(p)==='med'?'medicine':'cosmetic/personal care'}${p.ing?' — active: '+p.ing:''}${lastPx(p,'EUR')?' — price €'+lastPx(p,'EUR'):''}.
+Shop data (last 30 days): in ${h.k} of ${h.N} invoices. Why people bought: ${JSON.stringify(topK(h.why).map(([k,v])=>[WHY[k]||k,v]))}. Why people did NOT buy: ${JSON.stringify(topK(h.obj).map(([k,v])=>[OBJ[k]||k,v]))}.${fbT?`\nTourists' own words:\n${fbT}`:''}
+Method: find the MAIN hesitation (if no data, infer the most likely one for a tourist seeing this product for the first time, e.g. "I don't know this brand / is it for me / I'm not an expert"). Answer it with simple, non-expert, everyday language (no jargon, no technical claims). Use the "self-disqualification" style for hooks: start by voicing the tourist's own doubt, then remove it. Build an in-store 3:2:2 test: 3 opening hooks, 2 benefit lines, 2 closing lines. Then a shelf/phone card whose message MATCHES the hooks exactly (message match). Honest only: no invented reviews, no medical/cure claims beyond normal labelled use${tOf(p)==='med'?', and for medicines stay strictly factual about labelled use':''}.
+Write all customer-facing text in ${LANGS[lang].split(' ').slice(1).join(' ')}; add Arabic (Egyptian) meaning for staff.
+Return ONLY JSON, no markdown:
+{"main_objection":"Arabic","why_buy":"Arabic, one line","hypothesis":"Arabic: لو الجيست بيتردد عشان ... فـجملة بتشيل ... هتزوّد البيع","hooks":[{"t":"≤20 words","ar":"..."},{"t":"","ar":""},{"t":"","ar":""}],"benefits":[{"t":"≤14 words","ar":""},{"t":"","ar":""}],"closes":[{"t":"≤12 words","ar":""},{"t":"","ar":""}],"card":{"headline":"≤6 words","line":"≤14 words","badge":"≤3 words, must be factually true from the product info (never claim origin, awards or certifications you are not sure of) — else a neutral tag like 'Beach essential'"},"avoid":["Arabic: jargon or claims NOT to say"]}`;
+    try{P=await askText(prompt,1800);P.t=Date.now();P.lang=lang;run(ref('pitches/'+key).set(P))}catch(e){if(r.isConnected)r.querySelector('#pcB').innerHTML=`<p class="rd">مقدرتش أجهز الكلام</p>${visionErr?`<small class="verr">${esc(visionErr)}</small>`:''}`;return}}
+  pitchCache[key]=P;if(!r.isConnected)return;
+  const st=i=>{const w=S.sales.filter(x=>x.id===p.id&&x.hook===i&&x.lang===lang).length,l=(S.fb||[]).filter(f=>f.id===p.id&&f.hook===i&&f.lang===lang).length;return w+l?`<small class="hst">${w} بيع / ${w+l} مرة${w+l>=3?` · ثقة ${Math.round(wilson(w,w+l)*100)}%`:''}</small>`:''};
+  const best=(()=>{let b=-1,bs=-1;[0,1,2].forEach(i=>{const w=S.sales.filter(x=>x.id===p.id&&x.hook===i&&x.lang===lang).length,l=(S.fb||[]).filter(f=>f.id===p.id&&f.hook===i&&f.lang===lang).length;if(w+l>=3){const v=wilson(w,w+l);if(v>bs){bs=v;b=i}}});return b})();
+  const line=(x,cls,m)=>`<div class="pl ${cls||''}"${m?` data-m="${m}" role="button"`:''}><p dir="auto">${esc(x.t||'')}</p><small>${esc(x.ar||'')}</small></div>`;
+  r.querySelector('#pcB').innerHTML=`<div class="pcobj"><b>😕 التردد الأساسي:</b> ${esc(P.main_objection||'')}${P.why_buy?`<br><b>💚 بيشتروه عشان:</b> ${esc(P.why_buy)}`:''}</div>
+    <p class="hint">🧪 <b>الفرضية:</b> ${esc(P.hypothesis||'')}</p>
+    <label>🎬 3 جمل بداية — جرّب واحدة ودوس عليها عشان نعرف أنهي بتبيع أكتر</label>${(P.hooks||[]).map((x,i)=>`<div class="hkw">${line(x,'hk'+(best===i?' best':''),'h:'+i)}${st(i)}${best===i?'<small class="ok">⭐ الأقوى لحد دلوقتي</small>':''}</div>`).join('')}
+    <label>💡 2 فايدة بكلام بسيط</label>${(P.benefits||[]).map(x=>line(x)).join('')}
+    <label>🤝 2 جملة قفل</label>${(P.closes||[]).map(x=>line(x)).join('')}
+    ${(P.avoid||[]).length?`<p class="hint rd">🚫 ما تقولش: ${P.avoid.map(esc).join('، ')}</p>`:''}
+    <div class="actions"><button class="btn primary" data-m="card">🪧 اعرض الكارت للجيست</button><button class="btn" data-m="sell">🧾 بيع</button></div>
+    <div class="actions minor"><button class="btn" data-m="nobuy">😕 ماشتراش</button><button class="btn" data-m="regen">↻ كلام جديد</button><button class="btn" data-cancel>قفل</button></div>`;
+}
+/* الكارت المطابق للكلام (Message Match) */
+function showCard(p,P,lang){if(!P||!P.card)return;let el=$('showc');if(!el){el=document.createElement('div');el.id='showc';el.className='showc';document.body.appendChild(el);el.addEventListener('click',e=>{const b=e.target.closest('[data-sc]');if(!b)return;if(b.dataset.sc==='x')el.hidden=true;if(b.dataset.sc==='img')cardImage(el._p,el._P).then(f=>shareFiles([f],''))})}
+  el._p=p;el._P=P;const px=lastPx(p,'EUR');
+  el.innerHTML=`<div class="scard"><button class="scx" data-sc="x" aria-label="قفل">✕</button>${P.card.badge?`<span class="sbadge">${esc(P.card.badge)}</span>`:''}${p.img?`<img src="${p.img}" alt="">`:''}<h2 dir="auto">${esc(P.card.headline||'')}</h2><p dir="auto">${esc(P.card.line||'')}</p><div class="sname">${esc(p.name)}</div>${px?`<div class="sprice">€${num(px)}</div>`:''}<button class="btn sm" data-sc="img">🖼️ صورة للطباعة / الواتساب</button></div>`;el.hidden=false;
+  fullImg(p.id).then(d=>{if(d&&!el.hidden){const im=el.querySelector('img');if(im)im.src=d}});try{history.pushState({sc:1},'')}catch(e){}}
+async function cardImage(p,P){try{await document.fonts.ready}catch(e){}const F='Alexandria, Tahoma, Arial, sans-serif',W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  x.fillStyle='#F4FAF8';x.fillRect(0,0,W,H);x.fillStyle='#0E7C66';x.fillRect(0,0,W,16);
+  const src=p.img?(await fullImg(p.id))||p.img:'';const im=src?await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src}):null;
+  if(im){const bw=W-160,bh=620,sc=Math.min(bw/im.width,bh/im.height),w=im.width*sc,h=im.height*sc;x.save();x.shadowColor='rgba(0,0,0,.15)';x.shadowBlur=30;x.drawImage(im,(W-w)/2,90+(bh-h)/2,w,h);x.restore()}
+  const wrap=(t,font,max,y,lh,col)=>{x.font=font;x.fillStyle=col;x.textAlign='center';x.direction=/[؀-ۿ]/.test(t)?'rtl':'ltr';const ws=String(t).split(' '),L=[];let ln='';ws.forEach(w=>{const tt=ln?ln+' '+w:w;if(x.measureText(tt).width>max&&ln){L.push(ln);ln=w}else ln=tt});L.push(ln);L.slice(0,3).forEach((l,i)=>x.fillText(l,W/2,y+i*lh));return y+Math.min(3,L.length)*lh};
+  let y=wrap(P.card.headline||'',`800 76px ${F}`,W-140,800,88,'#102A2E');y=wrap(P.card.line||'',`500 44px ${F}`,W-160,y+30,58,'#3d5457');
+  x.font=`700 38px ${F}`;x.fillStyle='#0E7C66';x.textAlign='center';x.direction='ltr';x.fillText(p.name,W/2,Math.min(y+70,H-150));
+  const px=lastPx(p,'EUR');if(px){x.font=`800 64px ${F}`;x.fillText('€'+num(px),W/2,H-80)}
+  if(P.card.badge){x.font=`800 34px ${F}`;const bw=x.measureText(P.card.badge).width+50;x.fillStyle='#0E7C66';rrPath(x,W-60-bw,40,bw,62,31);x.fill();x.fillStyle='#fff';x.fillText(P.card.badge,W-60-bw/2,82)}
+  const b=await new Promise(res=>c.toBlob(res,'image/jpeg',.9));return new File([b],fileName(p.name)+' card.jpg',{type:'image/jpeg'})}
 
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
@@ -2913,6 +3031,7 @@ $app.addEventListener('click',e=>{
   else if(act==='sell'&&p)sellSheet(p);
   else if(act==='add')itemForm(null);
   else if(act==='addmenu')addMenu();
+  else if(act==='coach')sellCoach();
   else if(act==='ing'){if(can('ing'))ingSheet(S.q);else toast('الميزة دي مقفولة')}
   else if(act==='perm2')permSheet();
   else if(act==='restock')restockSheet(p||null);
@@ -3003,6 +3122,7 @@ function startData(){
   col('events').orderBy('t','desc').limit(400).onSnapshot(snap=>{S.events=snap.docs.map(d=>d.data());if(S.view==='log')render()},e=>console.error(e));
   startChat();startNotes();startAcc();
   col('invoices').where('t','>=',winStart).onSnapshot(snap=>{S.invs={};snap.docs.forEach(d=>S.invs[d.id]=d.data());if(S.view==='sales')render()},()=>{});
+  startFb();
   col('members').onSnapshot(q=>{S.members=q.docs.map(d=>({uid:d.id,...d.data()}));S.membersErr=false},()=>{S.membersErr=true});
   ref('secrets/ai').onSnapshot(d=>{S.teamKey=(d.data()||{}).key||''},()=>{});
   ref('settings/app').onSnapshot({includeMetadataChanges:true},d=>{S.cfg={cur:'ج.م',...(d.data()||{})};if(!d.metadata.fromCache&&!S.cfg.topic)ensureTopic();if(S.ready)render()},e=>console.error(e));
