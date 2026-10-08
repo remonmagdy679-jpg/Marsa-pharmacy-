@@ -602,6 +602,29 @@ body.hasinv .wrap{padding-bottom:230px}
 .cntact{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .cntst .lw{color:var(--amber)} .cntst .ok{color:var(--green)}
 
+.calc{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(8,22,24,.35)}
+.cpanel{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 30px rgba(0,0,0,.25)}
+@media(min-width:700px){.calc{align-items:center}.cpanel{border-radius:22px}}
+.ctop{display:flex;align-items:center;gap:8px;margin-bottom:8px}.ctop b{flex:1;font-size:15px}
+.cx{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+.cscreen{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:10px 14px;text-align:left;direction:ltr;min-height:86px}
+.cexp{font-size:16px;color:var(--muted);min-height:22px;word-break:break-all}
+.cres{font-size:38px;font-weight:800;line-height:1.2;word-break:break-all;color:var(--muted)}.cres.fin{color:var(--green)}
+.ckeys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;direction:ltr}
+.ckeys button{height:58px;border-radius:16px;border:1px solid var(--line);background:var(--bg);font-size:24px;font-weight:600;color:var(--ink)}
+.ckeys button:active{transform:scale(.96)}
+.ckeys .op{background:var(--green-soft);color:var(--green);font-size:28px}
+.ckeys .fn{color:var(--muted);font-size:20px}
+.ckeys .eq{background:var(--green);color:#fff;border-color:var(--green);font-size:28px}
+.cacts{display:flex;gap:8px;margin-top:10px}.cacts button{flex:1;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:inherit;font-size:14px;font-weight:600;color:var(--ink)}
+.cacts #cUse{background:var(--green);color:#fff;border-color:var(--green)}
+.chist{max-height:180px;overflow:auto;margin-bottom:8px;border:1px solid var(--line);border-radius:12px}
+.chist button{display:flex;justify-content:space-between;gap:10px;width:100%;padding:8px 12px;border:0;border-bottom:1px solid var(--line);background:none;direction:ltr;font:inherit;font-size:14px;color:var(--ink)}
+.chist .mu,.chist p.mu{color:var(--muted);justify-content:center;margin:8px}
+.sheet{position:relative}
+.sheet>h4,.sheet>.sbwrap>h4{padding-left:44px}
+.sheetcalc{position:absolute;top:12px;left:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:16px;z-index:2;opacity:.85}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -655,6 +678,7 @@ body.hasinv .wrap{padding-bottom:230px}
   <div class="brand">
     <h1>Dr. Corner<small id="status">صيدلية وكوزماتكس</small></h1>
     <button class="notesbtn" id="notesBtn" aria-label="النوتس" hidden><span class="ni">📝</span><span class="nl">النوتس</span><span class="pill" id="notespill" hidden></span></button>
+    <button class="bell" id="calcBtn" aria-label="الآلة الحاسبة" hidden>🧮</button>
     <button class="bell" id="chatBtn" aria-label="شات الفريق" hidden>💬<span class="pill" id="chatpill" hidden></span></button>
     <button class="bell" id="bell" aria-label="التنبيهات" hidden>🔔<span class="pill" id="bellpill" hidden></span></button>
   </div>
@@ -680,6 +704,19 @@ body.hasinv .wrap{padding-bottom:230px}
 <div class="login" id="login" hidden></div>
 <div class="scanner" id="scanner" hidden><video id="scVid" playsinline webkit-playsinline autoplay muted></video><div id="scBox"></div><div id="scFile" hidden></div><div class="scframe"><i></i></div><div class="sctop"><button class="zx" id="scClose" aria-label="قفل">✕</button><b id="scTitle"></b><button class="zx" id="scTorch" aria-label="الفلاش" hidden>🔦</button></div><div class="scbot"><div class="seg scmode" id="scMode" hidden><button data-sm="sell">🧾 بيع</button><button data-sm="in">📦 استلام</button></div><p id="scHint">وجّه الكاميرا على الباركود أو الـ QR</p><div class="scbtns"><button class="btn" id="scPhoto">📸 صوّر الكود</button><button class="btn" id="scType">⌨️ اكتب الكود</button></div></div></div>
 <div id="modal"></div>
+<div class="calc" id="calc" hidden role="dialog" aria-label="الآلة الحاسبة"><div class="cpanel">
+  <div class="ctop"><b>🧮 الآلة الحاسبة</b><button class="cx" data-c="hist" aria-label="السجل">🕘</button><button class="cx" data-c="close" aria-label="قفل">✕</button></div>
+  <div class="chist" id="cHist" hidden></div>
+  <div class="cscreen"><div class="cexp" id="cExp"></div><div class="cres" id="cRes">0</div></div>
+  <div class="ckeys">
+    <button data-c="C" class="fn">C</button><button data-c="back" class="fn">⌫</button><button data-c="%" class="fn">%</button><button data-c="/" class="op">÷</button>
+    <button data-c="7">7</button><button data-c="8">8</button><button data-c="9">9</button><button data-c="*" class="op">×</button>
+    <button data-c="4">4</button><button data-c="5">5</button><button data-c="6">6</button><button data-c="-" class="op">−</button>
+    <button data-c="1">1</button><button data-c="2">2</button><button data-c="3">3</button><button data-c="+" class="op">+</button>
+    <button data-c="(" class="fn">( )</button><button data-c="0">0</button><button data-c=".">.</button><button data-c="=" class="eq">=</button>
+  </div>
+  <div class="cacts"><button data-c="copy">📋 نسخ</button><button data-c="use" id="cUse" hidden>⬅ حطه في الخانة</button></div>
+</div></div>
 <div id="print"></div>
 
 <script>
@@ -694,7 +731,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 عدّ باللون 2';
+const APP_V = '8-10 آلة حاسبة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -771,7 +808,7 @@ function renderTop(){
   $seg.hidden=['acc','log','notes','sales','short'].includes(S.view);
   $seg.innerHTML=[['all','الكل','الكل'],['med','💊','أدوية بس'],['cos','🧴','كوزماتكس بس']].map(([k,l,a])=>`<button data-type="${k}" aria-pressed="${S.type===k}" aria-label="${a}" title="${a}">${l}</button>`).join('');
   $st.className=S.offline?'off':'';$st.innerHTML=show?`<i></i>${S.offline?'مش متصل':''}`:'';$st.title=S.offline?'مش متصل — هيتزامن لما النت يرجع':'متزامن مع الكل';
-  $bell.hidden=$('notesBtn').hidden=$mic.hidden=!show;$fab.hidden=true;$('chatBtn').hidden=!show;
+  $bell.hidden=$('notesBtn').hidden=$mic.hidden=!show;$fab.hidden=true;$('chatBtn').hidden=!show;$('calcBtn').hidden=!show;
   const on=S.notes.filter(n=>!n.done).length;$('notespill').hidden=!on;$('notespill').textContent=on;$('notesBtn').setAttribute('aria-pressed',S.view==='notes');
   const oa=openAlerts();$bp.hidden=!oa.length;$bp.textContent=oa.length;
   $ab.hidden=!show||!oa.length;
@@ -1025,7 +1062,7 @@ function textSheet(title,text){
 
 /* ---------- sheets ---------- */
 function openSheet(html,onClick,dismissable=true){
-  $modal.innerHTML=`<div class="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  $modal.innerHTML=`<div class="scrim"><div class="sheet" role="dialog" aria-modal="true"><button class="sheetcalc" data-calc aria-label="الآلة الحاسبة">🧮</button>${html}</div></div>`;
   const scrim=$modal.firstChild;
   scrim.addEventListener('click',e=>{if((dismissable&&e.target===scrim)||e.target.closest('[data-cancel]')){closeSheet();return}const b=e.target.closest('[data-m]');if(b&&onClick)onClick(b.dataset.m,scrim,b)});
   const f=scrim.querySelector('input:not([type=number]):not([type=checkbox]),textarea:not([readonly])');if(f)setTimeout(()=>f.focus(),60);
@@ -2267,7 +2304,8 @@ document.addEventListener('click',pushGuard,{capture:true,passive:true});
 document.addEventListener('touchend',pushGuard,{capture:true,passive:true});
 addEventListener('popstate',()=>{
   backGuard=false;let handled=true;
-  if(!$sc.hidden)stopScanner();
+  if(!$calc.hidden)calcClose();
+  else if(!$sc.hidden)stopScanner();
   else if(!$zoom.hidden)closeZoom();
   else if($modal.innerHTML)closeSheet();
   else if(!$('remind').hidden)$('remind').hidden=true;
@@ -2700,6 +2738,46 @@ async function countPhoto(o){
     }catch(e){st.innerHTML=`<span class="rd">مقدرتش أعدّ من الصورة</span>${visionErr?`<small class="verr">${esc(visionErr)}</small>`:''} <button class="btn sm" data-m="cnt">↻ جرب تاني</button>`}
     delete st.dataset.busy},1600,.85);
 }
+
+
+/* ---------- الآلة الحاسبة (من أي مكان) ---------- */
+const $calc=$('calc');let cExp='',cLastInput=null,cJust=false;
+document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.tagName==='INPUT'&&(t.type==='number'||/decimal|numeric/.test(t.inputMode||''))&&!$calc.contains(t))cLastInput=t});
+function calcEval(src){src=toEn(String(src)).replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/,/g,'');
+  const tk=src.match(/\d*\.?\d+|[-+*/%()]/g)||[];let i=0;
+  const peek=()=>tk[i],eat=()=>tk[i++];
+  const prim=()=>{let t=eat();if(t==='-')return -prim();if(t==='+')return prim();if(t==='('){const v=expr();if(peek()===')')eat();return post(v)}if(t==null||isNaN(+t))throw 0;return post(+t)};
+  const post=v=>{while(peek()==='%'){eat();v=v/100}return v};
+  const term=()=>{let v=prim();while(peek()==='*'||peek()==='/'){const o=eat(),r=prim();v=o==='*'?v*r:v/r}return v};
+  const expr=()=>{let v=term();while(peek()==='+'||peek()==='-'){const o=eat();let r=term();
+    // 100+10% = 110 زي الآلة العادية
+    if(tk[i-1]==='%'&&/[\d)]/.test(tk[i-2]||''))r=v*r;v=o==='+'?v+r:v-r}return v};
+  const v=expr();if(i<tk.length||!isFinite(v))throw 0;return Math.round(v*1e8)/1e8}
+const cFmt=v=>Number(v).toLocaleString('en-US',{maximumFractionDigits:8});
+function calcDraw(){const show=cExp.replace(/\*/g,'×').replace(/\//g,'÷').replace(/-/g,'−');$('cExp').textContent=show||'';
+  let r='';try{r=cExp?cFmt(calcEval(cExp)):'0'}catch(e){r=$('cRes').textContent}$('cRes').textContent=r;$('cRes').classList.toggle('fin',cJust)}
+function calcHist(){let h=[];try{h=JSON.parse(LS.get('drc.calcH')||'[]')}catch(e){}return h}
+function calcOpen(){$calc.hidden=false;$('cUse').hidden=!(cLastInput&&document.body.contains(cLastInput));calcDraw();try{history.pushState({calc:1},'')}catch(e){}}
+function calcClose(){$calc.hidden=true;$('cHist').hidden=true}
+function calcKey(k){
+  if(k==='close')return calcClose();
+  if(k==='hist'){const h=calcHist(),el=$('cHist');el.hidden=!el.hidden;el.innerHTML=h.length?h.map((x,i)=>`<button data-c="h:${i}"><span>${esc(x.e)}</span><b>= ${esc(x.r)}</b></button>`).join('')+'<button data-c="hclr" class="mu">امسح السجل</button>':'<p class="mu">لسه مفيش عمليات</p>';return}
+  if(k==='hclr'){LS.set('drc.calcH','[]');$('cHist').hidden=true;return}
+  if(k.startsWith('h:')){const x=calcHist()[+k.slice(2)];if(x){cExp=String(x.v);cJust=false;$('cHist').hidden=true;calcDraw()}return}
+  if(k==='copy'){copyText($('cRes').textContent.replace(/,/g,'')).then(ok=>toast(ok?'الناتج اتنسخ':'انسخه يدوي'));return}
+  if(k==='use'){if(cLastInput&&document.body.contains(cLastInput)){let v;try{v=calcEval(cExp||'0')}catch(e){return}cLastInput.value=v;cLastInput.dispatchEvent(new Event('input',{bubbles:true}));cLastInput.dispatchEvent(new Event('change',{bubbles:true}));calcClose();toast('الرقم اتحط في الخانة')}return}
+  if(k==='C'){cExp='';cJust=false;return calcDraw()}
+  if(k==='back'){cExp=cJust?'':cExp.slice(0,-1);cJust=false;return calcDraw()}
+  if(k==='='){if(!cExp)return;try{const v=calcEval(cExp),h=calcHist();h.unshift({e:cExp.replace(/\*/g,'×').replace(/\//g,'÷'),r:cFmt(v),v});LS.set('drc.calcH',JSON.stringify(h.slice(0,15)));cExp=String(v);cJust=true;calcDraw()}catch(e){toast('العملية مش مكتملة')}return}
+  if(k==='('){const o=(cExp.match(/\(/g)||[]).length,c=(cExp.match(/\)/g)||[]).length;k=o>c&&/[\d)%]$/.test(cExp)?')':(/[\d)%]$/.test(cExp)?'*(':'(')}
+  if(/^[-+*/%]$/.test(k)){cJust=false;if(!cExp&&k!=='-')cExp='0';if(/[-+*/]$/.test(cExp)&&k!=='%')cExp=cExp.slice(0,-1);cExp+=k;return calcDraw()}
+  if(cJust&&/[\d.]/.test(k)){cExp='';}cJust=false;
+  if(k==='.'){const last=(cExp.match(/[\d.]*$/)||[''])[0];if(last.includes('.'))return;if(!last)k='0.'}
+  cExp+=k;calcDraw()}
+$calc.addEventListener('click',e=>{if(e.target===$calc)return calcClose();const b=e.target.closest('[data-c]');if(b){e.stopPropagation();calcKey(b.dataset.c)}});
+$('calcBtn').addEventListener('click',calcOpen);
+document.addEventListener('click',e=>{if(e.target.closest('[data-calc]')){e.preventDefault();e.stopPropagation();calcOpen()}},true);
+document.addEventListener('keydown',e=>{if($calc.hidden)return;const m={Enter:'=',Backspace:'back',Escape:'close',Delete:'C'}[e.key]||(/^[0-9.+\-*/%()]$/.test(e.key)?e.key:null);if(m){e.preventDefault();calcKey(m==='('||m===')'?'(':m)}});
 
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
