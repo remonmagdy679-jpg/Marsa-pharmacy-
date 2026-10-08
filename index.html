@@ -580,6 +580,19 @@ body.hasinv .wrap{padding-bottom:230px}
 .audsel button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:14px;font-weight:700}
 .audsel button small{font-size:11px;font-weight:500;opacity:.8}
 
+.shsec{margin-top:14px}
+.shsec>header{display:flex;align-items:center;gap:8px;margin:0 2px 6px}
+.shsec>header b{font-size:15px}
+.shsec>header small{flex:1;color:var(--muted);font-size:12px}
+.shsec>header .btn{padding:6px 10px;font-size:12.5px}
+.sck.sm{width:26px;height:26px;font-size:14px}
+.sck.all{background:var(--green);color:#fff;border-color:var(--green)}
+.sck.some{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.pvrow{display:flex;gap:6px;overflow-x:auto;padding:4px 0}
+.pvrow img{height:150px;border-radius:10px;border:1px solid var(--line);flex:none}
+.pvrow span{align-self:center;color:var(--muted);font-weight:700;padding:0 8px}
+#saBtns .btn.sent{opacity:.55}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -672,7 +685,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '7-10 مدير وشركة';
+const APP_V = '8-10 نواقص بالأقسام';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -803,12 +816,14 @@ function vSales(){
     :`<div class="empty">مفيش مبيعات في اليوم ده${CART.lines.length?`<br><b>🧾 عندك فاتورة مفتوحة لسه ما خلصتش (${CART.lines.length} صنف)</b><br><button class="btn sm primary" data-act="inv-open" style="margin-top:8px">افتحها وأنهيها</button>`:''}</div>`;
   $app.innerHTML=h;
 }
+const grpOf=p=>(p.grp||'').trim()||'بدون قسم';
+const bySec=(a,b)=>grpOf(a)===grpOf(b)?0:grpOf(a)==='بدون قسم'?1:grpOf(b)==='بدون قسم'?-1:grpOf(a).localeCompare(grpOf(b),'ar');
 function shortList(){
   let l=S.items.filter(p=>tOf(p)===S.shortTab&&matchQ(hay(p))&&isShort(p));
   if(S.shortMode==='out')l=l.filter(p=>!good(p));
   if(S.shortMode==='low')l=l.filter(p=>good(p)>0);
   if(S.shortMode==='todo')l=l.filter(p=>!p.ordered);
-  return l.sort((a,b)=>(good(a)?1:0)-(good(b)?1:0)||good(a)-good(b)||byName(a,b));
+  return l.sort((a,b)=>bySec(a,b)||(good(a)?1:0)-(good(b)?1:0)||good(a)-good(b)||byName(a,b));
 }
 /* تحديد الأصناف اللي هتتبعت + كمية كل صنف (بالعلبة) */
 let SHQ=(()=>{try{return JSON.parse(LS.get('drc.shq')||'{}')}catch(e){return {}}})();
@@ -832,13 +847,14 @@ function vShort(){
   if(list.length){
     const n=list.filter(shSel).length;
     h+=`<div class="shtop"><button class="linkb" data-act="sh-all">${n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}</button><span class="hint" style="margin:0">علّم على اللي هتبعته وظبط الكمية</span></div>`;
-    h+=`<div class="rows">${list.map(rowShort).join('')}</div>`;
+    const secs=[];list.forEach(p=>{const g=grpOf(p);let s_=secs.find(x=>x.g===g);if(!s_){s_={g,l:[]};secs.push(s_)}s_.l.push(p)});
+    h+=secs.map(({g,l})=>{const on=l.filter(shSel).length;return `<section class="shsec" data-g="${esc(g)}"><header><button class="sck sm ${on===l.length?'all':on?'some':''}" data-act="sh-gtog" data-g="${esc(g)}" aria-label="حدد القسم">${on===l.length?'✓':on?'–':''}</button><b>${esc(g)}</b><small>${l.length} صنف</small><button class="btn sm primary" data-act="sh-gsend" data-g="${esc(g)}">📤 ابعت القسم</button></header><div class="rows">${l.map(rowShort).join('')}</div></section>`}).join('');
     h+=`<div class="toolbar" style="margin-top:12px"><button class="btn" data-act="rep-short" data-k="copy">نسخ</button><button class="btn" data-act="rep-short" data-k="pdf">PDF</button>${out?`<button class="btn" data-act="alert-out">🔔 نبّه الكل بالخلصان</button>`:''}</div>`;
     h+=`<div class="shbar"><b id="shN">${n}</b><span>صنف متحدد</span><button class="btn" data-act="sh-text">📋 نص</button><button class="btn primary" data-act="sh-send">📤 ابعت صور</button></div>`;
   }else h+=`<div class="empty">${S.items.length?'مفيش نواقص هنا 👌':'لسه مفيش أصناف'}</div>`;
   $app.innerHTML=h;
 }
-function shRefreshBar(){const list=shortList(),n=list.filter(shSel).length,el=$('shN');if(el)el.textContent=n;const a=$app.querySelector('[data-act="sh-all"]');if(a)a.textContent=n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}
+function shRefreshBar(){const list=shortList(),n=list.filter(shSel).length,el=$('shN');if(el)el.textContent=n;$app.querySelectorAll('.shsec').forEach(sec=>{const l=list.filter(p=>grpOf(p)===sec.dataset.g),on=l.filter(shSel).length,b=sec.querySelector('[data-act=sh-gtog]');if(b){b.className='sck sm '+(on===l.length?'all':on?'some':'');b.textContent=on===l.length?'✓':on?'–':''}});const a=$app.querySelector('[data-act="sh-all"]');if(a)a.textContent=n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}
 function shMore(p){openSheet(`<h4>${esc(p.name)}</h4><div class="menu">
     <button data-m="in"><span>📦</span><b>اتورد</b><small>ضيف الكمية اللي وصلت</small></button>
     <button data-m="ord"><span>✓</span><b>${p.ordered?'شيل «اتطلب»':'اتطلب'}</b><small>علّم إنه اتطلب من المورد</small></button>
@@ -875,25 +891,33 @@ async function makeShortList(sel,pi,pn,aud){aud=aud||'co';
   x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 24px ${F}`;x.fillText(SHOP_NAME,W/2,H-38);
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
 }
-async function shSend(){
-  const sel=shSelected();if(!sel.length){toast('علّم على صنف واحد على الأقل');return}
-  const PER=12,pn=Math.ceil(sel.length/PER);let aud=LS.get('drc.aud')||'co';
-  const r=openSheet(`<h4>📤 ابعت ${sel.length} صنف</h4>
+async function shSend(grp){
+  let sel=shSelected();if(grp)sel=sel.filter(x=>grpOf(x.p)===grp);
+  if(!sel.length){if(grp){const l=shortList().filter(p=>grpOf(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>grpOf(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
+  sel.sort((a,b)=>bySec(a.p,b.p));
+  let aud=LS.get('drc.aud')||'co',mode='each';const PER=12;
+  const r=openSheet(`<h4>📤 ابعت ${grp?`قسم «${esc(grp)}» — `:''}${sel.length} صنف</h4>
     <div class="seg audsel"><button data-m="a:mgr" aria-pressed="${aud==='mgr'}">👔 للمدير<small>عندنا + عايزين</small></button><button data-m="a:co" aria-pressed="${aud==='co'}">🏭 للشركة<small>عايزين بس</small></button></div>
-    <img id="saPrev" class="scanimg" alt="" hidden><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصور…</p><label class="check"><input type="checkbox" id="saOrd" checked> علّمهم «اتطلب» بعد الإرسال للشركة</label>
-    <button class="btn primary" data-m="list" id="saGo" disabled style="width:100%;padding:13px"></button>
-    <div class="actions"><button class="btn" data-m="each">🖼️ صورة لكل صنف</button><button class="btn" data-cancel>قفل</button></div>`,
-  async m=>{const mark=()=>{if(aud==='co'&&r.querySelector('#saOrd')&&r.querySelector('#saOrd').checked){const b=fs.batch();sel.forEach(x=>{if(!x.p.ordered)b.update(ref('items/'+x.p.id),{ordered:{by:me(),t:Date.now()}})});commit(b)}};
-    if(m.startsWith('a:')){aud=m.slice(2);LS.set('drc.aud',aud);r.querySelectorAll('.audsel button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));show();return}
-    if(m==='list'){await shareFiles(files[aud],'');mark();return}
-    if(m==='each'){r.querySelector('#saSt').innerHTML='<span class="spin"></span>جاري تجهيز صورة لكل صنف…';const fl=[];for(const x of sel){const b=await makeShortCard(x.p,good(x.p)+x.need,aud);fl.push(new File([b],fileName(x.p.name)+'.jpg',{type:'image/jpeg'}))}
-      r.querySelector('#saSt').textContent=`✓ ${fl.length} صورة جاهزة (${aud==='mgr'?'للمدير':'للشركة'})`;const box=r.querySelector('.actions');box.querySelectorAll('[data-m^="e:"]').forEach(x=>x.remove());let h='';for(let i=0;i<fl.length;i+=10)h+=`<button class="btn primary" data-m="e:${i}">📤 ابعت ${fl.length>10?`${i+1}–${Math.min(i+10,fl.length)}`:'الصور'}</button>`;box.insertAdjacentHTML('afterbegin',h);each=fl;return}
-    if(m.startsWith('e:')){const i=+m.slice(2);await shareFiles(each.slice(i,i+10),'');if(i+10>=each.length)mark()}});
-  let each=[];const files={mgr:[],co:[]},urls={};
-  const show=()=>{if(!files[aud].length)return;const pv=r.querySelector('#saPrev');if(!urls[aud])urls[aud]=URL.createObjectURL(files[aud][0]);pv.src=urls[aud];pv.hidden=false;
-    r.querySelector('#saGo').textContent=`📤 ابعت ${aud==='mgr'?'للمدير':'للشركة'} — ${pn>1?pn+' صور':'صورة واحدة'}`;r.querySelector('#saGo').disabled=false;r.querySelector('#saOrd').parentElement.hidden=aud!=='co'};
-  for(const a of ['co','mgr'])for(let i=0;i<pn;i++){if(!r.isConnected)return;const b=await makeShortList(sel.slice(i*PER,(i+1)*PER),i,pn,a);files[a].push(new File([b],`${a==='mgr'?'نواقص':'طلبية'} ${TYPES[S.shortTab].name} ${today()}${pn>1?' - '+(i+1):''}.jpg`,{type:'image/jpeg'}))}
-  r.querySelector('#saSt').textContent=pn>1?`✓ ${pn} صور — كل صورة فيها لحد ${PER} صنف`:'✓ الصورة جاهزة';show();
+    <div class="pvrow" id="saPrev"></div><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصور…</p>
+    <label class="check" id="saOrdL"><input type="checkbox" id="saOrd" checked> علّمهم «اتطلب» بعد الإرسال للشركة</label>
+    <div class="actions" id="saBtns"></div>
+    <div class="actions"><button class="btn" data-m="one">🧾 بدلها: صورة واحدة فيها الكل</button><button class="btn" data-cancel>قفل</button></div>`,
+  async m=>{const mark=()=>{if(aud==='co'&&r.querySelector('#saOrd').checked){const b=fs.batch();sel.forEach(x=>{if(!x.p.ordered)b.update(ref('items/'+x.p.id),{ordered:{by:me(),t:Date.now()}})});commit(b)}};
+    if(m.startsWith('a:')){aud=m.slice(2);LS.set('drc.aud',aud);r.querySelectorAll('.audsel button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));build();return}
+    if(m==='one'){mode=mode==='one'?'each':'one';r.querySelector('[data-m=one]').textContent=mode==='one'?'🖼️ بدلها: صورة لكل صنف':'🧾 بدلها: صورة واحدة فيها الكل';build();return}
+    if(m.startsWith('b:')){const i=+m.slice(2),fl=cache[aud+mode];await shareFiles(fl.slice(i,i+10),'');r.querySelector(`[data-m="${m}"]`).classList.add('sent');if(i+10>=fl.length)mark()}});
+  const cache={};let tok=0;
+  async function build(){const my=++tok,key=aud+mode;r.querySelector('#saOrdL').hidden=aud!=='co';
+    const st=r.querySelector('#saSt'),bt=r.querySelector('#saBtns'),pv=r.querySelector('#saPrev');bt.innerHTML='';pv.innerHTML='';
+    if(!cache[key]){const fl=[];
+      if(mode==='each'){for(const x of sel){if(!r.isConnected||my!==tok)return;st.innerHTML=`<span class="spin"></span>جاري تجهيز ${fl.length+1} من ${sel.length}…`;const b=await makeShortCard(x.p,good(x.p)+x.need,aud);fl.push(new File([b],`${String(fl.length+1).padStart(2,'0')} ${fileName(x.p.name)}.jpg`,{type:'image/jpeg'}))}}
+      else{const pn=Math.ceil(sel.length/PER);for(let i=0;i<pn;i++){if(!r.isConnected||my!==tok)return;const b=await makeShortList(sel.slice(i*PER,(i+1)*PER),i,pn,aud);fl.push(new File([b],`${aud==='mgr'?'نواقص':'طلبية'} ${today()}${pn>1?' - '+(i+1):''}.jpg`,{type:'image/jpeg'}))}}
+      cache[key]=fl}
+    if(my!==tok||!r.isConnected)return;const fl=cache[key];
+    pv.innerHTML=fl.slice(0,12).map(f=>`<img src="${URL.createObjectURL(f)}" alt="">`).join('')+(fl.length>12?`<span>+${fl.length-12}</span>`:'');
+    st.textContent=`✓ ${fl.length} ${mode==='each'?'صورة — صنف في كل صورة، بترتيب الأقسام':'صورة'} (${aud==='mgr'?'للمدير':'للشركة'})${fl.length>10?' — بتتبعت كل 10 مع بعض بالترتيب':''}`;
+    let h='';for(let i=0;i<fl.length;i+=10)h+=`<button class="btn primary" data-m="b:${i}">📤 ابعت ${aud==='mgr'?'للمدير':'للشركة'}${fl.length>10?` ${i+1}–${Math.min(i+10,fl.length)}`:''}</button>`;bt.innerHTML=h}
+  build();
 }
 const mStart=i=>dayKey(new Date(Math.floor(i/12),i%12,1));
 const mEnd=i=>dayKey(new Date(Math.floor(i/12),i%12+1,0));
@@ -2407,6 +2431,7 @@ async function makeShortCard(p,target,aud){aud=aud||'co';
   x.save();x.shadowColor='rgba(16,42,46,.12)';x.shadowBlur=40;x.shadowOffsetY=12;x.fillStyle='#fff';rrPath(x,36,36,W-72,H-72,44);x.fill();x.restore();
   // الهيدر
   x.textBaseline='middle';x.direction='ltr';x.textAlign='left';x.fillStyle='#0E7C66';x.font=`800 40px ${F}`;x.fillText('Dr. Corner',86,108);
+  if(aud==='mgr'){const pill=out?['خلصان','#C62A2F','#FDECEC']:['قرب يخلص','#A8650A','#FFF3DC'];x.font=`800 32px ${F}`;x.direction='rtl';const pw=x.measureText(pill[0]).width+56;x.fillStyle=pill[2];rrPath(x,W-86-pw,82,pw,54,27);x.fill();x.fillStyle=pill[1];x.textAlign='center';x.fillText(pill[0],W-86-pw/2,110)}
   // صورة المنتج (بتتقص جوه الإطار)
   x.save();rrPath(x,76,PY,W-152,PH,34);x.clip();x.fillStyle='#F2F6F5';x.fillRect(76,PY,W-152,PH);
   const src=p.img?(await fullImg(p.id))||p.img:'';
@@ -2424,7 +2449,7 @@ async function makeShortCard(p,target,aud){aud=aud||'co';
   if(aud==='mgr'){tile(0,'عندنا',fmtQs(p,q),out?'#FDECEC':'#F2F6F5',out?'#C62A2F':'#102A2E','#587074');tile(1,'عايزين',fmtQs(p,need),'#0E7C66','#ffffff','#CDEFE5')}
   else tile(0,'عايزين',fmtQ(p,need),'#0E7C66','#ffffff','#CDEFE5');
   // الفوتر
-  x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 28px ${F}`;x.fillText(`طلبية ${fmtDay(today())}`,W/2,H-80);
+  x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 28px ${F}`;x.fillText(aud==='mgr'?`نواقص ${fmtDay(today())}${S.me?' — '+S.me:''}`:`طلبية ${fmtDay(today())}`,W/2,H-80);
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
 }
 const shortText=(p,target)=>{const q=good(p);return `${p.name}\nالمطلوب: ${fmtQ(p,Math.max(0,target-q))}`};
@@ -2632,6 +2657,8 @@ $app.addEventListener('click',e=>{
   else if(act==='sh-all'){const l=shortList(),allOn=l.every(shSel);l.forEach(x=>shSet(x.id,{on:!allOn}));render()}
   else if(act==='sh-more'&&p)shMore(p);
   else if(act==='sh-send')shSend();
+  else if(act==='sh-gsend')shSend(b.dataset.g);
+  else if(act==='sh-gtog'){const l=shortList().filter(p=>grpOf(p)===b.dataset.g),allOn=l.every(shSel);l.forEach(x=>shSet(x.id,{on:!allOn}));render()}
   else if(act==='sh-text'){const sel=shSelected();if(!sel.length)return toast('علّم على صنف واحد على الأقل');textSheet('نواقص',shText(sel))}
   else if(act==='inv-total')invTotalSheet(b.dataset.inv);
   else if(act==='urgent'&&p)urgent(p);
