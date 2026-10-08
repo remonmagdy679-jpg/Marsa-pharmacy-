@@ -746,7 +746,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 المادة الفعالة';
+const APP_V = '8-10 مميزات خاصة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -849,7 +849,7 @@ function grouped(list,keyFn,rowFn){
 }
 function vItems(){
   const list=S.items.filter(mItem).sort(byName);
-  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${S.type!=='cos'?'<button class="btn" data-act="ing">💊 بحث بالمادة الفعالة</button>':''}</div>`;
+  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${S.type!=='cos'&&can('ing')?'<button class="btn" data-act="ing">💊 بحث بالمادة الفعالة</button>':''}</div>`;
   if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>دوس «＋ إضافة» وابدأ.</div>`;
   else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
   else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
@@ -1001,7 +1001,7 @@ function vExp(){
 function vLog(){
   const list=S.events.filter(e=>matchQ(e.name+' '+(e.by||'')+' '+(ACT[e.a]||'')));
   const ppl=[...new Set(S.events.slice(0,200).map(e=>e.by).filter(Boolean))];
-  let h=`<div class="toolbar"><button class="btn" data-act="account">👤 ${esc(S.me||'حسابي')}</button>${S.role==='admin'?'<button class="btn" data-act="users">👥 المستخدمين</button>':''}<button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="acc-key">🔑 مفتاح الذكاء الاصطناعي${getKey()?' ✓':''}</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button><button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
+  let h=`<div class="toolbar"><button class="btn" data-act="account">👤 ${esc(S.me||'حسابي')}</button>${S.role==='admin'?'<button class="btn" data-act="users">👥 المستخدمين</button>':''}${isOwner()?'<button class="btn" data-act="perm2">🔒 مميزات خاصة</button>':''}<button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="acc-key">🔑 مفتاح الذكاء الاصطناعي${getKey()?' ✓':''}</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button><button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
   h+=`<p class="hint">نسخة التطبيق: <b>${APP_V}</b></p>`;
   if(ppl.length)h+=`<p class="hint">اللي بيستخدموا الموقع: ${ppl.map(esc).join('، ')}</p>`;
   h+=list.length?`<div class="rows log">${list.slice(0,300).map(e=>`<div class="row slim"><time>${fmtTime(e.t,1)}</time><span class="tag ${e.a}">${ACT[e.a]||e.a}</span><div class="kit"><b>${esc(e.name)}${e.n!==''&&e.n!=null?` × ${esc(e.n)}`:''}</b><div class="meta">${e.by?`<span>👤 ${esc(e.by)}</span>`:''}${e.note?`<span>${esc(e.note)}</span>`:''}</div></div></div>`).join('')}</div>`:`<div class="empty">مفيش حركات لسه</div>`;
@@ -2838,7 +2838,7 @@ List up to 5 matches, best first; only include real candidates (score ≥ 40). U
 /* ---------- بحث بالمادة الفعالة (للأدوية) ---------- */
 const askText=(prompt,max)=>askVision([],prompt,max);
 const medsAll=()=>S.items.filter(x=>!x.del&&tOf(x)==='med');
-function ingSheet(pre){
+function ingSheet(pre){if(!can('ing'))return toast('الميزة دي مقفولة');
   const r=openSheet(`<h4>💊 بحث بالمادة الفعالة</h4><p class="hint" style="margin-top:0">اكتب المادة الفعالة أو اسم الدوا الأوروبي (مثلاً: Ibuprofen 400، Nurofen، Voltaren gel، Pantoprazole 40) — أو صوّر العلبة أو الروشتة اللي مع الجيست.</p>
     <div class="vrow"><input id="igQ" dir="auto" value="${esc(pre||'')}" placeholder="المادة الفعالة أو الاسم التجاري"><button class="icon" data-m="ph" aria-label="صوّر">📷</button></div>
     <div class="actions"><button class="btn" data-cancel>قفل</button><button class="btn primary" data-m="go">🤖 دوّر في الأدوية اللي عندي</button></div>
@@ -2880,6 +2880,21 @@ ${part.map((x,i)=>`${i}: ${x.name}${x.str?' ('+x.str+')':''}`).join('\n')}`,2500
   out.innerHTML=`<p class="ok">✓ اتكمّلت المادة الفعالة لـ ${done} دوا — تقدر تراجعها من تعديل الصنف</p>`;
 }
 
+
+/* ---------- مميزات خاصة بالمالك (ريمون) ---------- */
+// أي ميزة جديدة خاصة: ضيفها هنا بـ def:'owner' واستخدم can('key')
+const FEATURES={
+  ing:{l:'💊 بحث بالمادة الفعالة',d:'البحث عن بديل بنفس المادة الفعالة وتكميل المادة الفعالة للأدوية',def:'owner'},
+};
+const isOwner=()=>!!(S.member&&S.member.owner);
+function can(f){if(isOwner())return true;const F=FEATURES[f];if(!F)return true;const lv=((S.cfg&&S.cfg.perm)||{})[f]||F.def;return lv==='all'||(lv==='admin'&&S.role==='admin')}
+function permSheet(){if(!isOwner()){toast('الصفحة دي لصاحب التطبيق بس');return}
+  const perm={...((S.cfg&&S.cfg.perm)||{})};
+  const draw=()=>Object.entries(FEATURES).map(([k,F])=>{const lv=perm[k]||F.def;return `<div class="astep"><b>${F.l}</b><p class="hint" style="margin:2px 0 8px">${esc(F.d)}</p><div class="seg">${[['owner','🔒 أنا بس'],['admin','👔 المديرين'],['all','👥 الكل']].map(([v,l])=>`<button data-m="${k}:${v}" aria-pressed="${lv===v}">${l}</button>`).join('')}</div></div>`}).join('');
+  const r=openSheet(`<h4>🔒 مميزات خاصة</h4><p class="hint" style="margin-top:0">إنت بس (صاحب التطبيق) اللي بتشوف الصفحة دي. اختار مين يقدر يستخدم كل ميزة — الموظفين مش هيشوفوا زرار الميزة خالص.</p><div id="pmL">${draw()}</div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  m=>{const [k,v]=m.split(':');if(!FEATURES[k])return;perm[k]=v;r.querySelector('#pmL').innerHTML=draw();run(ref('settings/app').set({perm},{merge:true}),'اتحفظ ✓')});
+}
+
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
 $tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
@@ -2898,7 +2913,8 @@ $app.addEventListener('click',e=>{
   else if(act==='sell'&&p)sellSheet(p);
   else if(act==='add')itemForm(null);
   else if(act==='addmenu')addMenu();
-  else if(act==='ing')ingSheet(S.q);
+  else if(act==='ing'){if(can('ing'))ingSheet(S.q);else toast('الميزة دي مقفولة')}
+  else if(act==='perm2')permSheet();
   else if(act==='restock')restockSheet(p||null);
   else if(act==='bulk')bulkSheet();
   else if(act==='ordered'&&p)toggleOrdered(p);
