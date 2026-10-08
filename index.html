@@ -593,6 +593,15 @@ body.hasinv .wrap{padding-bottom:230px}
 .pvrow span{align-self:center;color:var(--muted);font-weight:700;padding:0 8px}
 #saBtns .btn.sent{opacity:.55}
 
+.cntbtn{margin-top:6px}
+.cntst:empty{display:none}
+.cntst{margin-top:8px}
+.cntbox{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px;font-size:13px;line-height:1.6}
+.cntbox img{width:72px;height:72px;object-fit:cover;border-radius:10px;flex:none;cursor:zoom-in}
+.cntn{font-size:22px;color:var(--green)}
+.cntact{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.cntst .lw{color:var(--amber)} .cntst .ok{color:var(--green)}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -685,7 +694,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 نواقص بالأقسام';
+const APP_V = '8-10 عدّ بالصورة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1096,6 +1105,7 @@ function restockSheet(p,pre={}){
   openSheet(`<h4 class="withimg">${p&&p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">📦 استلام${p?' — '+esc(p.name):''}</span></h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}${pre.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}
     ${pick?`<label for="fItem">الصنف</label><div class="vrow"><input id="fItem" list="ilist" value="${esc(pre.name||'')}" placeholder="اكتب اسم الصنف أو امسحه"><button class="icon" data-m="scan" aria-label="امسح الباركود">🔳</button></div><datalist id="ilist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`:`<div class="stock"><div><small>عندك دلوقتي</small><b>${good(p)}</b></div><div><small>بعد الاستلام</small><b id="fAfter">${fmtQs(p,good(p)+(+pre.q||1)*spb(p))}</b></div></div>`}
     <label for="fQ">العدد اللي وصل${p&&spb(p)>1?' (علب)':''}</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fQ" type="number" inputmode="numeric" value="${pre.q||1}"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
+    <button class="btn sm cntbtn" data-m="cnt">📸 عدّ بالصورة</button><div id="cntSt" class="cntst"></div>
     ${p&&spb(p)>1?`<label for="fQs">+ شرايط فكة</label><input id="fQs" type="number" inputmode="numeric" placeholder="0">`:''}
     <label>الإكسباير (شهر / سنة)</label><div id="fE">${expSel(lastK,isMed?'الشهر':null,p&&p.life)}</div>
     ${lastK&&!pre.k?`<p class="hint" style="margin:4px 2px 0">متعبّي بآخر تاريخ عندك — غيّره لو مختلف</p>`:''}
@@ -1104,6 +1114,8 @@ function restockSheet(p,pre={}){
     const qi=r.querySelector('#fQ'),upd=()=>{const a=r.querySelector('#fAfter');if(a&&p)a.textContent=fmtQs(p,good(p)+Math.max(0,int(qi.value))*spb(p)+(r.querySelector('#fQs')?int(r.querySelector('#fQs').value):0))};
     if(m==='zoom')return openZoom(p);
     if(m==='dph')return datePhoto(r.querySelector('#fE .ex'),null,p&&p.life,r.querySelector('#rdSt'));
+    if(m==='cnt'||m==='cnt+'){const it=p||findByName((r.querySelector('#fItem')||{}).value||'');return countPhoto({input:qi,st:r.querySelector('#cntSt'),name:it?it.name:((r.querySelector('#fItem')||{}).value||''),unit:it&&tOf(it)==='med'?'box':'piece',add:m==='cnt+'})}
+    if(m==='cntz'){const st=r.querySelector('#cntSt');return openZoomSrc(st.dataset.img,'صورة العدّ')}
     if(m==='inc'){qi.value=int(qi.value)+1;return upd()}if(m==='dec'){qi.value=Math.max(1,int(qi.value)-1);return upd()}
     if(m==='scan2'||m==='scan')return openScanner({title:'امسح باركود الصنف اللي وصل',onCode:(c,g)=>{
       if(!p){const l=itemsByCode(c);if(!l.length){toast('الكود ده مش متسجل على أي صنف — اربطه من «صنف جديد» أو تعديل الصنف');return}r.querySelector('#fItem').value=l[0].name}
@@ -1132,7 +1144,7 @@ function itemForm(p,preset){
     <label>📷 صورة المنتج (بتسهّل التعرف عليه)</label><div class="photo"><img id="fImg" ${p&&p.img?`src="${p.img}"`:'hidden'} alt="صورة المنتج"><div class="pbtns"><button class="btn sm" data-m="pcam">📷 صوّر</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button><button class="btn sm" data-m="pdel" ${p&&p.img?'':'hidden'}>🗑 شيل</button><button class="btn sm aibtn" data-m="ai" ${p&&p.img?'':'hidden'}>🤖 اقرا البيانات من الصورة</button></div></div><p class="hint aist" id="aiSt">${p?'':'📷 صوّر العلبة من قدام والتطبيق هيكتب الاسم والتفاصيل لوحده'}</p>
     <label class="check"><input type="checkbox" id="fCr" ${p?.critical?'checked':''}> صنف مهم — نبّه الكل أول ما يوصل للحد الأدنى</label>
     <label>الكمية حسب تاريخ الإكسباير ${p?'(تعديل الجرد)':''}</label><div id="fB">${bl.length?bl.map(([k,v])=>brow(k,v)).join(''):brow(preset&&preset.k||'',preset&&preset.q||'')}</div>
-    <div class="actions" style="margin-top:8px"><button class="btn sm" data-m="addrow">+ تاريخ تاني</button><button class="btn sm primary" data-m="dphoto">📅 صوّر التاريخ والباركود</button></div><p class="hint" id="dSt" style="margin:4px 2px 0"></p>
+    <div class="actions" style="margin-top:8px"><button class="btn sm" data-m="addrow">+ تاريخ تاني</button><button class="btn sm primary" data-m="dphoto">📅 صوّر التاريخ والباركود</button><button class="btn sm" data-m="cnt">📸 عدّ بالصورة</button></div><p class="hint" id="dSt" style="margin:4px 2px 0"></p><div id="cntSt" class="cntst"></div>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="save">${p?'حفظ التعديل':'إضافة'}</button></div>`,
   (m,r,b)=>{
     if(m==='scode')return openScanner({title:'امسح باركود الصنف',onCode:(c,g)=>{const i=r.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(c))l.push(c);i.value=l.join(', ');
@@ -1140,6 +1152,9 @@ function itemForm(p,preset){
       const ex=S.items.find(x=>(x.codes||[]).includes(c)&&(!p||x.id!==p.id));if(ex)toast('⚠️ الكود ده متسجل على: '+ex.name)}});
     if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',d=>{pimg=d;const im=r.querySelector('#fImg');im.src=d;im.hidden=false;r.querySelector('[data-m=pdel]').hidden=false;r.querySelector('[data-m=ai]').hidden=false;if(!r.querySelector('#fName').value.trim())aiFill()});
     if(m==='ai')return aiFill();
+    if(m==='cnt'||m==='cnt+'){const rows=[...r.querySelectorAll('.brow')],row=(m==='cnt+'&&r.querySelector('#cntSt').dataset.row!=null?rows[+r.querySelector('#cntSt').dataset.row]:null)||rows.find(x=>!int(x.querySelector('.bq').value))||rows[rows.length-1];r.querySelector('#cntSt').dataset.row=rows.indexOf(row);
+      const med=r.querySelector('#fType').value==='med';return countPhoto({input:row.querySelector('.bq'),st:r.querySelector('#cntSt'),name:r.querySelector('#fName').value.trim(),unit:med?'box':'piece',add:m==='cnt+'})}
+    if(m==='cntz')return openZoomSrc(r.querySelector('#cntSt').dataset.img,'صورة العدّ');
     if(m==='dphoto'){const rows=[...r.querySelectorAll('.brow')],row=rows.find(x=>!x.querySelector('[data-x=m]').value)||rows[rows.length-1];return datePhoto(row&&row.querySelector('.ex'),r.querySelector('#fCode'),p&&p.life,r.querySelector('#dSt'))}
     if(m==='setkey'){const keep=pimg&&pimg!=='del'?pimg:'';return keySheet(()=>itemForm(p,{...(preset||{}),img:keep||(preset&&preset.img),auto:true}))}
     if(m==='pdel'){pimg='del';r.querySelector('#fImg').hidden=true;b.hidden=true;r.querySelector('[data-m=ai]').hidden=true;return}
@@ -1237,7 +1252,7 @@ function run(promise,okMsg){if(okMsg)toast(okMsg);promise.catch(e=>{console.erro
 const commit=(b,msg)=>run(b.commit(),msg);
 const me=()=>S.me||'بدون اسم';
 function evt(b,a,name,n,note,anon){b.set(col('events').doc(),{t:Date.now(),by:anon?'':me(),a,name:name||'',n:n??'',note:note||''})}
-function newAlert(b,p,q,auto,msg,silent){if(openAlerts().some(a=>a.id===p.id))return false;b.set(col('alerts').doc(),{t:Date.now(),by:auto?'تلقائي':me(),dev:DEV,id:p.id,name:p.name,type:tOf(p),qty:q,auto:!!auto,msg:msg||'',done:false});evt(b,'alert',p.name,q,msg);if(!silent)push('🔔 ناقص عاجل — '+SHOP_NAME,`${p.name} — ${q?'فاضل '+q:'خلص'}${msg&&msg!=='عاجل'?' ('+msg+')':''}${auto?'':' — '+me()}`,{prio:5,tags:['rotating_light']});return true}
+function newAlert(b,p,q,auto,msg,silent){if(openAlerts().some(a=>a.id===p.id))return false;b.set(col('alerts').doc(),{t:Date.now(),by:auto?'تلقائي':me(),dev:DEV,uid:S.uid||'',id:p.id,name:p.name,type:tOf(p),qty:q,auto:!!auto,msg:msg||'',done:false});evt(b,'alert',p.name,q,msg);if(!silent)push('🔔 ناقص عاجل — '+SHOP_NAME,`${p.name} — ${q?'فاضل '+q:'خلص'}${msg&&msg!=='عاجل'?' ('+msg+')':''}${auto?'':' — '+me()}`,{prio:5,tags:['rotating_light']});return true}
 function doSell(p,n,start,quiet,extra){
   const bl=bats(p);if(!start)start=(bl.find(([k])=>bkIdx(k)>=nowIdx())||[])[0];let order=bl.map(x=>x[0]);if(start&&order.includes(start))order=[start,...order.filter(k=>k!==start)];
   let rem=n;const alloc={},upd={};
@@ -1395,7 +1410,8 @@ const avColor=n=>`hsl(${hue(n)} 55% 44%)`;
 const av=n=>`<span class="av" style="background:${avColor(n)}">${esc(String(n||'؟').trim().charAt(0))}</span>`;
 const onlyEmoji=t=>t.length<=12&&/^(\p{Extended_Pictographic}|\p{Emoji_Component}|\u200d|\ufe0f|\s)+$/u.test(t)&&!/^[\d#*\s]+$/.test(t);
 const chatDay=k=>k===today()?'النهارده':k===dayKey(new Date(Date.now()-864e5))?'امبارح':`${dayName(k)} ${fmtDay(k)}`;
-function unread(){return C.msgs.filter(m=>m.t>C.seen&&m.dev!==DEV).length}
+const isMine=x=>!!x&&(x.uid&&S.uid?x.uid===S.uid:x.dev===DEV);
+function unread(){return C.msgs.filter(m=>m.t>C.seen&&!isMine(m)).length}
 function renderFab(){const n=unread(),cp=$('chatpill');$fp.hidden=!n||C.open;$fp.textContent=n>99?'99+':n;cp.hidden=!n;cp.textContent=n>99?'99+':n}
 function renderChatHead(){
   const now=Date.now(),on=C.pres.filter(p=>p.t>now-100000&&p.name),others=on.filter(p=>p.id!==DEV);
@@ -1412,7 +1428,7 @@ function renderChat(){
   if(!C.msgs.length)h=`<div class="cempty"><b>👋</b>الشات فاضي — ابدأ إنت!<br>أي حد معاه اللينك بيشوف الرسايل على طول.</div>`;
   C.msgs.forEach(m=>{
     const d=dayKey(new Date(m.t));if(d!==lastDay){h+=`<div class="cday">${chatDay(d)}</div>`;lastDay=d;prev=null}
-    const mine=m.dev===DEV,first=!prev||prev.dev!==m.dev||m.t-prev.t>300000,big=onlyEmoji(m.text||'');
+    const mine=isMine(m),first=!prev||(prev.uid||prev.dev)!==(m.uid||m.dev)||m.t-prev.t>300000,big=onlyEmoji(m.text||'');
     const isNew=!C.first&&!C.shown.has(m.id);C.shown.add(m.id);
     h+=`<div class="msg ${mine?'me':''} ${first?'first':''} ${isNew?'new':''}">${mine?'':`<span class="avs">${first?av(m.by):''}</span>`}<button class="bub ${big?'big':''}" data-mid="${m.id}">${!mine&&first&&!big?`<span class="who" style="color:${avColor(m.by)}">${esc(m.by)}</span>`:''}${esc(m.text)}<time>${fmtTime(m.t)}</time></button></div>`;
     const rs=Object.entries(m.r||{}).filter(([,v])=>v&&v.length);
@@ -1421,7 +1437,7 @@ function renderChat(){
   });
   h+=`<div class="typingdots" hidden><i></i><i></i><i></i></div>`;
   $cb.innerHTML=h;C.first=false;
-  const lastMine=C.msgs.length&&C.msgs[C.msgs.length-1].dev===DEV;
+  const lastMine=C.msgs.length&&isMine(C.msgs[C.msgs.length-1]);
   if(nearBottom||lastMine||C.jump){$cb.scrollTop=$cb.scrollHeight;C.jump=false}
   renderChatHead();markSeen();
 }
@@ -1436,12 +1452,12 @@ function $cQ(){$('cQuick').innerHTML=QUICK.map(q=>`<button data-q="${esc(q)}">${
 function sendMsg(text){
   text=String(text||'').trim();if(!text)return;if(!S.me){askName(false,()=>sendMsg(text));return}
   if(text.length>1000)text=text.slice(0,1000);
-  run(col('chat').doc().set({t:Date.now(),by:S.me,dev:DEV,text,r:{}}));
+  run(col('chat').doc().set({t:Date.now(),by:S.me,dev:DEV,uid:S.uid||'',text,r:{}}));
   if(S.cfg.pushChat!==false)push('💬 '+S.me,text,{prio:3,tags:['speech_balloon']});
   run(ref('presence/'+DEV).set({typing:0},{merge:true}));
 }
 function msgSheet(m){
-  const mine=m.dev===DEV;
+  const mine=isMine(m);
   openSheet(`<h4>${mine?'رسالتك':esc(m.by)}</h4><p class="hint" style="margin-top:0">${esc(m.text).slice(0,140)}</p><div class="rpick">${REACT.map(e=>`<button data-m="r:${e}">${e}</button>`).join('')}</div>
     <div class="actions"><button class="btn" data-m="copy">نسخ</button>${mine?'<button class="btn danger" data-m="del">مسح الرسالة</button>':''}<button class="btn" data-cancel>قفل</button></div>`,
   async k=>{closeSheet();if(k.startsWith('r:'))react(m,k.slice(2));if(k==='copy')toast(await copyText(m.text)?'اتنسخت':'مقدرتش أنسخ');if(k==='del')run(ref('chat/'+m.id).delete(),'اتمسحت')});
@@ -1474,7 +1490,7 @@ setInterval(()=>{if(C.open)renderChatHead();if(!document.hidden&&Date.now()-last
 function startChat(){
   col('chat').orderBy('t','desc').limit(200).onSnapshot(snap=>{
     C.msgs=snap.docs.map(d=>({id:d.id,...d.data()})).reverse();
-    const fresh=C.msgs.filter(m=>m.t>C.notified&&m.dev!==DEV);
+    const fresh=C.msgs.filter(m=>m.t>C.notified&&!isMine(m));
     if(fresh.length){C.notified=Math.max(...fresh.map(m=>m.t));onNewMsgs(fresh)}
     renderChat();renderFab();
   },e=>console.error(e));
@@ -1656,7 +1672,7 @@ function vNotes(){
   const open=S.notes.filter(n=>!n.done&&f(n)).sort((a,b)=>{const A=a.at&&a.at>now-36e5?a.at:9e15,B=b.at&&b.at>now-36e5?b.at:9e15;return A-B||b.t-a.t});
   const done=S.notes.filter(n=>n.done&&f(n)).slice(0,20);
   const card=n=>{const isNew=!notesFirst&&!shownNotes.has(n.id);shownNotes.add(n.id);
-    return `<article class="sticky ${n.done?'done':''} ${isNew?'new':''}" style="--nc:${ncol(n.id)}"><p>${esc(n.text)}</p>${n.at&&!n.done?`<span class="rem ${n.at<=now?'due':''}">⏰ ${fmtAt(n.at)}</span>`:''}<footer><span>${esc(n.by)} — ${fmtTime(n.t,1)}${n.editT?`<br>✏️ ${esc(n.editBy||'')} ${fmtTime(n.editT,1)}`:''}${n.done&&n.doneBy?`<br>✓ ${esc(n.doneBy)}`:''}</span>${n.done?'':`<button data-act="note-edit" data-nid="${n.id}" aria-label="تعديل">✏️</button>`}${n.done?`<button data-act="note-undo" data-nid="${n.id}" aria-label="رجّعها">↺</button>`:`<button data-act="note-done" data-nid="${n.id}" aria-label="خلصت">✓</button>`}${n.dev===DEV||n.done?`<button data-act="note-del" data-nid="${n.id}" aria-label="امسح">🗑</button>`:''}</footer></article>`};
+    return `<article class="sticky ${n.done?'done':''} ${isNew?'new':''}" style="--nc:${ncol(n.id)}"><p>${esc(n.text)}</p>${n.at&&!n.done?`<span class="rem ${n.at<=now?'due':''}">⏰ ${fmtAt(n.at)}</span>`:''}<footer><span>${esc(n.by)} — ${fmtTime(n.t,1)}${n.editT?`<br>✏️ ${esc(n.editBy||'')} ${fmtTime(n.editT,1)}`:''}${n.done&&n.doneBy?`<br>✓ ${esc(n.doneBy)}`:''}</span>${n.done?'':`<button data-act="note-edit" data-nid="${n.id}" aria-label="تعديل">✏️</button>`}${n.done?`<button data-act="note-undo" data-nid="${n.id}" aria-label="رجّعها">↺</button>`:`<button data-act="note-done" data-nid="${n.id}" aria-label="خلصت">✓</button>`}${isMine(n)||n.done?`<button data-act="note-del" data-nid="${n.id}" aria-label="امسح">🗑</button>`:''}</footer></article>`};
   let h=`<div class="toolbar"><button class="btn primary" data-act="note-new">+ نوت جديدة</button><button class="btn" data-act="note-voice">🎙️ قول النوت</button></div>`;
   h+=open.length?`<p class="hint">النوتس بتظهر عند كل اللي معاهم اللينك، واللي ليها تذكير بترن عند الكل في ميعادها.</p><div class="notes">${open.map(card).join('')}</div>`:`<div class="empty">مفيش نوتس مفتوحة 📝</div>`;
   if(done.length)h+=`<section class="group"><h3>خلصت</h3><div class="notes">${done.map(card).join('')}</div></section>`;
@@ -1677,7 +1693,7 @@ function noteSheet(pre={},ed=null){
       if(ed){closeSheet();const b2=fs.batch(),ch=at!==(ed.at||0);
         b2.update(ref('notes/'+ed.id),{text,at:at||0,pushed:ch?(schedRem(text,ed.by,at)?at:0):(ed.pushed||0),editBy:S.me||'',editT:Date.now()});evt(b2,'note',text.slice(0,60),'','تعديل');
         commit(b2,ch&&at?`اتعدلت — هترن عند الكل ${fmtAt(at)}`:'النوت اتعدلت عند الكل');return}
-      closeSheet();needName(()=>{const b2=fs.batch(),nr=col('notes').doc();push('📝 '+S.me,text,{prio:4,tags:['memo']});const pushed=schedRem(text,S.me,at)?at:0;b2.set(nr,{t:Date.now(),by:S.me,dev:DEV,text,at:at||0,pushed,done:false});evt(b2,'note',text.slice(0,60),'');commit(b2,at?`النوت اتثبتت — هترن عند الكل ${fmtAt(at)}`:'النوت وصلت للكل');if(S.view!=='notes')go('notes')})}});
+      closeSheet();needName(()=>{const b2=fs.batch(),nr=col('notes').doc();push('📝 '+S.me,text,{prio:4,tags:['memo']});const pushed=schedRem(text,S.me,at)?at:0;b2.set(nr,{t:Date.now(),by:S.me,dev:DEV,uid:S.uid||'',text,at:at||0,pushed,done:false});evt(b2,'note',text.slice(0,60),'');commit(b2,at?`النوت اتثبتت — هترن عند الكل ${fmtAt(at)}`:'النوت وصلت للكل');if(S.view!=='notes')go('notes')})}});
   const show=()=>{r.querySelector('#nAt').value=at?toLocalInput(at):'';r.querySelector('#nAtL').textContent=at?`⏰ هترن عند الكل ${fmtAt(at)}`:'من غير تذكير — هتوصل للكل دلوقتي بصوت';};
   r.querySelector('#nAt').addEventListener('change',e=>{at=e.target.value?new Date(e.target.value).getTime():0;show()});
   show();
@@ -1697,7 +1713,7 @@ setInterval(checkReminders,15000);
 function startNotes(){
   col('notes').orderBy('t','desc').limit(120).onSnapshot(snap=>{
     S.notes=snap.docs.map(d=>({id:d.id,...d.data()}));
-    const fresh=S.notes.filter(n=>n.t>nSeen&&n.dev!==DEV&&!n.done);
+    const fresh=S.notes.filter(n=>n.t>nSeen&&!isMine(n)&&!n.done);
     const mx=Math.max(nSeen,...S.notes.map(n=>n.t||0));nSeen=mx;LS.set('drc.nSeen',mx);
     if(fresh.length&&!snap.metadata.hasPendingWrites){dingdong(1);const nb=$('notesBtn');nb.classList.remove('wiggle');void nb.offsetWidth;nb.classList.add('wiggle');try{navigator.vibrate&&navigator.vibrate([120,80,120])}catch(e){}const n=fresh[0];toast(`📝 ${n.by}: ${n.text.slice(0,70)}`);
       if('Notification' in window&&Notification.permission==='granted'){try{sysNote('📝 نوت جديدة — '+n.by,{body:n.text,tag:'note-'+n.id})}catch(e){}}}
@@ -1716,13 +1732,25 @@ const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator
 function sysNote(title,o){if(!('Notification' in window)||Notification.permission!=='granted')return;try{if(swReg)swReg.showNotification(title,{...o,icon:'icon-192.png',badge:'icon-192.png'});else new Notification(title,o)}catch(e){}}
 const appUrl=()=>location.origin+location.pathname;
 const MAXD=3*864e5-6e4;
+/* كل واحد ليه قناة إشعارات خاصة بيه — عشان اللي بعت ما يجيلوش إشعار من نفسه */
+const h8=t=>{let h=5381;t=String(t||'');for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h.toString(36).padStart(7,'0')};
+const memKey=m=>norm(m.username||m.name||m.uid||'');
+const topicOf=m=>S.cfg.topic?S.cfg.topic+'-'+h8(memKey(m)):'';
+const myTopic=()=>S.member?topicOf(S.member):'';
+function teamMembers(){const seen=new Set();return (S.members||[]).filter(m=>m.active!==false&&!m.replacedBy).filter(m=>{const k=memKey(m);if(!k||seen.has(k))return false;seen.add(k);return true})}
 function push(title,message,o={}){
-  const topic=S.cfg.topic;if(!topic)return;
-  const body={topic,title,message:String(message||'').slice(0,1500),priority:o.prio||4,tags:o.tags||[],click:appUrl()};
-  if(o.at&&o.at-Date.now()>15000)body.delay=String(Math.floor(o.at/1000));
-  return fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify(body)}).then(r=>r.ok).catch(e=>{console.warn('push',e);return false});
+  if(!S.cfg.topic)return Promise.resolve(false);
+  const meK=S.member?memKey(S.member):'';
+  let topics;
+  if(o.self)topics=[myTopic()];
+  else if(S.membersErr||!(S.members||[]).length)topics=[];  // لو مش عارفين نجيب الفريق، منبعتش لحد بدل ما نزعج اللي بعت
+  else topics=teamMembers().filter(m=>o.all||memKey(m)!==meK).map(topicOf);
+  topics=[...new Set(topics.filter(Boolean))];if(!topics.length)return Promise.resolve(false);
+  const base={title,message:String(message||'').slice(0,1500),priority:o.prio||4,tags:o.tags||[],click:appUrl()};
+  if(o.at&&o.at-Date.now()>15000)base.delay=String(Math.floor(o.at/1000));
+  return Promise.all(topics.map(topic=>fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({...base,topic})}).then(r=>r.ok).catch(e=>{console.warn('push',e);return false}))).then(a=>a.some(Boolean));
 }
-function schedRem(text,by,at){if(!at||at-Date.now()>MAXD)return false;push('⏰ تذكير — '+SHOP_NAME,`${text}\n(${by})`,{prio:5,tags:['alarm_clock'],at});return true}
+function schedRem(text,by,at){if(!at||at-Date.now()>MAXD)return false;push('⏰ تذكير — '+SHOP_NAME,`${text}\n(${by})`,{prio:5,tags:['alarm_clock'],at,all:true});return true}
 const schedTried=new Set();
 function schedulePending(){if(!fs||!fs.runTransaction||!S.cfg.topic)return;const now=Date.now();
   S.notes.forEach(n=>{if(n.done||!n.at||n.pushed===n.at||n.at<now||n.at-now>MAXD||schedTried.has(n.id+':'+n.at))return;schedTried.add(n.id+':'+n.at);
@@ -1730,15 +1758,16 @@ function schedulePending(){if(!fs||!fs.runTransaction||!S.cfg.topic)return;const
 async function ensureTopic(){const t='drcorner-'+Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8);
   try{if(fs.runTransaction)await fs.runTransaction(async tx=>{const d=await tx.get(ref('settings/app'));if(d.exists&&d.data().topic)return;tx.set(ref('settings/app'),{topic:t},{merge:true})});else await ref('settings/app').set({topic:t},{merge:true})}catch(e){console.warn(e)}}
 function appSheet(){
-  const t=S.cfg.topic||'',ua=navigator.userAgent,isIOS=/iphone|ipad|ipod/i.test(ua)||(/macintosh/i.test(ua)&&'ontouchend' in document);
+  const t=myTopic(),ua=navigator.userAgent,isIOS=/iphone|ipad|ipod/i.test(ua)||(/macintosh/i.test(ua)&&'ontouchend' in document);
   openSheet(`<h4>📲 التطبيق وإشعارات الموبايل</h4>
     <div class="astep"><b>1) نزّل التطبيق على الموبايل</b>
       ${standalone()?'<p class="ok">✓ إنت فاتح من التطبيق دلوقتي</p>':deferredPrompt?'<button class="btn primary" data-m="install" style="width:100%">⬇️ تثبيت التطبيق</button>':`<p class="hint" style="margin:4px 0">${isIOS?'من Safari: زرار المشاركة ⬆️ ← «إضافة إلى الشاشة الرئيسية»':'من Chrome: النقط التلاتة ⋮ فوق ← «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية»'}</p>`}
       ${standalone()?'':'<button class="btn" data-m="diag" style="width:100%;margin-top:6px">🔎 افحص ليه مش بيتثبت</button><ul class="diag" id="diag" hidden></ul>'}
     </div>
     <div class="astep"><b>2) الإشعارات والموبايل مقفول</b>
-      <p class="hint" style="margin:4px 0">نزّل تطبيق <b>ntfy</b> المجاني مرة واحدة، واشترك في قناة الصيدلية. هيوصلك عليه النواقص العاجلة والنوتس والتذكيرات والشات حتى والموبايل مقفول، ولما تدوس على الإشعار بيفتحلك التطبيق.</p>
-      ${t?`<div class="actions"><a class="btn" href="${isIOS?'https://docs.ntfy.sh/subscribe/phone/':'https://play.google.com/store/apps/details?id=io.heckel.ntfy'}" target="_blank" rel="noopener">⬇️ نزّل ntfy</a><a class="btn primary" href="ntfy://ntfy.sh/${t}">🔔 اشترك في القناة</a></div>
+      <p class="hint" style="margin:4px 0">نزّل تطبيق <b>ntfy</b> المجاني مرة واحدة، واشترك في <b>قناتك الشخصية</b> (كل واحد في الفريق ليه قناة لوحده، عشان اللي بيبعت حاجة ما يجيلوش إشعار من نفسه).</p>
+      <p class="warn" style="margin:6px 0">⚠️ لو كنت مشترك في القناة القديمة <span class="ltr">${esc(S.cfg.topic||'')}</span> — افتح ntfy وامسحها (اضغط عليها ضغطة طويلة ← Delete)، واشترك في الجديدة تحت.</p>
+      ${t?`<div class="actions"><a class="btn" href="${isIOS?'https://docs.ntfy.sh/subscribe/phone/':'https://play.google.com/store/apps/details?id=io.heckel.ntfy'}" target="_blank" rel="noopener">⬇️ نزّل ntfy</a><a class="btn primary" href="ntfy://ntfy.sh/${t}">🔔 اشترك في قناتي</a></div>
       <p class="hint">لو زرار الاشتراك ما فتحش: افتح ntfy ← ➕ ← اكتب اسم القناة ده بالظبط:<br><span class="ltr">${t}</span> <button class="btn sm" data-m="copy">نسخ</button></p>
       <button class="btn" data-m="test" style="width:100%">🧪 ابعت إشعار تجربة</button>
       <p class="hint">تقدر تشوف كل الإشعارات اللي خرجت من هنا: <a href="https://ntfy.sh/${t}" target="_blank" rel="noopener">ntfy.sh/${t}</a></p>`:'<p class="hint">جاري تجهيز القناة… افتح الشاشة دي تاني بعد ثانية.</p>'}
@@ -1749,7 +1778,7 @@ function appSheet(){
     if(m==='install'&&deferredPrompt){deferredPrompt.prompt();const r=await deferredPrompt.userChoice.catch(()=>null);deferredPrompt=null;closeSheet();if(r&&r.outcome==='accepted')toast('التطبيق بيتثبت ✓')}
     if(m==='copy')toast(await copyText(t)?'اسم القناة اتنسخ':'انسخه يدوي');
     if(m==='diag'){const el=document.getElementById('diag');el.hidden=false;el.innerHTML='<li>جاري الفحص…</li>';el.innerHTML=(await installCheck()).join('')}
-    if(m==='test'){const ok=await push('✅ تجربة — '+SHOP_NAME,`الإشعارات شغالة${S.me?' — من '+S.me:''}`,{prio:5,tags:['white_check_mark']});
+    if(m==='test'){const ok=await push('✅ تجربة — '+SHOP_NAME,`الإشعارات شغالة${S.me?' — '+S.me:''}`,{prio:5,tags:['white_check_mark'],self:true});
       toast(ok?'✓ الإشعار خرج من الموقع — لو ما وصلش يبقى المشكلة في إعدادات ntfy على الموبايل':'✗ الإشعار ما خرجش — اتأكد إن النت شغال وجرب تاني')}
   });
 }
@@ -2628,6 +2657,28 @@ async function saveSB(){syncSB();const L=SB.items.filter(i=>i.inc&&+amt(i.d.amou
   SB=null;closeSheet();await commit(b,`✓ اتسجل ${L.length} فاتورة`);
   for(const [id,d] of imgs){const x=await shrinkData(d);if(x){imgCache['L_'+id]=x;run(ref('imgs/L_'+id).set({d:x,t:Date.now()}))}}}
 
+
+/* ---------- عدّ المنتجات من صورة بالذكاء الاصطناعي ---------- */
+const COUNT_PROMPT=(name,unit)=>`You are counting stock in a pharmacy / cosmetics shop. Count how many separate units of ${name?`the product "${name}"`:'the main product'} are visible in this photo.
+A unit = one ${unit==='box'?'medicine box / pack (not tablets or strips)':'retail item (one bottle, tube, jar, box or pack)'}.
+Rules: count every unit you can see, including ones partly hidden behind others in rows or stacks; if units are stacked in neat rows/columns, count rows × columns × layers you can actually see; do NOT count other products, shelves, labels or reflections; if a closed carton shows a printed quantity, do not guess its contents — count only visible units.
+Return ONLY one JSON object, no markdown: {"count":integer,"confidence":"high"|"medium"|"low","note":"very short Arabic note, e.g. صفين × 6 أو فيه علب مستخبية"}`;
+async function countPhoto(o){
+  const st=o.st,name=o.name||'';if(!getKey()){st.innerHTML='🔑 العدّ بالصورة محتاج مفتاح الذكاء الاصطناعي — حطه من السجل ← 🔑 مفتاح الذكاء الاصطناعي';return}
+  pickPhoto(true,async d=>{
+    const add=o.add&&+st.dataset.total>0;st.dataset.busy=1;
+    st.innerHTML=`<div class="cntbox"><img src="${d}" alt=""><div><span class="spin"></span>🤖 بيعدّ${name?' '+esc(name):''}…</div></div>`;
+    try{const j=await askVision(d,COUNT_PROMPT(name,o.unit),300);const n=Math.max(0,Math.round(+j.count||0));
+      const tot=(add?+st.dataset.total:0)+n;st.dataset.total=tot;st.dataset.n=(add?+st.dataset.n:0)+1;
+      const cf={high:['✓ متأكد','ok'],medium:['راجع العدد','lw'],low:['⚠️ مش متأكد — عدّ بإيدك','rd']}[j.confidence]||['راجع العدد','lw'];
+      o.input.value=tot;o.input.classList.add('aifill');o.input.dispatchEvent(new Event('input',{bubbles:true}));
+      st.innerHTML=`<div class="cntbox"><img src="${d}" alt="" data-m="cntz"><div><b class="cntn">${n}</b> ${o.unit==='box'?'علبة':'قطعة'} في الصورة دي${add?` — الإجمالي <b>${tot}</b> من ${st.dataset.n} صور`:''}<br><span class="${cf[1]}">${cf[0]}</span>${j.note?` · ${esc(j.note)}`:''}
+        <div class="cntact"><button class="btn sm" data-m="cnt+">＋ صورة تانية (زوّد عليها)</button><button class="btn sm" data-m="cnt">↺ من جديد</button></div></div></div>`;
+      st.dataset.img=d;
+    }catch(e){st.innerHTML=`<span class="rd">مقدرتش أعدّ من الصورة</span>${visionErr?`<small class="verr">${esc(visionErr)}</small>`:''} <button class="btn sm" data-m="cnt">↻ جرب تاني</button>`}
+    delete st.dataset.busy},1600,.85);
+}
+
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
 $tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
@@ -2726,7 +2777,7 @@ function startData(){
   col('sales').where('t','>=',winStart).orderBy('t','desc').onSnapshot(snap=>{S.sales=snap.docs.map(d=>({sid:d.id,...d.data()})).filter(x=>!x.del);if(S.ready)render()},fail);
   col('alerts').orderBy('t','desc').limit(80).onSnapshot(snap=>{
     S.alerts=snap.docs.map(d=>({aid:d.id,...d.data()}));
-    const fresh=S.alerts.filter(a=>!a.done&&a.t>seen&&a.dev!==DEV);
+    const fresh=S.alerts.filter(a=>!a.done&&a.t>seen&&!isMine(a));
     const mx=Math.max(seen,...S.alerts.map(a=>a.t||0));seen=mx;LS.set('drc.seen',mx);
     if(fresh.length&&!snap.metadata.hasPendingWrites)notify(fresh);
     if(S.ready)render();
@@ -2734,6 +2785,7 @@ function startData(){
   col('events').orderBy('t','desc').limit(400).onSnapshot(snap=>{S.events=snap.docs.map(d=>d.data());if(S.view==='log')render()},e=>console.error(e));
   startChat();startNotes();startAcc();
   col('invoices').where('t','>=',winStart).onSnapshot(snap=>{S.invs={};snap.docs.forEach(d=>S.invs[d.id]=d.data());if(S.view==='sales')render()},()=>{});
+  col('members').onSnapshot(q=>{S.members=q.docs.map(d=>({uid:d.id,...d.data()}));S.membersErr=false},()=>{S.membersErr=true});
   ref('secrets/ai').onSnapshot(d=>{S.teamKey=(d.data()||{}).key||''},()=>{});
   ref('settings/app').onSnapshot({includeMetadataChanges:true},d=>{S.cfg={cur:'ج.م',...(d.data()||{})};if(!d.metadata.fromCache&&!S.cfg.topic)ensureTopic();if(S.ready)render()},e=>console.error(e));
   setTimeout(()=>{if(S.ready||S.error)return;
