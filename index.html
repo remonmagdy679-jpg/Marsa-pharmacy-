@@ -694,7 +694,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 قراءة أسرع';
+const APP_V = '8-10 عدّ باللون 2';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -2669,22 +2669,32 @@ async function saveSB(){syncSB();const L=SB.items.filter(i=>i.inc&&+amt(i.d.amou
 
 
 /* ---------- عدّ المنتجات من صورة بالذكاء الاصطناعي ---------- */
-const COUNT_PROMPT=(name,unit,hasRef)=>`You are counting stock in a pharmacy / cosmetics shop.
-${hasRef?`IMAGE 1 = reference photo of the EXACT product registered in the system${name?` ("${name}")`:''}. IMAGE 2 = shelf/stock photo to count.`:`The registered product is "${name||'the main product'}".`}
-Count ONLY the units in the stock photo that are the SAME product AND SAME variant as the registered one (same brand, same flavour/type, same colour of pack, same size). Similar products from the same brand with a different variant/colour/size are NOT the same product — exclude them and report them separately.
-A unit = one ${unit==='box'?'medicine box / pack (not tablets or strips)':'retail item (one box, bottle, tube, jar or pack)'}. Count units partly hidden in rows/stacks if you can see them; never guess hidden ones.
+const COUNT_PROMPT=(name,unit,hasRef,cols)=>`You are counting stock in a pharmacy / cosmetics shop.
+${hasRef?`IMAGE 1 = reference photo of the registered product. IMAGE 2 = shelf/stock photo to count.`:''}
+Product name (may be imprecise — e.g. size or wording may be wrong): "${name||'unknown'}".
+${cols&&cols.length?`Main colours of the reference package (measured from its coloured pixels, background ignored): ${cols.join(', ')}. Units on the shelf may show a different face/side of the same box (e.g. the narrow end with a coloured band) — match by these colours.`:''}
+HOW TO MATCH: identify the product by its PACKAGE COLOURS and DESIGN as seen in ${hasRef?'IMAGE 1':'the name'} — same dominant colour(s), same logo/brand, same colour layout. A unit counts as the SAME product when its package colours and design match the reference, even if: it is seen from another side or angle, the visible face is in Arabic instead of English, the size/weight text is unreadable, or the name above is wrong. Exclude a unit ONLY if its package colour is clearly different from the reference (e.g. a blue or green pack when the reference is gold/red).
+A unit = one ${unit==='box'?'medicine box / pack (not tablets or strips)':'retail item (one box, bottle, tube, jar or pack)'}. Count units partly hidden in rows/stacks if you can see them; never guess units you cannot see.
 Return ONLY one JSON object, no markdown:
-{"count":integer number of matching units only,"others":[{"name":"short name of a different variant seen","count":integer}],"confidence":"high"|"medium"|"low","note":"very short Arabic note"}`;
+{"count":integer (units matching the reference colours),"match_colour":"short Arabic description of the colour you matched, e.g. ذهبي وأحمر","others":[{"name":"short Arabic description by colour, e.g. علب زرقاء","count":integer}],"confidence":"high"|"medium"|"low","note":"very short Arabic note"}`;
+async function refColours(d){return new Promise(res=>{const im=new Image();im.onload=()=>{try{const W=60,H=60,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  x.drawImage(im,0,0,W,H);const px=x.getImageData(0,0,W,H).data,bins={};
+  for(let i=0;i<px.length;i+=4){const r=px[i],g=px[i+1],b=px[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/510,sat=mx===mn?0:(mx-mn)/(255-Math.abs(mx+mn-255));
+    let nm;if(l>.9||l<.12||sat<.25)continue;else{let h=0;const dd=mx-mn;h=mx===r?((g-b)/dd)%6:mx===g?(b-r)/dd+2:(r-g)/dd+4;h=(h*60+360)%360;
+      nm=h<15||h>=345?'red':h<40?(l<.4?'brown':'orange'):h<65?(sat<.55||l<.45?'gold':'yellow'):h<160?'green':h<200?'turquoise':h<255?'blue':h<290?'purple':'pink'}
+    bins[nm]=(bins[nm]||0)+1}
+  const tot=Object.values(bins).reduce((a,b)=>a+b,0);if(tot<W*H*.04)return res([]);const top=Object.entries(bins).sort((a,b)=>b[1]-a[1]).filter(([,n])=>n/tot>.1).slice(0,3).map(([k,n])=>`${k} ${Math.round(n/tot*100)}%`);res(top)}catch(e){res([])}};im.onerror=()=>res([]);im.src=d})}
+
 async function countPhoto(o){
   const st=o.st,name=o.name||'',ref=o.ref||'';if(!getKey()){st.innerHTML='🔑 العدّ بالصورة محتاج مفتاح الذكاء الاصطناعي — حطه من السجل ← 🔑 مفتاح الذكاء الاصطناعي';return}
   pickPhoto(true,async d=>{
     const add=o.add&&+st.dataset.total>0;st.dataset.busy=1;
     st.innerHTML=`<div class="cntbox"><img src="${d}" alt=""><div><span class="spin"></span>🤖 بيعدّ${name?' '+esc(name):''}…</div></div>`;
-    try{const j=await askVision(ref?[ref,d]:d,COUNT_PROMPT(name,o.unit,!!ref),400);const oth=(Array.isArray(j.others)?j.others:[]).filter(x=>x&&+x.count>0);const n=Math.max(0,Math.round(+j.count||0));
+    try{const cols=ref?await refColours(ref):[];const j=await askVision(ref?[ref,d]:d,COUNT_PROMPT(name,o.unit,!!ref,cols),400);const oth=(Array.isArray(j.others)?j.others:[]).filter(x=>x&&+x.count>0);const n=Math.max(0,Math.round(+j.count||0));
       const tot=(add?+st.dataset.total:0)+n;st.dataset.total=tot;st.dataset.n=(add?+st.dataset.n:0)+1;
       const cf={high:['✓ متأكد','ok'],medium:['راجع العدد','lw'],low:['⚠️ مش متأكد — عدّ بإيدك','rd']}[j.confidence]||['راجع العدد','lw'];
       o.input.value=tot;o.input.classList.add('aifill');o.input.dispatchEvent(new Event('input',{bubbles:true}));
-      st.innerHTML=`<div class="cntbox"><img src="${d}" alt="" data-m="cntz"><div><b class="cntn">${n}</b> ${o.unit==='box'?'علبة':'قطعة'} في الصورة دي${add?` — الإجمالي <b>${tot}</b> من ${st.dataset.n} صور`:''}<br><span class="${cf[1]}">${cf[0]}</span>${j.note?` · ${esc(j.note)}`:''}${oth.length?`<br><small class="mu">مش محسوبين (صنف تاني): ${oth.map(x=>esc(x.name)+' '+(+x.count)).join('، ')}</small>`:''}${ref?'':'<br><small class="lw">💡 حط صورة للمنتج فوق عشان يعدّ النوع ده بس بدقة</small>'}
+      st.innerHTML=`<div class="cntbox"><img src="${d}" alt="" data-m="cntz"><div><b class="cntn">${n}</b> ${o.unit==='box'?'علبة':'قطعة'} في الصورة دي${add?` — الإجمالي <b>${tot}</b> من ${st.dataset.n} صور`:''}<br><span class="${cf[1]}">${cf[0]}</span>${j.match_colour?` · اللون: <b>${esc(j.match_colour)}</b>`:''}${j.note?` · ${esc(j.note)}`:''}${oth.length?`<br><small class="mu">مش محسوبين (صنف تاني): ${oth.map(x=>esc(x.name)+' '+(+x.count)).join('، ')}</small>`:''}${ref?'':'<br><small class="lw">💡 حط صورة للمنتج فوق عشان يعدّ النوع ده بس بدقة</small>'}
         <div class="cntact"><button class="btn sm" data-m="cnt+">＋ صورة تانية (زوّد عليها)</button><button class="btn sm" data-m="cnt">↺ من جديد</button></div></div></div>`;
       st.dataset.img=d;
     }catch(e){st.innerHTML=`<span class="rd">مقدرتش أعدّ من الصورة</span>${visionErr?`<small class="verr">${esc(visionErr)}</small>`:''} <button class="btn sm" data-m="cnt">↻ جرب تاني</button>`}
