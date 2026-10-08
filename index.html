@@ -694,7 +694,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 عدّ نفس الصنف';
+const APP_V = '8-10 قراءة أسرع';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1938,7 +1938,9 @@ function parseJSONText(t){const j=String(t||'').replace(/```json|```/g,'').match
 let visionErr='';
 async function errText(r){try{const t=await r.text();try{const j=JSON.parse(t);const e=Array.isArray(j)?j[0]&&j[0].error:j.error;return (e&&(e.message||e.status))||t.slice(0,160)}catch(_){return t.slice(0,160)}}catch(e){return ''}}
 async function askVision(dataUrl,prompt,maxTok){
-  const key=getKey(),kind=keyKind(key),IMGS=(Array.isArray(dataUrl)?dataUrl:[dataUrl]).filter(Boolean).map(d=>({mt:(/^data:([^;]+)/.exec(d)||[])[1]||'image/jpeg',b64:d.split(',')[1]}));visionErr='';if(!key)throw 'key';
+  const big=/invoice|EXPIRY|back or bottom/i.test(prompt),lim=big?1400:1024;
+  dataUrl=await Promise.all((Array.isArray(dataUrl)?dataUrl:[dataUrl]).filter(Boolean).map(d=>shrinkFast(d,lim)));
+  const key=getKey(),kind=keyKind(key),IMGS=dataUrl.filter(Boolean).map(d=>({mt:(/^data:([^;]+)/.exec(d)||[])[1]||'image/jpeg',b64:d.split(',')[1]}));visionErr='';if(!key)throw 'key';
   if(kind==='anthropic'){let r=null;
     for(const model of ['claude-sonnet-5-5','claude-haiku-4-5-20251001']){
       try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
@@ -1947,18 +1949,21 @@ async function askVision(dataUrl,prompt,maxTok){
     if(!r.ok){visionErr=r.status+' — '+await errText(r);throw r.status===401||r.status===403?'key':r.status===429?'quota':'http'}
     const d=await r.json();try{return parseJSONText((d.content||[]).map(x=>x.text||'').join(''))}catch(e){visionErr='الرد مش مفهوم';throw 'parse'}}
   // Google Gemini — AI Studio أولاً (بيختار أحدث موديل متاح لوحده)، وبعدين Vertex
-  const mk=json=>({contents:[{role:'user',parts:[...IMGS.map(x=>({inlineData:{mimeType:x.mt,data:x.b64}})),{text:prompt}]}],generationConfig:Object.assign({temperature:0.1,maxOutputTokens:4096},json?{responseMimeType:'application/json'}:{})});
+  const mk=(json,th)=>({contents:[{role:'user',parts:[...IMGS.map(x=>({inlineData:{mimeType:x.mt,data:x.b64}})),{text:prompt}]}],generationConfig:Object.assign({temperature:0.1,maxOutputTokens:2048},json?{responseMimeType:'application/json'}:{},th?{thinkingConfig:th}:{})});
+  const vn=n=>parseFloat((String(n).match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||0);
+  const thOpts=model=>{const c=LS.get('drc.th.'+model);if(c)return [c==='none'?null:JSON.parse(c)];const v=vn(model);return v>=3||/latest/.test(model)?[{thinkingLevel:'minimal'},{thinkingLevel:'low'},null]:v>=2.5?[{thinkingBudget:0},null]:[null]};
   const GL='https://generativelanguage.googleapis.com/v1beta/models/',VX='https://aiplatform.googleapis.com/v1/publishers/google/models/';
   const errs=[];let code='http',glOnly404=true;
   let gAuth=LS.get('drc.gauth')||'h';
   const tryBase=async(base,models,host)=>{
     const queue=models.slice(),tried=new Set();
     while(queue.length&&tried.size<7){const model=queue.shift();if(!model||tried.has(model))continue;tried.add(model);
-      for(const json of [true,false]){
-        const doF=md=>fetch(md==='q'?`${base}${model}:generateContent?key=${encodeURIComponent(key)}`:`${base}${model}:generateContent`,{method:'POST',headers:md==='q'?{'content-type':'application/json'}:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify(mk(json))});
+      const ths=thOpts(model);let ti=0;
+      for(let json=true,guard=0;guard<6;guard++){const th=ths[ti];
+        const doF=md=>{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),30000);return fetch(md==='q'?`${base}${model}:generateContent?key=${encodeURIComponent(key)}`:`${base}${model}:generateContent`,{method:'POST',signal:ac.signal,headers:md==='q'?{'content-type':'application/json'}:{'content-type':'application/json','x-goog-api-key':key},body:JSON.stringify(mk(json,th))}).finally(()=>clearTimeout(tm))};
         let r;try{r=await doF(gAuth);if(r.status===401||r.status===403){const alt=gAuth==='h'?'q':'h',r2=await doF(alt);if(r2.ok||r2.status!==r.status){r=r2;if(r2.ok){gAuth=alt}}}}
-        catch(e){errs.push(`${host} · ${model}: مش قادر يوصل`);code='net';return null}
-        if(r.ok)LS.set('drc.gauth',gAuth);
+        catch(e){if(e&&e.name==='AbortError'){errs.push(`${host} · ${model}: اتأخر أكتر من 30 ثانية`);code='net';break}errs.push(`${host} · ${model}: مش قادر يوصل`);code='net';return null}
+        if(r.ok){LS.set('drc.gauth',gAuth);LS.set('drc.th.'+model,th?JSON.stringify(th):'none')}
         if(r.ok){const d=await r.json(),c=(d.candidates||[])[0]||{},t=((c.content||{}).parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('');
           try{const out=parseJSONText(t);if(host==='AI Studio')LS.set('drc.gmodel',model);return out}catch(e){errs.push(`${host} · ${model}: رد مش مفهوم (${c.finishReason||'?'})`);code='parse';break}}
         const msg=await errText(r);errs.push(`${host} · ${model} ${r.status}: ${msg}`);
@@ -1966,15 +1971,18 @@ async function askVision(dataUrl,prompt,maxTok){
         if(r.status===404){const rec=/models\/([\w.\-]+)/g;let m;while((m=rec.exec(msg)))if(m[1]!==model&&!tried.has(m[1]))queue.unshift(m[1]);break}
         if(host==='AI Studio')glOnly404=false;
         if(r.status===401||r.status===403){code=/ACCESS_TOKEN_TYPE_UNSUPPORTED|Expected OAuth/i.test(msg)?'aqbug':'key';return null}
-        if(r.status===400&&json&&/mime|responseMimeType|json/i.test(msg))continue;
+        if(r.status===400&&/thinking/i.test(msg)&&ti<ths.length-1){ti++;continue}
+        if(r.status===400&&json&&/mime|responseMimeType|json/i.test(msg)){json=false;continue}
         if(r.status===400&&/API key/i.test(msg)){code='key';return null}
         break}}
     return null};
+  const cached=LS.get('drc.gmodel');
+  if(cached){const o=await tryBase(GL,[cached],'AI Studio');if(o)return o}
   // اكتشاف الموديلات المتاحة للمفتاح ده
   let avail=[];try{let r=await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200',{headers:{'x-goog-api-key':key}});if(!r.ok)r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=${encodeURIComponent(key)}`);if(r.ok){const d=await r.json();avail=(d.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>String(m.name).replace(/^models\//,''))}}catch(e){}
   const ver=n=>parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||0);
   const flash=avail.filter(n=>/flash/.test(n)&&!/(tts|image|live|audio|embed|exp|8b)/.test(n)).sort((a,b)=>ver(b)-ver(a)||(/preview|lite/.test(a)?1:0)-(/preview|lite/.test(b)?1:0));
-  const glModels=[LS.get('drc.gmodel'),...flash,'gemini-flash-latest','gemini-3.8-flash','gemini-3.7-flash','gemini-3.6-flash','gemini-3-flash','gemini-2.5-flash'].filter(Boolean);
+  const glModels=[...flash,'gemini-flash-latest','gemini-3.8-flash','gemini-3.7-flash','gemini-3.6-flash','gemini-3-flash','gemini-2.5-flash'].filter(Boolean);
   let out=await tryBase(GL,[...new Set(glModels)],'AI Studio');if(out)return out;
   if(kind!=='gemini'){out=await tryBase(VX,['gemini-2.5-flash','gemini-2.0-flash-001'],'Vertex');if(out)return out}
   if(glOnly404&&code!=='net')code='model';
@@ -2118,6 +2126,8 @@ const zApply=()=>{$zimg.style.transform=`translate(${zx}px,${zy}px) scale(${zs})
 function openZoom(p){if(!p||!p.img)return;openZoomSrc(p.img,p.name,p.id)}
 function openZoomSrc(src,name,loadId){zs=1;zx=zy=0;zApply();$zimg.src=src||'';$zimg.alt=name;$('zc').innerHTML=`${esc(name)}<small>اقرص بصباعين أو دوس مرتين للتكبير</small>`;$zoom.hidden=false;
   if(loadId)fullImg(loadId).then(d=>{if(d&&!$zoom.hidden&&$zimg.alt===name)$zimg.src=d;else if(!d&&!src)toast('مقدرتش أحمّل الصورة')})}
+const _shr=new Map();
+async function shrinkFast(d,max){const k=d.length+':'+max+':'+d.slice(-40);if(_shr.has(k))return _shr.get(k);const out=await new Promise(res=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height));if(sc>=1&&d.length<450000)return res(d);const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.82))};im.onerror=()=>res(d);im.src=d});_shr.set(k,out);if(_shr.size>20)_shr.delete(_shr.keys().next().value);return out}
 function shrinkData(d,max=1400,q=.7){return new Promise(res=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);let o=c.toDataURL('image/jpeg',q);res(o.length>900000?c.toDataURL('image/jpeg',.5):o)};im.onerror=()=>res('');im.src=d})}
 function closeZoom(){$zoom.hidden=true;zpts.clear()}
 $('zx').addEventListener('click',closeZoom);
