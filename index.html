@@ -694,7 +694,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 عدّ بالصورة';
+const APP_V = '8-10 عدّ نفس الصنف';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1114,7 +1114,7 @@ function restockSheet(p,pre={}){
     const qi=r.querySelector('#fQ'),upd=()=>{const a=r.querySelector('#fAfter');if(a&&p)a.textContent=fmtQs(p,good(p)+Math.max(0,int(qi.value))*spb(p)+(r.querySelector('#fQs')?int(r.querySelector('#fQs').value):0))};
     if(m==='zoom')return openZoom(p);
     if(m==='dph')return datePhoto(r.querySelector('#fE .ex'),null,p&&p.life,r.querySelector('#rdSt'));
-    if(m==='cnt'||m==='cnt+'){const it=p||findByName((r.querySelector('#fItem')||{}).value||'');return countPhoto({input:qi,st:r.querySelector('#cntSt'),name:it?it.name:((r.querySelector('#fItem')||{}).value||''),unit:it&&tOf(it)==='med'?'box':'piece',add:m==='cnt+'})}
+    if(m==='cnt'||m==='cnt+'){const it=p||findByName((r.querySelector('#fItem')||{}).value||'');return (async()=>{const ref=it?((await fullImg(it.id))||it.img||''):'';countPhoto({input:qi,st:r.querySelector('#cntSt'),name:it?it.name:((r.querySelector('#fItem')||{}).value||''),ref,unit:it&&tOf(it)==='med'?'box':'piece',add:m==='cnt+'})})()}
     if(m==='cntz'){const st=r.querySelector('#cntSt');return openZoomSrc(st.dataset.img,'صورة العدّ')}
     if(m==='inc'){qi.value=int(qi.value)+1;return upd()}if(m==='dec'){qi.value=Math.max(1,int(qi.value)-1);return upd()}
     if(m==='scan2'||m==='scan')return openScanner({title:'امسح باركود الصنف اللي وصل',onCode:(c,g)=>{
@@ -1153,7 +1153,7 @@ function itemForm(p,preset){
     if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',d=>{pimg=d;const im=r.querySelector('#fImg');im.src=d;im.hidden=false;r.querySelector('[data-m=pdel]').hidden=false;r.querySelector('[data-m=ai]').hidden=false;if(!r.querySelector('#fName').value.trim())aiFill()});
     if(m==='ai')return aiFill();
     if(m==='cnt'||m==='cnt+'){const rows=[...r.querySelectorAll('.brow')],row=(m==='cnt+'&&r.querySelector('#cntSt').dataset.row!=null?rows[+r.querySelector('#cntSt').dataset.row]:null)||rows.find(x=>!int(x.querySelector('.bq').value))||rows[rows.length-1];r.querySelector('#cntSt').dataset.row=rows.indexOf(row);
-      const med=r.querySelector('#fType').value==='med';return countPhoto({input:row.querySelector('.bq'),st:r.querySelector('#cntSt'),name:r.querySelector('#fName').value.trim(),unit:med?'box':'piece',add:m==='cnt+'})}
+      const med=r.querySelector('#fType').value==='med';return (async()=>{const ref=pimg&&pimg!=='del'?pimg:(p&&p.img?((await fullImg(p.id))||p.img):'');countPhoto({input:row.querySelector('.bq'),st:r.querySelector('#cntSt'),name:r.querySelector('#fName').value.trim(),ref,unit:med?'box':'piece',add:m==='cnt+'})})()}
     if(m==='cntz')return openZoomSrc(r.querySelector('#cntSt').dataset.img,'صورة العدّ');
     if(m==='dphoto'){const rows=[...r.querySelectorAll('.brow')],row=rows.find(x=>!x.querySelector('[data-x=m]').value)||rows[rows.length-1];return datePhoto(row&&row.querySelector('.ex'),r.querySelector('#fCode'),p&&p.life,r.querySelector('#dSt'))}
     if(m==='setkey'){const keep=pimg&&pimg!=='del'?pimg:'';return keySheet(()=>itemForm(p,{...(preset||{}),img:keep||(preset&&preset.img),auto:true}))}
@@ -1938,16 +1938,16 @@ function parseJSONText(t){const j=String(t||'').replace(/```json|```/g,'').match
 let visionErr='';
 async function errText(r){try{const t=await r.text();try{const j=JSON.parse(t);const e=Array.isArray(j)?j[0]&&j[0].error:j.error;return (e&&(e.message||e.status))||t.slice(0,160)}catch(_){return t.slice(0,160)}}catch(e){return ''}}
 async function askVision(dataUrl,prompt,maxTok){
-  const key=getKey(),kind=keyKind(key),b64=dataUrl.split(',')[1];visionErr='';if(!key)throw 'key';
+  const key=getKey(),kind=keyKind(key),IMGS=(Array.isArray(dataUrl)?dataUrl:[dataUrl]).filter(Boolean).map(d=>({mt:(/^data:([^;]+)/.exec(d)||[])[1]||'image/jpeg',b64:d.split(',')[1]}));visionErr='';if(!key)throw 'key';
   if(kind==='anthropic'){let r=null;
     for(const model of ['claude-sonnet-5-5','claude-haiku-4-5-20251001']){
       try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model,max_tokens:maxTok||600,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})})}catch(e){visionErr='مش قادر يوصل لـ Anthropic';throw 'net'}
+        body:JSON.stringify({model,max_tokens:maxTok||600,messages:[{role:'user',content:[...IMGS.map(x=>({type:'image',source:{type:'base64',media_type:x.mt,data:x.b64}})),{type:'text',text:prompt}]}]})})}catch(e){visionErr='مش قادر يوصل لـ Anthropic';throw 'net'}
       if(r.status!==404)break}
     if(!r.ok){visionErr=r.status+' — '+await errText(r);throw r.status===401||r.status===403?'key':r.status===429?'quota':'http'}
     const d=await r.json();try{return parseJSONText((d.content||[]).map(x=>x.text||'').join(''))}catch(e){visionErr='الرد مش مفهوم';throw 'parse'}}
   // Google Gemini — AI Studio أولاً (بيختار أحدث موديل متاح لوحده)، وبعدين Vertex
-  const mk=json=>({contents:[{role:'user',parts:[{inlineData:{mimeType:'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:Object.assign({temperature:0.1,maxOutputTokens:4096},json?{responseMimeType:'application/json'}:{})});
+  const mk=json=>({contents:[{role:'user',parts:[...IMGS.map(x=>({inlineData:{mimeType:x.mt,data:x.b64}})),{text:prompt}]}],generationConfig:Object.assign({temperature:0.1,maxOutputTokens:4096},json?{responseMimeType:'application/json'}:{})});
   const GL='https://generativelanguage.googleapis.com/v1beta/models/',VX='https://aiplatform.googleapis.com/v1/publishers/google/models/';
   const errs=[];let code='http',glOnly404=true;
   let gAuth=LS.get('drc.gauth')||'h';
@@ -2659,20 +2659,22 @@ async function saveSB(){syncSB();const L=SB.items.filter(i=>i.inc&&+amt(i.d.amou
 
 
 /* ---------- عدّ المنتجات من صورة بالذكاء الاصطناعي ---------- */
-const COUNT_PROMPT=(name,unit)=>`You are counting stock in a pharmacy / cosmetics shop. Count how many separate units of ${name?`the product "${name}"`:'the main product'} are visible in this photo.
-A unit = one ${unit==='box'?'medicine box / pack (not tablets or strips)':'retail item (one bottle, tube, jar, box or pack)'}.
-Rules: count every unit you can see, including ones partly hidden behind others in rows or stacks; if units are stacked in neat rows/columns, count rows × columns × layers you can actually see; do NOT count other products, shelves, labels or reflections; if a closed carton shows a printed quantity, do not guess its contents — count only visible units.
-Return ONLY one JSON object, no markdown: {"count":integer,"confidence":"high"|"medium"|"low","note":"very short Arabic note, e.g. صفين × 6 أو فيه علب مستخبية"}`;
+const COUNT_PROMPT=(name,unit,hasRef)=>`You are counting stock in a pharmacy / cosmetics shop.
+${hasRef?`IMAGE 1 = reference photo of the EXACT product registered in the system${name?` ("${name}")`:''}. IMAGE 2 = shelf/stock photo to count.`:`The registered product is "${name||'the main product'}".`}
+Count ONLY the units in the stock photo that are the SAME product AND SAME variant as the registered one (same brand, same flavour/type, same colour of pack, same size). Similar products from the same brand with a different variant/colour/size are NOT the same product — exclude them and report them separately.
+A unit = one ${unit==='box'?'medicine box / pack (not tablets or strips)':'retail item (one box, bottle, tube, jar or pack)'}. Count units partly hidden in rows/stacks if you can see them; never guess hidden ones.
+Return ONLY one JSON object, no markdown:
+{"count":integer number of matching units only,"others":[{"name":"short name of a different variant seen","count":integer}],"confidence":"high"|"medium"|"low","note":"very short Arabic note"}`;
 async function countPhoto(o){
-  const st=o.st,name=o.name||'';if(!getKey()){st.innerHTML='🔑 العدّ بالصورة محتاج مفتاح الذكاء الاصطناعي — حطه من السجل ← 🔑 مفتاح الذكاء الاصطناعي';return}
+  const st=o.st,name=o.name||'',ref=o.ref||'';if(!getKey()){st.innerHTML='🔑 العدّ بالصورة محتاج مفتاح الذكاء الاصطناعي — حطه من السجل ← 🔑 مفتاح الذكاء الاصطناعي';return}
   pickPhoto(true,async d=>{
     const add=o.add&&+st.dataset.total>0;st.dataset.busy=1;
     st.innerHTML=`<div class="cntbox"><img src="${d}" alt=""><div><span class="spin"></span>🤖 بيعدّ${name?' '+esc(name):''}…</div></div>`;
-    try{const j=await askVision(d,COUNT_PROMPT(name,o.unit),300);const n=Math.max(0,Math.round(+j.count||0));
+    try{const j=await askVision(ref?[ref,d]:d,COUNT_PROMPT(name,o.unit,!!ref),400);const oth=(Array.isArray(j.others)?j.others:[]).filter(x=>x&&+x.count>0);const n=Math.max(0,Math.round(+j.count||0));
       const tot=(add?+st.dataset.total:0)+n;st.dataset.total=tot;st.dataset.n=(add?+st.dataset.n:0)+1;
       const cf={high:['✓ متأكد','ok'],medium:['راجع العدد','lw'],low:['⚠️ مش متأكد — عدّ بإيدك','rd']}[j.confidence]||['راجع العدد','lw'];
       o.input.value=tot;o.input.classList.add('aifill');o.input.dispatchEvent(new Event('input',{bubbles:true}));
-      st.innerHTML=`<div class="cntbox"><img src="${d}" alt="" data-m="cntz"><div><b class="cntn">${n}</b> ${o.unit==='box'?'علبة':'قطعة'} في الصورة دي${add?` — الإجمالي <b>${tot}</b> من ${st.dataset.n} صور`:''}<br><span class="${cf[1]}">${cf[0]}</span>${j.note?` · ${esc(j.note)}`:''}
+      st.innerHTML=`<div class="cntbox"><img src="${d}" alt="" data-m="cntz"><div><b class="cntn">${n}</b> ${o.unit==='box'?'علبة':'قطعة'} في الصورة دي${add?` — الإجمالي <b>${tot}</b> من ${st.dataset.n} صور`:''}<br><span class="${cf[1]}">${cf[0]}</span>${j.note?` · ${esc(j.note)}`:''}${oth.length?`<br><small class="mu">مش محسوبين (صنف تاني): ${oth.map(x=>esc(x.name)+' '+(+x.count)).join('، ')}</small>`:''}${ref?'':'<br><small class="lw">💡 حط صورة للمنتج فوق عشان يعدّ النوع ده بس بدقة</small>'}
         <div class="cntact"><button class="btn sm" data-m="cnt+">＋ صورة تانية (زوّد عليها)</button><button class="btn sm" data-m="cnt">↺ من جديد</button></div></div></div>`;
       st.dataset.img=d;
     }catch(e){st.innerHTML=`<span class="rd">مقدرتش أعدّ من الصورة</span>${visionErr?`<small class="verr">${esc(visionErr)}</small>`:''} <button class="btn sm" data-m="cnt">↻ جرب تاني</button>`}
