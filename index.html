@@ -659,6 +659,11 @@ body.hasinv .wrap{padding-bottom:230px}
 .scx{position:absolute;top:0;left:0;width:42px;height:42px;border-radius:50%;border:1px solid #cfe0dc;background:#fff;font-size:18px}
 .showc .btn{color:#102A2E;background:#fff;border-color:#cfe0dc}
 
+.setbn{margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--green-soft);border:1px solid var(--green);font-size:13.5px;line-height:1.7}
+.setbn .btn{margin-top:6px}
+.cycbar{margin-top:12px;padding:10px 12px;border-radius:14px;background:var(--bg);border:1px dashed var(--muted);font-size:13.5px}
+.cycbar .actions{margin-top:8px}
+
 #print{display:none}
 @media print{
   @page{size:A4;margin:12mm 11mm 14mm}
@@ -765,7 +770,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '8-10 مساعد البيع';
+const APP_V = '10-10 تصفير الحساب';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1893,9 +1898,9 @@ const amt=x=>typeof x==='number'?x:flt(toEn(String(x??'')).replace(/[,،٬\s]/g,
 const KIND={inv:{l:'فاتورة',i:'🧾',s:1},ret:{l:'مرتجع',i:'↩️',s:-1},pay:{l:'دفعة',i:'💵',s:-1}};
 const RANGES={all:'كل الفترات',m0:'الشهر ده',m1:'الشهر اللي فات'};
 function accFilter(e){if(S.accRange==='all')return true;const d=new Date();if(S.accRange==='m1')d.setMonth(d.getMonth()-1);return (e.date||'').slice(0,7)===dayKey(d).slice(0,7)}
-const accList=cid=>S.ledger.filter(e=>e.cid===cid&&accFilter(e));
+const accList=cid=>S.ledger.filter(e=>e.cid===cid&&(S.accCyc?e.cyc===S.accCyc:!e.cyc)&&accFilter(e));
 function stats(list){const st={n:0,inv:0,ret:0,pay:0,last:''};list.forEach(e=>{const a=+e.amount||0;if(e.kind==='inv'){st.n++;st.inv+=a}else if(e.kind==='ret')st.ret+=a;else st.pay+=a;if((e.date||'')>st.last)st.last=e.date||''});st.net=st.inv-st.ret-st.pay;return st}
-const allStats=cid=>stats(S.ledger.filter(e=>e.cid===cid));
+const allStats=cid=>stats(S.ledger.filter(e=>e.cid===cid&&!e.cyc));
 const mon=n=>`${num(n)} ج`;
 let oldData=null;
 function vAcc(){const c=S.acc&&S.companies.find(x=>x.id===S.acc);if(!c)return vAccList();
@@ -1905,6 +1910,10 @@ function vAcc(){const c=S.acc&&S.companies.find(x=>x.id===S.acc);if(!c)return vA
     <div class="mini"><span>🧾 ${st.n} فاتورة <b>${num(st.inv)}</b></span>${st.ret?`<span>↩️ مرتجع <b>${num(st.ret)}</b></span>`:''}${st.pay?`<span>💵 مدفوع <b>${num(st.pay)}</b></span>`:''}</div>
     <div class="seg rng">${Object.entries(RANGES).map(([k,l])=>`<button data-act="acc-range" data-k="${k}" aria-pressed="${S.accRange===k}">${l}</button>`).join('')}</div></div>
   <div class="accacts"><button class="btn primary" data-act="acc-scanmenu">📷 صوّر فواتير</button><button class="btn" data-act="acc-manual">＋ يدوي</button>${all.length?`<button class="btn" data-act="acc-send">📤 ابعت الكشف</button>`:''}</div>`;
+  const cy=S.accCyc&&(c.cycles||[]).find(x=>x.id===S.accCyc);
+  if(S.accCyc)h=h.replace(/<div class="accacts">[\s\S]*?<\/div>/,'')+`<div class="cycbar">📁 حساب قديم ${cy?`${fmtDay(cy.from)} ← ${fmtDay(cy.to)} — اتصفّر ${fmtDay(dayKey(new Date(cy.at)))}`:''}<div class="actions"><button class="btn sm primary" data-act="acc-cur">↩ الحساب الحالي</button><button class="btn sm" data-act="acc-pdfc">📤 ابعت الكشف ده</button><button class="btn sm" data-act="acc-unset">إلغاء التصفير</button></div></div>`;
+  else{const d=detectSettle(c.id);if(d)h+=`<div class="setbn">💡 دفعة <b>${num(d.pay.amount)} ج</b> صفّرت الفواتير لحد ${fmtDay(d.docs[d.docs.length-1].date)}. <button class="btn sm primary" data-act="acc-settle-auto">🔄 ابدأ حساب جديد</button></div>`;
+    if((c.cycles||[]).length)h+=`<button class="linkb" data-act="acc-cycles" style="margin-top:8px">📁 حسابات قديمة (${c.cycles.length})</button>`}
   h+=list.length?`<div class="rows acclist">${list.map(e=>`<div class="row slim"><span class="ti">${KIND[e.kind].i}</span><div class="kit"><button class="linkbtn" data-act="acc-edit" data-eid="${e.id}"><b>${KIND[e.kind].l}${e.no?' <bdi dir="ltr">'+esc(e.no)+'</bdi>':''}</b></button><div class="meta"><span>${e.date?fmtDay(e.date):'—'}</span>${e.notes?`<span>${esc(e.notes)}</span>`:''}</div></div>${e.img?`<button class="icon clip" data-act="acc-img" data-eid="${e.id}" aria-label="صورة الفاتورة">📎</button>`:`<button class="icon clip add" data-act="acc-addimg" data-eid="${e.id}" aria-label="ضيف صورة للفاتورة">📷</button>`}<span class="amt ${KIND[e.kind].s<0?'minus':''}">${KIND[e.kind].s<0?'−':''}${num(e.amount)}</span></div>`).join('')}</div>`
     :`<div class="empty">🗂️ ${all.length?'مفيش نتايج':'لسه مفيش فواتير'}<br>دوس «📷 صوّر فواتير» وصوّر كذا فاتورة مرة واحدة</div>`;
   $app.innerHTML=h}
@@ -1929,9 +1938,10 @@ function companySheet(c){
 function accMenu(c){
   const n=S.ledger.filter(e=>e.cid===c.id).length;
   openSheet(`<h4>🏢 ${esc(c.name)}</h4><div class="actions"><button class="btn" data-m="ren">تغيير الاسم</button><button class="btn" data-m="mv" ${n?'':'disabled'}>↔️ نقل حركات لشركة تانية</button></div>
+  <div class="actions"><button class="btn primary" data-m="settle" ${n?'':'disabled'}>🔄 صفّرت الحساب — ابدأ من جديد</button>${(c.cycles||[]).length?`<button class="btn" data-m="cyc">📁 حسابات قديمة (${c.cycles.length})</button>`:''}</div>
   <div class="actions"><button class="btn danger" data-m="clr" ${n?'':'disabled'}>🗑️ مسح كل الحركات (${n})</button><button class="btn danger" data-m="del">حذف الشركة</button></div>
   <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
-  m=>{if(m==='ren')return companySheet(c);if(m==='mv')return moveSheet(c);
+  m=>{if(m==='ren')return companySheet(c);if(m==='mv')return moveSheet(c);if(m==='settle'){const d=detectSettle(c.id);return settleSheet(c,d)}if(m==='cyc')return cyclesSheet(c);
     const what=m==='clr'?`مسح كل حركات «${esc(c.name)}» (${n})`:`حذف «${esc(c.name)}» وكل حركاتها (${n})`;
     openSheet(`<h4>⚠️ ${what}؟</h4><p class="hint" style="margin-top:0">هيختفي من عند الكل، وتقدر ترجّعه من «🗑️ سلة المحذوفات» في السجل.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">أيوه امسح</button></div>`,
     async()=>{closeSheet();const ids=S.ledger.filter(e=>e.cid===c.id).map(e=>e.id),g='g'+Date.now();
@@ -1967,7 +1977,7 @@ function entrySheet(cid,kind,pre={},rec=null){
     closeSheet();const b2=fs.batch(),lr=rec?ref('ledger/'+rec.id):col('ledger').doc(),imgF=limg==='del'?{img:FV().delete()}:limg?{img:1}:{};
     if(rec){b2.update(lr,{cid,kind:k,no,date,amount,notes,...imgF});evt(b2,'acc',c?c.name:'',num(amount),'تعديل '+KIND[k].l+' '+no)}
     else{b2.set(lr,{cid,kind:k,no,date,amount,notes,t:Date.now(),by:me(),src:pre.scan?'scan':'manual',...(limg&&limg!=='del'?{img:1}:{})});evt(b2,'acc',c?c.name:'',num(amount),KIND[k].l+' '+no)}
-    commit(b2,rec?'اتعدل':`${KIND[k].l} اتسجلت — ${num(amount)} ج`);
+    commit(b2,rec?'اتعدل':`${KIND[k].l} اتسجلت — ${num(amount)} ج`);if(!rec&&k==='pay'){const cc=S.companies.find(x=>x.id===cid);setTimeout(()=>{const d=cc&&detectSettle(cid);if(d)settleSheet(cc,d)},900)}
     if(limg==='del'&&rec)run(ref('imgs/L_'+lr.id).delete());
     else if(limg&&limg!=='del')shrinkData(limg).then(d=>{if(d){imgCache['L_'+lr.id]=d;run(ref('imgs/L_'+lr.id).set({d,t:Date.now()}))}})});
   if(rec&&rec.img&&!pre.img)fullImg('L_'+rec.id).then(d=>{const im=r.querySelector('#eImg');if(d&&im&&limg!=='del'){im.src=d;im.hidden=false}});
@@ -2083,7 +2093,7 @@ function repAcc(){const c=S.companies.find(x=>x.id===S.acc);const l=accList(c.id
   const rows=l.map(e=>{const a=+e.amount||0;bal+=KIND[e.kind].s*a;return [e.date?fmtDay(e.date):'—',KIND[e.kind].l,e.no||'—',e.notes||'',e.kind==='inv'?num(a):'',e.kind!=='inv'?num(a):'',num(bal)]});
   let t=`حساب ${c.name} — ${SHOP_NAME}\n${RANGES[S.accRange]} — لحد ${fmtDay(today())}\n\nعدد الفواتير: ${st.n}\nإجمالي الفواتير: ${mon(st.inv)}\nإجمالي المرتجعات: ${mon(st.ret)}\nالمدفوع: ${mon(st.pay)}\n💰 الصافي المطلوب: ${mon(st.net)}\n\nالتفاصيل:\n`;
   l.forEach(e=>{t+=`${e.date?fmtDay(e.date):'—'} — ${KIND[e.kind].l}${e.no?' '+e.no:''} — ${KIND[e.kind].s<0?'−':''}${num(e.amount)}\n`});
-  return {sum:[['عدد الفواتير',st.n,''],['إجمالي الفواتير',num(st.inv),''],['مرتجعات ودفعات',num(st.ret+st.pay),'grn'],['الصافي المطلوب',num(st.net),'red']],title:'حساب '+c.name,sub:`${RANGES[S.accRange]} — عدد الفواتير ${st.n} — الصافي المطلوب ${mon(st.net)}`,text:t.trim(),
+  return {sum:[['عدد الفواتير',st.n,''],['إجمالي الفواتير',num(st.inv),''],['مرتجعات ودفعات',num(st.ret+st.pay),'grn'],['الصافي المطلوب',num(st.net),'red']],title:'حساب '+c.name+(S.accCyc?' (حساب قديم)':''),sub:`${S.accCyc?'حساب مقفول':RANGES[S.accRange]} — عدد الفواتير ${st.n} — الصافي المطلوب ${mon(st.net)}`,text:t.trim(),
     head:['التاريخ','النوع','الرقم','ملاحظات','فاتورة','مرتجع / دفعة','الرصيد'],rows,foot:['','','','الإجمالي',num(st.inv),num(st.ret+st.pay),num(st.net)]}}
 /* استيراد من صفحة الفواتير القديمة (نفس الموقع github.io — بيقرا من نفس المتصفح) */
 const GENK=/^(invoices?|records?|items?|data|list|entries|bills?|history|rows?|returns?|transactions?|docs?|state|store|app|all|db)$/i;
@@ -3013,6 +3023,42 @@ async function cardImage(p,P){try{await document.fonts.ready}catch(e){}const F='
   if(P.card.badge){x.font=`800 34px ${F}`;const bw=x.measureText(P.card.badge).width+50;x.fillStyle='#0E7C66';rrPath(x,W-60-bw,40,bw,62,31);x.fill();x.fillStyle='#fff';x.fillText(P.card.badge,W-60-bw/2,82)}
   const b=await new Promise(res=>c.toBlob(res,'image/jpeg',.9));return new File([b],fileName(p.name)+' card.jpg',{type:'image/jpeg'})}
 
+
+/* ---------- تصفير الحساب: كل ما تصفّر المديونية يبدأ حساب جديد ---------- */
+const byDT=(a,b)=>(a.date||'').localeCompare(b.date||'')||(a.t||0)-(b.t||0);
+function detectSettle(cid){
+  const cur=S.ledger.filter(e=>e.cid===cid&&!e.cyc&&!e.del),pays=cur.filter(e=>e.kind==='pay').sort(byDT).reverse();
+  const docs=cur.filter(e=>e.kind!=='pay').sort(byDT);
+  for(const pay of pays){let sum=0;for(let i=0;i<docs.length;i++){sum+=KIND[docs[i].kind].s*(+docs[i].amount||0);
+    if(Math.abs(sum-(+pay.amount||0))<1){const earlier=cur.filter(e=>e.kind==='pay'&&e.id!==pay.id&&byDT(e,pay)<0);return {pay,docs:docs.slice(0,i+1),extraPays:earlier}}}}
+  return null}
+async function doSettle(c,ents,pay){
+  const id='c'+Date.now().toString(36),all=[...ents];if(pay&&!all.includes(pay))all.push(pay);const st=stats(all),ds=all.map(e=>e.date||'').filter(Boolean).sort();
+  const cyc={id,at:Date.now(),by:me(),paid:pay?+pay.amount:st.pay,inv:st.inv,n:st.n,from:ds[0]||'',to:ds[ds.length-1]||'',left:Math.round(st.net*100)/100};
+  try{for(let i=0;i<all.length;i+=400){const b=fs.batch();all.slice(i,i+400).forEach(e=>b.update(ref('ledger/'+e.id),{cyc:id}));await b.commit()}
+    const b=fs.batch();b.update(ref('companies/'+c.id),{cycles:FV().arrayUnion(cyc)});evt(b,'acc',c.name,num(cyc.paid),'تصفير الحساب — بداية حساب جديد');await b.commit();
+    S.accCyc='';toast('✓ اتصفّر — بدأ حساب جديد');render()}catch(e){toast('حصلت مشكلة — جرب تاني')}}
+function settleSheet(c,auto){
+  const cur=S.ledger.filter(e=>e.cid===c.id&&!e.cyc&&!e.del);if(!cur.length)return toast('مفيش حركات');
+  if(auto){const d=auto,ents=[...d.docs,...d.extraPays];
+    return openSheet(`<h4>🔄 تبدأ حساب جديد لـ ${esc(c.name)}؟</h4><p class="hint" style="margin-top:0">دفعة <b>${num(d.pay.amount)} ج</b> يوم ${fmtDay(d.pay.date)} بتصفّر <b>${d.docs.length}</b> حركة لحد ${fmtDay(d.docs[d.docs.length-1].date)}.<br>دول هيتنقلوا لـ «📁 حسابات قديمة»، واللي يفضل ظاهر الفواتير الجديدة بس (${cur.length-ents.length-1}).</p>
+      <div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn" data-m="man">اختار التاريخ بإيدي</button><button class="btn primary" data-m="ok">🔄 ابدأ حساب جديد</button></div>`,
+    m=>{if(m==='man')return settleSheet(c);if(m==='ok'){closeSheet();doSettle(c,ents,d.pay)}})}
+  const last=cur.filter(e=>e.kind==='pay').sort(byDT).pop();
+  const r=openSheet(`<h4>🔄 صفّرت الحساب — ${esc(c.name)}</h4><p class="hint" style="margin-top:0">كل الحركات لحد التاريخ ده (ومعاها الدفعات) هتتنقل لـ «📁 حسابات قديمة»، والحساب يبدأ من جديد بعده.</p>
+    <label>صفّرت لحد يوم</label>${dateSel('stD',last?last.date:today())}<p class="hint" id="stI"></p>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">🔄 ابدأ حساب جديد</button></div>`,
+  m=>{if(m!=='ok')return;const d=readDateSel(r.querySelector('#stD')),ents=cur.filter(e=>(e.date||'')<=d);if(!ents.length)return toast('مفيش حركات لحد التاريخ ده');closeSheet();doSettle(c,ents,null)});
+  const upd=()=>{const d=readDateSel(r.querySelector('#stD')),ents=cur.filter(e=>(e.date||'')<=d),st=stats(ents);r.querySelector('#stI').innerHTML=`${ents.length} حركة — الصافي بتاعهم <b class="${Math.abs(st.net)<1?'ok':'rd'}">${num(st.net)} ج</b>${Math.abs(st.net)>=1?' ⚠️ مش صفر — اتأكد إن الدفعة متسجلة':' ✓'} · هيفضل ${cur.length-ents.length} حركة في الحساب الجديد`};
+  r.addEventListener('change',upd);r.addEventListener('click',()=>setTimeout(upd,0));upd();
+}
+function cyclesSheet(c){const L=(c.cycles||[]).slice().sort((a,b)=>b.at-a.at);
+  openSheet(`<h4>📁 حسابات قديمة — ${esc(c.name)}</h4>${L.length?`<div class="rows">${L.map(x=>`<button class="row linkbtn" data-m="c:${x.id}"><span class="ti">📁</span><div class="kit"><b>${x.from?fmtDay(x.from):''} ← ${x.to?fmtDay(x.to):''}</b><div class="meta"><span>${x.n} فاتورة · ${num(x.inv)} ج</span><span>اتصفّر ${fmtDay(dayKey(new Date(x.at)))}${x.by?' — '+esc(x.by):''}</span></div></div><span class="amt">${num(x.paid)}</span></button>`).join('')}</div>`:'<div class="empty">مفيش حسابات قديمة</div>'}<div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  m=>{if(m.startsWith('c:')){S.accCyc=m.slice(2);closeSheet();render();scrollTo(0,0)}})}
+async function unsettle(c,cid){const ents=S.ledger.filter(e=>e.cid===c.id&&e.cyc===cid),x=(c.cycles||[]).find(y=>y.id===cid);
+  try{for(let i=0;i<ents.length;i+=400){const b=fs.batch();ents.slice(i,i+400).forEach(e=>b.update(ref('ledger/'+e.id),{cyc:FV().delete()}));await b.commit()}
+    if(x)await ref('companies/'+c.id).update({cycles:FV().arrayRemove(x)});S.accCyc='';toast('رجعوا للحساب الحالي');render()}catch(e){toast('حصلت مشكلة')}}
+
 /* ---------- events ---------- */
 function go(view){S.view=view;render();scrollTo(0,0)}
 $tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)go(b.dataset.tab)});
@@ -3068,8 +3114,8 @@ $app.addEventListener('click',e=>{
   else if(act==='settings')settingsSheet();
   else if(act==='perm')askPerm();
   else if(act==='app')appSheet();
-  else if(act==='acc-open'){S.acc=b.dataset.cid;LS.set('drc.acc',S.acc);S.q='';$q.value='';render();scrollTo(0,0)}
-  else if(act==='acc-back'){S.acc='';LS.set('drc.acc','');S.q='';$q.value='';render()}
+  else if(act==='acc-open'){S.accCyc='';S.acc=b.dataset.cid;LS.set('drc.acc',S.acc);S.q='';$q.value='';render();scrollTo(0,0)}
+  else if(act==='acc-back'){S.accCyc='';S.acc='';LS.set('drc.acc','');S.q='';$q.value='';render()}
   else if(act==='acc-newc')companySheet(null);
   else if(act==='acc-menu'){const c=S.companies.find(x=>x.id===S.acc);if(c)accMenu(c)}
   else if(act==='acc-range'){S.accRange=k;render()}
@@ -3078,6 +3124,11 @@ $app.addEventListener('click',e=>{
   else if(act==='acc-img'){const e=S.ledger.find(x=>x.id===b.dataset.eid);if(e)openZoomSrc('',`${KIND[e.kind].l} ${e.no||''} — ${num(e.amount)}`,'L_'+e.id)}
   else if(act==='acc-addimg'){const e=S.ledger.find(x=>x.id===b.dataset.eid);if(e)attachLedgerImg(e)}
   else if(act==='acc-cam')pickImage(true);
+  else if(act==='acc-cycles'){const c=S.companies.find(x=>x.id===S.acc);if(c)cyclesSheet(c)}
+  else if(act==='acc-cur'){S.accCyc='';render()}
+  else if(act==='acc-pdfc')accSend();
+  else if(act==='acc-unset'){const c=S.companies.find(x=>x.id===S.acc);if(c)openSheet('<h4>تلغي التصفير؟</h4><p class="hint" style="margin-top:0">الحركات دي هترجع تتحسب في الحساب الحالي.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">ألغي التصفير</button></div>',()=>{closeSheet();unsettle(c,S.accCyc)})}
+  else if(act==='acc-settle-auto'){const c=S.companies.find(x=>x.id===S.acc),d=c&&detectSettle(c.id);if(d)settleSheet(c,d)}
   else if(act==='acc-scanmenu')accScanMenu();
   else if(act==='acc-manual')accManual();
   else if(act==='acc-send')accSend();
