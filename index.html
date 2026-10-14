@@ -527,9 +527,11 @@ body.hasinv .wrap{padding-bottom:230px}
 .euc{margin:4px 0 8px}.eup{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}.eubig{font-size:22px;font-weight:800;direction:ltr;text-align:start}.eubig small{display:block;font-size:13px;color:var(--muted);font-weight:600}
 .eusrc{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:12px}.eusrc a{color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:start}
 .updbar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:12px;right:12px;z-index:9999;background:#0E7C66;color:#fff;border:0;border-radius:14px;padding:12px 14px;font:inherit;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer}
-.mcam{position:fixed;inset:0;z-index:9000;background:#000;display:flex;flex-direction:column}.mcam video{flex:1;min-height:0;width:100%;object-fit:cover}.mcam.flash video{opacity:.3}
+.mcam{position:fixed;inset:0;z-index:9000;background:#000;display:flex;flex-direction:column}.mcam video{flex:1;min-height:0;width:100%;object-fit:cover}.mcwrap video{height:100%}.mcam.flash video{opacity:.3}
 .mct{color:#fff;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;font-weight:700}
-.mcs{display:flex;gap:6px;overflow-x:auto;padding:8px;min-height:78px;background:#111}.mcs span{position:relative;flex:0 0 auto}.mcs img{width:62px;height:62px;object-fit:cover;border-radius:8px;border:2px solid #3cc}.mcs button{position:absolute;top:-4px;left:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#c33;color:#fff;font-size:11px;padding:0}.mcs i{position:absolute;bottom:2px;right:4px;color:#fff;font-style:normal;font-weight:800;text-shadow:0 0 3px #000}
+.mcwrap{position:relative;flex:1;min-height:0;display:flex}.mclast{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.72);color:#fff;border-radius:12px;padding:10px 12px;font-size:16px;text-align:center}.mclast b{font-size:20px;direction:ltr;unicode-bidi:isolate}
+.mcs{display:flex;gap:8px;overflow-x:auto;padding:8px;min-height:78px;background:#111}.mci{position:relative;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;width:92px}.mci img{width:92px;height:66px;object-fit:cover;border-radius:8px;border:2px solid #3cc}.mci .rm{position:absolute;top:-4px;left:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#c33;color:#fff;font-size:11px;padding:0}.mci i{position:absolute;top:46px;right:5px;color:#fff;font-style:normal;font-weight:800;text-shadow:0 0 3px #000}
+.mci b{font-size:14px;color:#fff;direction:ltr;white-space:nowrap}.mci b.ok,.mclast b.ok{color:#5be3b5}.mci b.rd,.mclast b.rd{color:#ff8a8a}.mci b.lw,.mclast b.lw{color:#ffcc66}.mci b.wt{font-size:12px;color:#ccc}.mci .rr{border:1px solid #555;background:#222;color:#fff;border-radius:8px;font-size:11.5px;padding:3px 6px;cursor:pointer}
 .mcb{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 14px);background:#111}.mcb .btn{min-width:96px}
 .mcshot{width:74px;height:74px;border-radius:50%;border:5px solid #fff;background:#fff;box-shadow:inset 0 0 0 4px #111;cursor:pointer}.mcshot:active{transform:scale(.92)}
 .mrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.mrow>b{flex:1;font-size:18px;direction:ltr;text-align:right}.mrow b.dead,.mrow b.now{color:var(--red)}.mrow b.soon{color:var(--amber)}
@@ -795,7 +797,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10هـ صوّر كذا تاريخ';
+const APP_V = '14-10و التاريخ بيظهر وقت التصوير';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1246,11 +1248,12 @@ function restockSheet(p,pre={}){
     if(m==='zoom')return openZoom(p);
     if(m==='edit'&&p){const keep={q:int(qi.value)||1,k:readExp(r.querySelector('#fE'))};return itemForm(p,{after:np=>restockSheet(np,{...pre,q:keep.q,k:keep.k&&keep.k!=='x'?keep.k:pre.k})})}
     if(m==='mdates'){const it=p||findByName((r.querySelector('#fItem')||{}).value||'');if(!it){toast('اختار الصنف الأول');return}
-      return multiCam('صوّر كل تاريخ صلاحية — صورة لكل تاريخ',async shots=>{const st=r.querySelector('#rdSt');if(!getKey()){st.textContent='🔑 محتاج مفتاح الذكاء الاصطناعي';return}
-        st.innerHTML=`<span class="spin"></span>بيقرا ${shots.length} صورة…`;const res=await readMany(shots,it.life),L=[],seen={};let bad=0;
+      if(!getKey()){r.querySelector('#rdSt').textContent='🔑 محتاج مفتاح الذكاء الاصطناعي';return}
+      return multiCam('صوّر كل تاريخ صلاحية — التاريخ بيظهر تحت كل صورة',async(shots,res0)=>{const st=r.querySelector('#rdSt');
+        if(!res0)st.innerHTML=`<span class="spin"></span>بيقرا ${shots.length} صورة…`;const res=res0||await readMany(shots,it.life),L=[],seen={};let bad=0;
         res.forEach(x=>{if(!x.k){bad++;return}if(seen[x.k])return;seen[x.k]=1;L.push({k:x.k,life:x.life})});
         if(!L.length){st.textContent='مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ';return}
-        multiRestock(it,L.sort((a,b)=>bkIdx(a.k)-bkIdx(b.k)),bad)})}
+        multiRestock(it,L.sort((a,b)=>bkIdx(a.k)-bkIdx(b.k)),bad)},d=>readDates(d,it.life))}
     if(m==='dph')return datePhoto(r.querySelector('#fE .ex'),null,p&&p.life,r.querySelector('#rdSt'));
     if(m==='cnt'||m==='cnt+'){const it=p||findByName((r.querySelector('#fItem')||{}).value||'');return (async()=>{const ref=it?((await fullImg(it.id))||it.img||''):'';countPhoto({input:qi,st:r.querySelector('#cntSt'),name:it?it.name:((r.querySelector('#fItem')||{}).value||''),ref,unit:it&&tOf(it)==='med'?'box':'piece',add:m==='cnt+'})})()}
     if(m==='cntz'){const st=r.querySelector('#cntSt');return openZoomSrc(st.dataset.img,'صورة العدّ')}
@@ -1295,8 +1298,9 @@ function itemForm(p,preset){
     if(m==='cnt'||m==='cnt+'){const rows=[...r.querySelectorAll('.brow')],row=(m==='cnt+'&&r.querySelector('#cntSt').dataset.row!=null?rows[+r.querySelector('#cntSt').dataset.row]:null)||rows.find(x=>!int(x.querySelector('.bq').value))||rows[rows.length-1];r.querySelector('#cntSt').dataset.row=rows.indexOf(row);
       const med=r.querySelector('#fType').value==='med';return (async()=>{const ref=pimg&&pimg!=='del'?pimg:(p&&p.img?((await fullImg(p.id))||p.img):'');countPhoto({input:row.querySelector('.bq'),st:r.querySelector('#cntSt'),name:r.querySelector('#fName').value.trim(),ref,unit:med?'box':'piece',add:m==='cnt+'})})()}
     if(m==='cntz')return openZoomSrc(r.querySelector('#cntSt').dataset.img,'صورة العدّ');
-    if(m==='mdates')return multiCam('صوّر كل تاريخ صلاحية — صورة لكل تاريخ',async shots=>{const st=r.querySelector('#dSt');if(!getKey()){st.textContent='🔑 قراية التواريخ محتاجة مفتاح الذكاء الاصطناعي';return}
-      st.innerHTML=`<span class="spin"></span>بيقرا ${shots.length} صورة…`;const res=await readMany(shots,p&&p.life);if(!r.isConnected)return;
+    if(m==='mdates'){if(!getKey()){r.querySelector('#dSt').textContent='🔑 قراية التواريخ محتاجة مفتاح الذكاء الاصطناعي';return}
+      return multiCam('صوّر كل تاريخ صلاحية — التاريخ بيظهر تحت كل صورة',async(shots,res0)=>{const st=r.querySelector('#dSt');
+      if(!res0)st.innerHTML=`<span class="spin"></span>بيقرا ${shots.length} صورة…`;const res=res0||await readMany(shots,p&&p.life);if(!r.isConnected)return;
       const seen={};let ok=0,bad=0,dup=0,code='';
       res.forEach(x=>{if(x.code&&!code)code=x.code;const key=x.k||(x.prod?'p'+x.prod.y+'-'+x.prod.m:'');if(!key){bad++;return}if(seen[key]){dup++;return}
         let row=[...r.querySelectorAll('.brow')].find(w=>!w.querySelector('[data-x=m]').value&&!int(w.querySelector('.bq').value));
@@ -1304,7 +1308,7 @@ function itemForm(p,preset){
         applyExp(row.querySelector('.ex'),x);row.querySelector('.bq').classList.add('need');seen[key]=1;ok++});
       if(code){const i=r.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(code)){l.push(code);i.value=l.join(', ');i.classList.add('aifill')}}
       medT();st.innerHTML=(ok?`✓ اتضاف ${ok} تاريخ — اكتب العدد قدام كل تاريخ`:'مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ')+(dup?` — ${dup} صورة مكررة بنفس التاريخ`:'')+(bad?` — ${bad} صورة ما اتقرتش`:'');
-      const q=r.querySelector('.bq.need');if(q)setTimeout(()=>{try{q.focus()}catch(e){}},200)});
+      const q=r.querySelector('.bq.need');if(q)setTimeout(()=>{try{q.focus()}catch(e){}},200)},d=>readDates(d,p&&p.life))}
     if(m==='dphoto'){const rows=[...r.querySelectorAll('.brow')],row=rows.find(x=>!x.querySelector('[data-x=m]').value)||rows[rows.length-1];return datePhoto(row&&row.querySelector('.ex'),r.querySelector('#fCode'),p&&p.life,r.querySelector('#dSt'))}
     if(m==='setkey'){const keep=pimg&&pimg!=='del'?pimg:'';return keySheet(()=>itemForm(p,{...(preset||{}),img:keep||(preset&&preset.img),auto:true}))}
     if(m==='pdel'){pimg='del';r.querySelector('#fImg').hidden=true;b.hidden=true;r.querySelector('[data-m=ai]').hidden=true;return}
@@ -2801,19 +2805,25 @@ function applyExp(ex,res){if(!ex)return;
   if(res.k){const pp=bkParse(res.k);ex.querySelector('[data-x=m]').value=String(pp.m);const ys=ex.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(pp.y)))ys.insertAdjacentHTML('beforeend',`<option>${pp.y}</option>`);ys.value=String(pp.y);ex.classList.add('aifill');if(res.life)ex.dataset.life=res.life;return}
   if(res.prod){const pn=ex.querySelector('.prod'),lk=ex.querySelector('[data-prod]');if(pn&&pn.hidden&&lk)lk.click();ex.querySelector('[data-x=pm]').value=String(res.prod.m);const py=ex.querySelector('[data-x=py]');if(![...py.options].some(o=>o.value===String(res.prod.y)))py.insertAdjacentHTML('beforeend',`<option>${res.prod.y}</option>`);py.value=String(res.prod.y);calcProd(ex)}}
 /* كاميرا بتصوّر كذا صورة ورا بعض من غير ما تقفل */
-function multiCam(title,cb){
-  const ov=document.createElement('div');ov.className='mcam';ov.innerHTML=`<div class="mct">${esc(title)}</div><video playsinline muted autoplay></video><div class="mcs"></div><div class="mcb"><button class="btn" data-x="no">✕ إلغاء</button><button class="mcshot" data-x="shot" aria-label="صوّر"></button><button class="btn primary" data-x="ok" disabled>✓ تمام (0)</button></div>`;
+function multiCam(title,cb,read){
+  const ov=document.createElement('div');ov.className='mcam';ov.innerHTML=`<div class="mct">${esc(title)}</div><div class="mcwrap"><video playsinline muted autoplay></video><div class="mclast" hidden></div></div><div class="mcs"></div><div class="mcb"><button class="btn" data-x="no">✕ إلغاء</button><button class="mcshot" data-x="shot" aria-label="صوّر"></button><button class="btn primary" data-x="ok" disabled>✓ تمام (0)</button></div>`;
   document.body.appendChild(ov);const v=ov.querySelector('video'),shots=[];let st=null;
-  const end=ok=>{try{st&&st.getTracks().forEach(t=>t.stop())}catch(e){}ov.remove();if(ok&&shots.length)cb(shots)};
-  const upd=()=>{ov.querySelector('.mcs').innerHTML=shots.map((d,i)=>`<span><img src="${d}" alt=""><button data-x="rm:${i}" aria-label="شيل">✕</button><i>${i+1}</i></span>`).join('');const b=ov.querySelector('[data-x=ok]');b.disabled=!shots.length;b.textContent=`✓ تمام (${shots.length})`};
+  const end=ok=>{try{st&&st.getTracks().forEach(t=>t.stop())}catch(e){}ov.remove();if(ok&&shots.length)cb(shots.map(x=>x.d),read?shots.map(x=>x.res||{}):null)};
+  const lab=x=>x.busy?'<b class="wt"><span class="spin"></span>بيقرا…</b>':!x.res?'':x.res.k?`<b class="ok">${x.res.k==='x'?'—':bkLabel(x.res.k)}</b>`:x.res.prod?`<b class="lw">إنتاج ${pad(x.res.prod.m)}/${x.res.prod.y}</b>`:'<b class="rd">⚠️ مش واضح</b>';
+  const upd=()=>{ov.querySelector('.mcs').innerHTML=shots.map((x,i)=>`<span class="mci"><img src="${x.d}" alt=""><button class="rm" data-x="rm:${i}" aria-label="شيل">✕</button><i>${i+1}</i>${read?`${lab(x)}${x.busy?'':`<button class="rr" data-x="rr:${i}">↻ اقرا تاني</button>`}`:''}</span>`).join('');
+    const busy=shots.some(x=>x.busy),b=ov.querySelector('[data-x=ok]');b.disabled=!shots.length||busy;b.textContent=busy?'⏳ استنى القراية…':`✓ تمام (${shots.length})`;
+    const l=ov.querySelector('.mclast'),x=shots[shots.length-1];if(read&&x){l.hidden=false;l.innerHTML=`صورة ${shots.length}: ${lab(x)}${!x.busy&&x.res&&!x.res.k&&!x.res.prod?' — قرّب على التاريخ وصوّر تاني أو دوس ↻':''}`}else l.hidden=true;
+    const sc=ov.querySelector('.mcs');sc.scrollLeft=-sc.scrollWidth};
+  const go=async x=>{const tk=x.tk=(x.tk||0)+1;x.busy=true;upd();let r={};try{r=await read(x.d)}catch(e){}if(x.tk!==tk)return;x.res=r||{};x.busy=false;if(ov.isConnected)upd()};
   ov.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b)return;const x=b.dataset.x;
     if(x==='no')return end(false);if(x==='ok')return end(true);
     if(x.startsWith('rm:')){shots.splice(+x.slice(3),1);return upd()}
-    if(x==='shot'){if(!v.videoWidth)return;const sc=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);c.getContext('2d').drawImage(v,0,0,c.width,c.height);shots.push(c.toDataURL('image/jpeg',.88));
-      try{navigator.vibrate&&navigator.vibrate(40)}catch(_){}try{scBeep()}catch(_){}ov.classList.add('flash');setTimeout(()=>ov.classList.remove('flash'),130);upd()}});
+    if(x.startsWith('rr:')){const s_=shots[+x.slice(3)];if(s_)go(s_);return}
+    if(x==='shot'){if(!v.videoWidth)return;const sc=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);c.getContext('2d').drawImage(v,0,0,c.width,c.height);const s_={d:c.toDataURL('image/jpeg',.88)};shots.push(s_);
+      try{navigator.vibrate&&navigator.vibrate(40)}catch(_){}try{scBeep()}catch(_){}ov.classList.add('flash');setTimeout(()=>ov.classList.remove('flash'),130);upd();if(read)go(s_)}});
   (async()=>{try{if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw 0;st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
       if(!ov.isConnected){st.getTracks().forEach(t=>t.stop());return}v.srcObject=st;try{await v.play()}catch(e){}try{await st.getVideoTracks()[0].applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}}
-    catch(e){end(false);toast('الكاميرا المباشرة مش متاحة — اختار الصور من الجاليري');pickFiles({cam:false,multiple:true},async fl=>{const out=[];for(const f of fl){try{out.push(await toJpeg(f,1600,.85))}catch(_){}}if(out.length)cb(out)})}})()}
+    catch(e){end(false);toast('الكاميرا المباشرة مش متاحة — اختار الصور من الجاليري');pickFiles({cam:false,multiple:true},async fl=>{const out=[];for(const f of fl){try{out.push(await toJpeg(f,1600,.85))}catch(_){}}if(out.length)cb(out,null)})}})()}
 async function readMany(shots,life){return Promise.all(shots.map(d=>readDates(d,life).catch(()=>({}))))}
 function multiRestock(it,L,bad){const K=spb(it);
   openSheet(`<h4>📦 استلام — ${esc(it.name)}</h4><p class="hint" style="margin-top:0">✓ اتقرا ${L.length} تاريخ${bad?` — ${bad} صورة ما اتقرتش`:''}. اكتب العدد${K>1?' (علب)':''} قدام كل تاريخ:</p>
