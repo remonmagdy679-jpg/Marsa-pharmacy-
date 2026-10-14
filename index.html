@@ -531,7 +531,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .mct{color:#fff;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;font-weight:700}
 .mcwrap{position:relative;flex:1;min-height:0;display:flex}.mclast{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.72);color:#fff;border-radius:12px;padding:10px 12px;font-size:16px;text-align:center}.mclast b{font-size:20px;direction:ltr;unicode-bidi:isolate}
 .mcs{display:flex;gap:8px;overflow-x:auto;padding:8px;min-height:78px;background:#111}.mci{position:relative;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;width:92px}.mci img{width:92px;height:66px;object-fit:cover;border-radius:8px;border:2px solid #3cc}.mci .rm{position:absolute;top:-4px;left:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#c33;color:#fff;font-size:11px;padding:0}.mci i{position:absolute;top:46px;right:5px;color:#fff;font-style:normal;font-weight:800;text-shadow:0 0 3px #000}
-.mci b{font-size:14px;color:#fff;direction:ltr;white-space:nowrap}.mci b.ok,.mclast b.ok{color:#5be3b5}.mci b.rd,.mclast b.rd{color:#ff8a8a}.mci b.lw,.mclast b.lw{color:#ffcc66}.mci b.wt{font-size:12px;color:#ccc}.mci .rr{border:1px solid #555;background:#222;color:#fff;border-radius:8px;font-size:11.5px;padding:3px 6px;cursor:pointer}
+.mci b{font-size:14px;color:#fff;direction:ltr;white-space:nowrap}.mci b.ok,.mclast b.ok{color:#5be3b5}.mci b.rd,.mclast b.rd{color:#ff8a8a}.mci b.lw,.mclast b.lw{color:#ffcc66}.mci b.wt{font-size:12px;color:#ccc}.mch{display:block;font-size:11px;color:#bbb;direction:rtl}.mclast .mch{font-size:13px}.mci .rr{border:1px solid #555;background:#222;color:#fff;border-radius:8px;font-size:11.5px;padding:3px 6px;cursor:pointer}
 .mcb{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 14px);background:#111}.mcb .btn{min-width:96px}
 .mcshot{width:74px;height:74px;border-radius:50%;border:5px solid #fff;background:#fff;box-shadow:inset 0 0 0 4px #111;cursor:pointer}.mcshot:active{transform:scale(.92)}
 .mrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.mrow>b{flex:1;font-size:18px;direction:ltr;text-align:right}.mrow b.dead,.mrow b.now{color:var(--red)}.mrow b.soon{color:var(--amber)}
@@ -797,7 +797,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10و التاريخ بيظهر وقت التصوير';
+const APP_V = '14-10ز إنتاج + مدة صلاحية';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -2779,13 +2779,13 @@ function invTotalSheet(inv){
 /* ---------- صورة تاريخ الصلاحية/الإنتاج → الإكسباير لوحده ---------- */
 const DATE_PROMPT=`This is a close-up photo of the back or bottom of a pharmacy / cosmetics package showing printed codes and dates.
 Return ONLY one JSON object, no markdown:
-{"expiry":"MM/YYYY of the EXPIRY / EXP / Use before date, or null","production":"MM/YYYY of the production / manufacturing date (MFG, MFD, PD, PROD, or a code like P.07/26 meaning produced 07/2026), or null","shelf_life_months":number if printed (e.g. "Shelf life is 30 months from production date" or "صالح لمدة ٣٠ شهر"), else null,"batch":"batch / lot number or null","barcode":"digits printed under the barcode, or null"}
-Dates printed as MM/YY mean month/20YY. Never guess: use null if not clearly printed.`;
+{"expiry":"MM/YYYY of the EXPIRY / EXP / Use before date ONLY if an expiry date is actually printed, else null","production":"MM/YYYY of the production / manufacturing date (MFG, MFD, PD, PROD, Prod., or a code like P.07/26 or P 07/26 inside a batch code such as BXY0208-P.03/26 meaning produced 03/2026), or null","shelf_life_months":number if a shelf life is printed anywhere on the pack — English or Arabic, e.g. "Shelf life is 30 months from production date", "Best before 36 months from manufacturing", "الصلاحية ٣٠ شهر من تاريخ الإنتاج", "صالح لمدة ٣ سنوات" (= 36) — else null. IGNORE the open-jar symbol (12M / 24M = period after opening), it is NOT the shelf life.,"batch":"batch / lot number or null","barcode":"digits printed under the barcode, or null"}
+Read Arabic-Indic digits too (٣٠ = 30). Dates printed as MM/YY mean month/20YY. Never guess: use null if not clearly printed.`;
 function parseDatesText(t){t=toEn(String(t||'')).replace(/[Oo](?=\d)/g,'0').replace(/(\d)[Oo]/g,(m,x)=>x+'0');const out={};
   const ym=(m,y)=>{m=+m;y=+y;if(y<100)y+=2000;return m>=1&&m<=12&&y>=2015&&y<=2045?{m,y}:null};
   let r=/(?:EXP(?:IRY)?|EX|USE\s*BY|BB|BEST\s*BEFORE)\s*[.:]?\s*(\d{1,2})\s*[\/\-.]\s*(\d{2,4})/i.exec(t);if(r)out.exp=ym(r[1],r[2]);
   r=/(?:MFG|MFD|PROD|PD|MF|\bP)\s*[.:]?\s*(\d{1,2})\s*[\/\-.]\s*(\d{2,4})/i.exec(t);if(r)out.prod=ym(r[1],r[2]);
-  r=/(\d{1,3})\s*months?/i.exec(t)||/صالح\s*لمد[ةه]\s*(\d{1,3})/.exec(t);if(r)out.life=+r[1];
+  r=/(?:shelf\s*life[^\d]{0,20}|best\s*before[^\d]{0,20})(\d{1,3})\s*months?/i.exec(t)||/(\d{2,3})\s*months?\s*from/i.exec(t)||/(?:صالح\s*لمد[ةه]|الصلاحي[ةه])\s*(\d{1,3})/.exec(t);if(r)out.life=+r[1];
   r=/\b(\d{13})\b/.exec(t.replace(/\s(?=\d)/g,''));if(r)out.code=r[1];
   return out}
 function loadTess(){return window.Tesseract?Promise.resolve():loadScript(['https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','https://unpkg.com/tesseract.js@5/dist/tesseract.min.js'])}
@@ -2809,7 +2809,7 @@ function multiCam(title,cb,read){
   const ov=document.createElement('div');ov.className='mcam';ov.innerHTML=`<div class="mct">${esc(title)}</div><div class="mcwrap"><video playsinline muted autoplay></video><div class="mclast" hidden></div></div><div class="mcs"></div><div class="mcb"><button class="btn" data-x="no">✕ إلغاء</button><button class="mcshot" data-x="shot" aria-label="صوّر"></button><button class="btn primary" data-x="ok" disabled>✓ تمام (0)</button></div>`;
   document.body.appendChild(ov);const v=ov.querySelector('video'),shots=[];let st=null;
   const end=ok=>{try{st&&st.getTracks().forEach(t=>t.stop())}catch(e){}ov.remove();if(ok&&shots.length)cb(shots.map(x=>x.d),read?shots.map(x=>x.res||{}):null)};
-  const lab=x=>x.busy?'<b class="wt"><span class="spin"></span>بيقرا…</b>':!x.res?'':x.res.k?`<b class="ok">${x.res.k==='x'?'—':bkLabel(x.res.k)}</b>`:x.res.prod?`<b class="lw">إنتاج ${pad(x.res.prod.m)}/${x.res.prod.y}</b>`:'<b class="rd">⚠️ مش واضح</b>';
+  const lab=x=>x.busy?'<b class="wt"><span class="spin"></span>بيقرا…</b>':!x.res?'':x.res.k?`<b class="ok">${x.res.k==='x'?'—':bkLabel(x.res.k)}</b>${x.res.prod?`<small class="mch">إنتاج ${pad(x.res.prod.m)}/${String(x.res.prod.y).slice(2)} + ${x.res.life} شهر</small>`:''}`:x.res.prod?`<b class="lw">إنتاج ${pad(x.res.prod.m)}/${x.res.prod.y}</b>`:'<b class="rd">⚠️ مش واضح</b>';
   const upd=()=>{ov.querySelector('.mcs').innerHTML=shots.map((x,i)=>`<span class="mci"><img src="${x.d}" alt=""><button class="rm" data-x="rm:${i}" aria-label="شيل">✕</button><i>${i+1}</i>${read?`${lab(x)}${x.busy?'':`<button class="rr" data-x="rr:${i}">↻ اقرا تاني</button>`}`:''}</span>`).join('');
     const busy=shots.some(x=>x.busy),b=ov.querySelector('[data-x=ok]');b.disabled=!shots.length||busy;b.textContent=busy?'⏳ استنى القراية…':`✓ تمام (${shots.length})`;
     const l=ov.querySelector('.mclast'),x=shots[shots.length-1];if(read&&x){l.hidden=false;l.innerHTML=`صورة ${shots.length}: ${lab(x)}${!x.busy&&x.res&&!x.res.k&&!x.res.prod?' — قرّب على التاريخ وصوّر تاني أو دوس ↻':''}`}else l.hidden=true;
