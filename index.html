@@ -809,7 +809,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ن الحجم في كل أماكن التصوير';
+const APP_V = '14-10س ترتيب البراند + الحد الأدنى';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -954,7 +954,12 @@ function guessCat(p){const t=[p.name,p.alias,p.grp,p.ing].filter(Boolean).join('
 const catOf=p=>CATM[p.cat]?p.cat:(guessCat(p)||'other');
 const catLabel=k=>CATM[k]?CATM[k].i+' '+CATM[k].n:k;
 const secOf=catOf;
-const bySec=(a,b)=>CATM[catOf(a)].o-CATM[catOf(b)].o;
+const KINDS=[['mask',/hair\s*mask|hot\s*oil|cream\s*bath|حمام\s*كريم|ماسك/i],['shampoo',/shampoo|شامبو/i],['cond',/condition|بلسم|كونديشنر/i],['serum',/serum|سيروم/i],['oil',/\boil\b|زيت|اويل|أويل/i],['leave',/leave[\s-]*in|cream|كريم/i],['lotion',/lotion|لوشن/i],['gel',/\bgel\b|جل/i],['spray',/spray|mist|سبراي/i],['wash',/wash|cleanser|soap|غسول|صابون/i],['tooth',/tooth|معجون/i]];
+const kindOf=p=>{const t=(p.name||'')+' '+(p.alias||'');const i=KINDS.findIndex(([,re])=>re.test(t));return i<0?99:i};
+const brandOf=p=>{if(p.brand)return norm(p.brand);const w=String(p.name||'').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/).filter(Boolean);if(!w.length)return '';return w[0].length>=3?w[0]:w.slice(0,2).join(' ')};
+const sizeVal=p=>{const m=/(\d+(?:[.,]\d+)?)\s*(kg|g|gm|gr|mg|ml|l|ltr|tabs?|caps?|pcs|قرص)\b/i.exec(String(p.size||'')+' '+String(p.name||''));if(!m)return 0;const v=parseFloat(m[1].replace(',','.')),u=m[2].toLowerCase();return u==='kg'||u==='l'||u==='ltr'?v*1000:v};
+const baseName=p=>String(p.name||'').toLowerCase().replace(/\d+(?:[.,]\d+)?\s*(kg|g|gm|gr|mg|ml|l|ltr)\b/gi,'').trim();
+const bySec=(a,b)=>CATM[catOf(a)].o-CATM[catOf(b)].o||brandOf(a).localeCompare(brandOf(b))||kindOf(a)-kindOf(b)||baseName(a).localeCompare(baseName(b))||sizeVal(a)-sizeVal(b);
 const catOpts=(sel,auto)=>`${auto?`<option value="">🤖 أوتوماتيك (${catLabel(auto)})</option>`:''}${CATS.map(([k,i,n])=>`<option value="${k}" ${k===sel?'selected':''}>${i} ${n}</option>`).join('')}`;
 function catPick(p,after){openSheet(`<h4>🏷️ قسم «${esc(p.name)}»</h4><div class="catgrid">${CATS.map(([k,i,n])=>`<button class="btn ${catOf(p)===k?'primary':''}" data-m="c:${k}">${i} ${n}</button>`).join('')}</div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
   m=>{if(!m.startsWith('c:'))return;const k=m.slice(2);closeSheet();p.cat=k;run(ref('items/'+p.id).update({cat:k}),'القسم اتغير: '+catLabel(k));if(after)after()})}
@@ -968,7 +973,7 @@ function shortList(){
   if(S.shortMode==='out')l=l.filter(p=>!good(p));
   if(S.shortMode==='low')l=l.filter(p=>good(p)>0);
   if(S.shortMode==='todo')l=l.filter(p=>!p.ordered);
-  return l.sort((a,b)=>bySec(a,b)||(good(a)?1:0)-(good(b)?1:0)||good(a)-good(b)||byName(a,b));
+  return l.sort((a,b)=>bySec(a,b)||byName(a,b));
 }
 /* تحديد الأصناف اللي هتتبعت + كمية كل صنف (بالعلبة) */
 let SHQ=(()=>{try{return JSON.parse(LS.get('drc.shq')||'{}')}catch(e){return {}}})();
@@ -1288,9 +1293,10 @@ function itemForm(p,preset){
   const t=p?tOf(p):(preset&&preset.type)||(S.type==='all'?'med':S.type);
   const K0=p?spb(p):1;
   const brow=(k,v)=>{const has=v!=null&&v!=='',b=has?Math.floor(+v/K0):'',st=has?(+v%K0):'';return `<div class="brow">${expSel(k,null,p&&p.life)}<input class="bq" type="number" inputmode="numeric" value="${b}" placeholder="${K0>1?'علب':'العدد'}"><input class="bs" type="number" inputmode="numeric" value="${st||''}" placeholder="شريط" ${K0>1?'':'hidden'}><button class="icon" data-m="rm" aria-label="شيل السطر">✕</button></div>`};
-  const bl=p?bats(p):[];let pimg=null;
+  const bl=p?bats(p):[];let pimg=null,aiBrand='';
   const fr=openSheet(`<h4>${p?'تعديل صنف':'صنف جديد'}</h4>${preset&&preset.heard?`<p class="heard">🎙️ «${esc(preset.heard)}»</p>`:''}
     <label for="fName">اسم الصنف</label><input id="fName" value="${esc(p?.name||preset?.name||'')}" placeholder="مثلاً: Panadol Extra 24 tab">
+    ${!p?`<label>📉 الحد الأدنى — ينزل نواقص لما يوصل لكام؟</label><div class="chips minq">${[1,2,3,5,10].map(n=>`<button class="chip" data-m="mq:${n}" aria-pressed="${n===(+(preset&&preset.min)||2)}">${n}</button>`).join('')}</div>`:''}
     <div class="two"><div><label for="fType">النوع</label><select id="fType"><option value="med" ${t==='med'?'selected':''}>💊 دوا</option><option value="cos" ${t==='cos'?'selected':''}>🧴 كوزماتكس</option></select></div>
     <div><label for="fGrp">الشركة / البراند</label><input id="fGrp" list="glist" value="${esc(p?.grp||'')}" placeholder="مثلاً: صن بلوك"><datalist id="glist">${grps.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div></div>
  <label for="fCat">🏷️ القسم (للنواقص)</label><select id="fCat">${catOpts(p&&CATM[p.cat]?p.cat:'',p?guessCat(p)||'other':'other')}</select>
@@ -1299,7 +1305,7 @@ function itemForm(p,preset){
     <label for="fSize">⚖️ الحجم / الوزن / العدد (مثلاً 225g — 100ml — 30 قرص)</label><input id="fSize" dir="ltr" value="${esc(p?.size||preset?.size||'')}" placeholder="بيتقرا لوحده من صورة المنتج">
     <label for="fAl">اسم تاني للبحث (إنجليزي / عربي)</label><input id="fAl" value="${esc(p?.alias||'')}" placeholder="مثلاً: بنادول اكسترا">
     <div class="two"><div><label for="fPr">سعر البيع</label><input id="fPr" type="number" inputmode="decimal" value="${p?.price??''}" placeholder="0"></div>
-    <div><label for="fMin">الحد الأدنى (ينزل نواقص)</label><input id="fMin" type="number" inputmode="numeric" value="${p?minOf(p):2}"></div></div>
+    <div><label for="fMin">الحد الأدنى (ينزل نواقص)</label><input id="fMin" type="number" inputmode="numeric" value="${p?minOf(p):(+(preset&&preset.min)||2)}"></div></div>
     <label>📷 صورة المنتج (بتسهّل التعرف عليه)</label><div class="photo"><img id="fImg" ${p&&p.img?`src="${p.img}"`:'hidden'} alt="صورة المنتج"><div class="pbtns"><button class="btn sm" data-m="pcam">📷 صوّر</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button><button class="btn sm" data-m="pdel" ${p&&p.img?'':'hidden'}>🗑 شيل</button><button class="btn sm aibtn" data-m="ai" ${p&&p.img?'':'hidden'}>🤖 اقرا البيانات من الصورة</button></div></div><p class="hint aist" id="aiSt">${p?'':'📷 صوّر العلبة من قدام والتطبيق هيكتب الاسم والتفاصيل لوحده'}</p>
     <label class="check"><input type="checkbox" id="fCr" ${p?.critical?'checked':''}> صنف مهم — نبّه الكل أول ما يوصل للحد الأدنى</label>
     <label>الكمية حسب تاريخ الإكسباير ${p?'(تعديل الجرد)':''}</label><div id="fB">${bl.length?bl.map(([k,v])=>brow(k,v)).join(''):brow(preset&&preset.k||'',preset&&preset.q||'')}</div>
@@ -1307,6 +1313,7 @@ function itemForm(p,preset){
     <div class="actions">${preset&&preset.after?'<button class="btn" data-m="back">↩ رجوع</button>':'<button class="btn" data-cancel>إلغاء</button>'}<button class="btn primary" data-m="save">${p?(preset&&preset.after?'💾 حفظ ورجوع':'حفظ التعديل'):'إضافة'}</button></div>`,
   (m,r,b)=>{
     if(m==='back'){closeSheet();return preset.after(p)}
+    if(m.startsWith('mq:')){r.querySelector('#fMin').value=m.slice(3);r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
     if(m==='scode')return scanTwice('امسح باركود الصنف',(c,g)=>{const i=r.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(c))l.push(c);i.value=l.join(', ');
       if(g&&g.y){const row=r.querySelector('.brow');if(row&&!row.querySelector('[data-x=m]').value){row.querySelector('[data-x=m]').value=String(g.m);const ys=row.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(g.y)))ys.insertAdjacentHTML('beforeend',`<option>${g.y}</option>`);ys.value=String(g.y);toast('الإكسباير اتقرا من الكود: '+pad(g.m)+'/'+g.y)}}
       const ex=S.items.find(x=>(x.codes||[]).includes(c)&&(!p||x.id!==p.id));if(ex)toast('⚠️ الكود ده متسجل على: '+ex.name)});
@@ -1341,7 +1348,7 @@ function itemForm(p,preset){
     const KK=type==='med'&&int(r.querySelector('#fSpb').value)>1?int(r.querySelector('#fSpb').value):1;
     r.querySelectorAll('.brow').forEach(row=>{const q=int(row.querySelector('.bq').value)*KK+(KK>1?int(row.querySelector('.bs').value):0);if(q<=0)return;const k=readExp(row);if(k==='x'&&type==='med')noDate=true;bm[k]=(bm[k]||0)+q});
     if(noDate){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
-    const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked,size:r.querySelector('#fSize').value.trim()};{const cv=r.querySelector('#fCat').value;if(cv)data.cat=cv;else if(p&&p.cat)data.cat=FV().delete()}if(type==='med'){data.ing=r.querySelector('#fIng').value.trim();data.str=r.querySelector('#fStr').value.trim();data.tabs=int(r.querySelector('#fTabs').value)||0;data.spb=KK}const lf=readLife(r.querySelector('#fB'));if(lf)data.life=lf;data.codes=[...new Set(r.querySelector('#fCode').value.split(/[,،\s]+/).map(normCode).filter(Boolean))];
+    const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked,size:r.querySelector('#fSize').value.trim()};if(aiBrand)data.brand=aiBrand;{const cv=r.querySelector('#fCat').value;if(cv)data.cat=cv;else if(p&&p.cat)data.cat=FV().delete()}if(type==='med'){data.ing=r.querySelector('#fIng').value.trim();data.str=r.querySelector('#fStr').value.trim();data.tabs=int(r.querySelector('#fTabs').value)||0;data.spb=KK}const lf=readLife(r.querySelector('#fB'));if(lf)data.life=lf;data.codes=[...new Set(r.querySelector('#fCode').value.split(/[,،\s]+/).map(normCode).filter(Boolean))];
     closeSheet();const _pr=saveItem(p,data,bm,pimg);if(!p&&pimg&&pimg!=='del'&&getKey()&&can('info'))Promise.resolve(_pr).then(id=>{if(id)setTimeout(()=>aiInfo({id,...data,img:pimg},pimg).then(()=>toast('📋 فوايد وجرعة «'+data.name+'» اتكتبت')).catch(()=>{}),400)});if(preset&&preset.after&&p)Promise.resolve(_pr).then(()=>setTimeout(()=>{const np=S.items.find(x=>x.id===p.id)||{...p,...data,b:bm};preset.after(np)},250));
   });
   const medT=()=>{const isMed=fr.querySelector('#fType').value==='med',K=isMed&&int(fr.querySelector('#fSpb').value)>1;fr.querySelector('#medBox').hidden=!isMed;fr.querySelectorAll('.bs').forEach(x=>x.hidden=!K);fr.querySelectorAll('.bq').forEach(x=>x.placeholder=K?'علب':'العدد')};
@@ -1354,7 +1361,7 @@ function itemForm(p,preset){
     try{const j=await askVision(img,productPrompt(),700);if(!fr.isConnected)return;let n=0;
       const set=(sel,v)=>{const el=fr.querySelector(sel);if(el&&v&&String(v).trim()&&!el.value.trim()){el.value=String(v).trim();el.classList.add('aifill');n++}};
       let nm=j.name?String(j.name).trim():'';if(nm&&j.size&&!norm(nm).includes(norm(String(j.size))))nm+=' '+String(j.size).trim();
-      set('#fName',nm);set('#fAl',j.alias);set('#fGrp',j.group);set('#fSize',j.size);{const cs=fr.querySelector('#fCat'),cv=String(j.cat||'').trim();if(cs&&CATM[cv]&&!cs.value){cs.value=cv;cs.classList.add('aifill')}}
+      set('#fName',nm);set('#fAl',j.alias);set('#fGrp',j.brand||j.group);set('#fSize',j.size);if(j.brand)aiBrand=String(j.brand).trim();{const cs=fr.querySelector('#fCat'),cv=String(j.cat||'').trim();if(cs&&CATM[cv]&&!cs.value){cs.value=cv;cs.classList.add('aifill')}}
       if((j.type==='med'||j.type==='cos')&&!p){const ts=fr.querySelector('#fType');if(ts.value!==j.type){ts.value=j.type;ts.classList.add('aifill')}}
       if(fr.querySelector('#fType').value==='med'){set('#fIng',j.active_ingredients);set('#fStr',j.strength);if(+j.tablets>0)set('#fTabs',String(j.tablets));if(+j.strips>1)set('#fSpb',String(j.strips))}medT();
       if(j.barcode){const c=normCode(j.barcode),i=fr.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(c&&c.length>=8&&!l.includes(c)){l.push(c);i.value=l.join(', ');i.classList.add('aifill');n++}}
@@ -2146,6 +2153,7 @@ function toJpegOld(file,max=1600,q=.85){return new Promise((res,rej)=>{const u=U
 const PRODUCT_PROMPT_BASE=`This is a photo of a pharmacy or cosmetics product package sold in Egypt (tourist resort pharmacy).
 Return ONLY one JSON object, no markdown, no other text:
 {"name":"product name in English as printed: brand + product + variant + size (e.g. \"Signal Sensitive Expert Toothpaste 75ml\")","alias":"short Arabic name an Egyptian pharmacist would say (e.g. \"معجون سيجنال سينسيتف\")","type":"med" for medicines (tablets, capsules, syrups, drops, creams registered as drugs) or "cos" for cosmetics, personal care, baby care, medical supplies,"group":"CATEGORY","size":"net weight / volume / count exactly as printed, e.g. \"100ml\", \"50g\", \"48 pcs\", \"20 tabs\", else null","expiry":"MM/YYYY only if an expiry date (EXP) is clearly printed, else null","production":"MM/YYYY only if a production/manufacturing date (P., MFG, PD) is printed, else null","shelf_life_months":number if a shelf life is printed (e.g. 30 months) else null,"barcode":"EAN digits under the barcode if clearly readable, else null","strength":"medicines only: strength per tablet/dose as printed, e.g. \"500 mg\", \"10 mg/5 ml\", else null","tablets":medicines only: number of tablets/capsules in the box, else null,"strips":medicines only: number of blister strips in the box if printed (e.g. 2x10 tablets = 2), else null,"active_ingredients":"medicines only: generic active ingredient(s) in English INN with strength per unit, e.g. \"Paracetamol 500mg + Caffeine 65mg\" or \"Diclofenac sodium 1%\" — read it from the pack; if not printed but the brand is well known, give its standard composition; else null"}
+Also add "brand": the brand name only (e.g. "Vatika", "Nivea", "Panadol").
 Also add "cat": exactly one of: ${'sun (sunscreen/after-sun/tanning), face, body, hair, women (feminine products), men (shaving/men/condoms), baby, oral, first (first aid/supplies), vit, pain, cold, stom, anti, skin, eye, other'}.
 Never guess dates or barcode digits. Use null when not visible.`;
 function productPrompt(){const ex=[...new Set(S.items.map(x=>x.grp).filter(Boolean))].slice(0,40);
@@ -2620,10 +2628,11 @@ function scanTwice(title,cb,reads){reads=reads||[];
 function unknownCode(code,g,mode){
   openSheet(`<h4>🔳 كود جديد</h4><p class="hint" style="margin-top:0">الكود <b class="ltr">${esc(code)}</b> مش متسجل على أي صنف لسه.</p>
     <label for="ucI">اربطه بصنف موجود</label><input id="ucI" list="uclist" placeholder="اكتب اسم الصنف"><datalist id="uclist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>
+    <label>📉 لو صنف جديد — الحد الأدنى كام؟</label><div class="chips minq">${[1,2,3,5,10].map(n=>`<button class="chip" data-m="mq:${n}" aria-pressed="${n===2}">${n}</button>`).join('')}</div>
     <p class="hint">المرة الجاية لما تمسحه هيفتح الصنف على طول. <b>هتمسحه مرة كمان للتأكيد</b> عشان الكود ما يتسجلش غلط.</p>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="vs">🤖 لاقيه بالصورة</button><button class="btn" data-m="new">🆕 صنف جديد بالكود ده</button><button class="btn primary" data-m="link">🔗 اربط و${mode==='in'?'استلم':'بيع'}</button></div>`,
-  (m,r)=>{if(m==='vs')return visualSearch(p=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},'لاقي الصنف واربط الكود');
-    if(m==='new'){closeSheet();return scanTwice('',c=>{const ex=itemsByCode(c);if(ex.length){toast('الكود ده متسجل على: '+ex[0].name);return mode==='in'?restockSheet(ex[0],{scan:true}):sellSheet(ex[0],{scan:true})}itemForm(null,{codes:[c],codeOk:1,k:g&&g.y?bk(g.y,g.m):'',q:mode==='in'?'':undefined})},[code])}
+  (m,r,b)=>{if(m.startsWith('mq:')){r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}const mq=+((r.querySelector('.minq [aria-pressed=true]')||{}).dataset||{m:'mq:2'}).m.slice(3)||2;if(m==='vs')return visualSearch(p=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},'لاقي الصنف واربط الكود');
+    if(m==='new'){closeSheet();return scanTwice('',c=>{const ex=itemsByCode(c);if(ex.length){toast('الكود ده متسجل على: '+ex[0].name);return mode==='in'?restockSheet(ex[0],{scan:true}):sellSheet(ex[0],{scan:true})}itemForm(null,{codes:[c],codeOk:1,min:mq,k:g&&g.y?bk(g.y,g.m):'',q:mode==='in'?'':undefined})},[code])}
     if(m!=='link')return;const p=findByName(r.querySelector('#ucI').value);if(!p){toast('اختار الصنف من القايمة');return}
     closeSheet();return scanTwice('',code=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},[code])});
 }
