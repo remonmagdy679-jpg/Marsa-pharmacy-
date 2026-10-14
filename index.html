@@ -809,7 +809,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10م الحجم من صورة التاريخ';
+const APP_V = '14-10ن الحجم في كل أماكن التصوير';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1267,6 +1267,7 @@ function restockSheet(p,pre={}){
       return multiCam('صوّر تاريخ كل قطعة — كل صورة = قطعة',async(shots,res0)=>{const st=r.querySelector('#rdSt');
         if(!res0)st.innerHTML=`<span class="spin"></span>بيقرا ${shots.length} صورة…`;const res=res0||await readMany(shots,it.life),L=[],seen={};let bad=0;
         res.forEach(x=>{if(!x.k){bad++;return}if(seen[x.k]){seen[x.k].n++;return}seen[x.k]={k:x.k,life:x.life,n:1};L.push(seen[x.k])});
+        const sz=(res.find(x=>x.size)||{}).size;if(sz&&!it.size){it.size=sz;run(ref('items/'+it.id).update({size:sz}),'⚖️ الحجم اتسجل: '+sz)}
         if(!L.length){st.textContent='مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ';return}
         multiRestock(it,L.sort((a,b)=>bkIdx(a.k)-bkIdx(b.k)),bad)},d=>readDates(d,it.life))}
     if(m==='dph')return datePhoto(r.querySelector('#fE .ex'),null,p&&p.life,r.querySelector('#rdSt'));
@@ -2886,6 +2887,7 @@ function parseDatesText(t){t=toEn(String(t||'')).replace(/[Oo](?=\d)/g,'0').repl
   r=/(?:MFG|MFD|PROD|PD|MF|\bP)\s*[.:]?\s*(\d{1,2})\s*[\/\-.]\s*(\d{2,4})/i.exec(t);if(r)out.prod=ym(r[1],r[2]);
   r=/(?:shelf\s*life[^\d]{0,20}|best\s*before[^\d]{0,20})(\d{1,3})\s*months?/i.exec(t)||/(\d{2,3})\s*months?\s*from/i.exec(t)||/(?:صالح\s*لمد[ةه]|الصلاحي[ةه])\s*(\d{1,3})/.exec(t);if(r)out.life=+r[1];
   r=/\b(\d{13})\b/.exec(t.replace(/\s(?=\d)/g,''));if(r)out.code=r[1];
+  r=/NET\s*(?:WT|WEIGHT|VOL|CONT\w*)?\.?\s*[:.]?\s*(\d{1,4}(?:[.,]\d+)?)\s*(kg|g|gm|gr|ml|l)\b/i.exec(t)||/\b(\d{2,4})\s*(ml|g|gm)\b/i.exec(t);if(r)out.size=r[1]+r[2].toLowerCase().replace(/^g[mr]$/,'g');
   return out}
 function loadTess(){return window.Tesseract?Promise.resolve():loadScript(['https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js','https://unpkg.com/tesseract.js@5/dist/tesseract.min.js'])}
 const dataToBlob=d=>fetch(d).then(r=>r.blob());
@@ -2897,7 +2899,7 @@ async function readDates(d,life,onStep){
     else if(j.production){const pp=bkParse(parseExp(String(j.production))||'');if(pp){res.prod=pp;res.life=+j.shelf_life_months||0}}
     if(!res.code&&j.barcode){const c=normCode(j.barcode);if(c&&c.length>=8)res.code=c}if(j.size)res.size=String(j.size).replace(/^(net\s*(wt|weight|vol)?\.?\s*)/i,'').replace(/\s+(?=(g|kg|mg|ml|l|oz)\b)/i,'').trim()}catch(e){res.aiErr=e}}
   if(!res.k&&!res.prod){onStep&&onStep('🔍 بيقرا التاريخ من الصورة (أول مرة بتاخد شوية)…');try{await loadTess();const {data}=await Tesseract.recognize(d,'eng');const o=parseDatesText(data&&data.text);
-    if(o.exp)res.k=bk(o.exp.y,o.exp.m),res.how='من تاريخ الإكسباير';else if(o.prod){res.prod=o.prod;res.life=o.life||0}if(!res.code&&o.code)res.code=normCode(o.code)}catch(e){res.ocrErr=1}}
+    if(o.exp)res.k=bk(o.exp.y,o.exp.m),res.how='من تاريخ الإكسباير';else if(o.prod){res.prod=o.prod;res.life=o.life||0}if(!res.code&&o.code)res.code=normCode(o.code);if(!res.size&&o.size)res.size=o.size}catch(e){res.ocrErr=1}}
   if(!res.k&&res.prod){const L=res.life||+life||+LS.get('drc.life')||0;if(L){const i=res.prod.y*12+res.prod.m-1+L;res.k=bk(Math.floor(i/12),i%12+1);res.how=`إنتاج ${pad(res.prod.m)}/${res.prod.y} + ${L} شهر`;res.life=L}}
   return res}
 function applyExp(ex,res){if(!ex)return;
@@ -2938,9 +2940,10 @@ function datePhoto(ex,codeInput,life,st){
   pickPhoto(true,async d=>{if(st)st.innerHTML='<span class="spin"></span>بيقرا الكود والتاريخ…';
     const res=await readDates(d,life,m=>{if(st)st.innerHTML='<span class="spin"></span>'+m});
     applyExp(ex,res);
+    const fsz=ex&&ex.closest('.sheet')&&ex.closest('.sheet').querySelector('#fSize');if(res.size&&fsz&&!fsz.value.trim()){fsz.value=res.size;fsz.classList.add('aifill')}
     if(res.code&&codeInput){const l=codeInput.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(res.code)){l.push(res.code);codeInput.value=l.join(', ');codeInput.classList.add('aifill')}}
     const msg=res.k?`✓ الإكسباير ${bkLabel(res.k)} (${res.how})`:res.prod?`✓ تاريخ الإنتاج ${pad(res.prod.m)}/${res.prod.y} — اختار مدة الصلاحية`:'مقدرتش أقرا التاريخ — قرّب الكاميرا على التاريخ واتأكد إنه واضح';
-    if(st)st.innerHTML=msg+(res.code?` — الباركود <span class="ltr">${esc(res.code)}</span>`:'');else toast(msg)},1600,.85);
+    if(st)st.innerHTML=msg+(res.size?` — ⚖️ ${esc(res.size)}`:'')+(res.code?` — الباركود <span class="ltr">${esc(res.code)}</span>`:'');else toast(msg)},1600,.85);
 }
 
 
