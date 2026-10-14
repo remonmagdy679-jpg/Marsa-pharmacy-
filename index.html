@@ -539,6 +539,10 @@ body.hasinv .wrap{padding-bottom:230px}
 .mcshot{width:74px;height:74px;border-radius:50%;border:5px solid #fff;background:#fff;box-shadow:inset 0 0 0 4px #111;cursor:pointer}.mcshot:active{transform:scale(.92)}
 .mrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.mrow>b{flex:1;font-size:18px;direction:ltr;text-align:right}.mrow b.dead,.mrow b.now{color:var(--red)}.mrow b.soon{color:var(--amber)}
 .bq.need{border-color:var(--amber)!important;box-shadow:0 0 0 2px rgba(240,170,40,.3)}
+.spl{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}.spl .pxin input{font-size:18px;font-weight:700}
+.splh{margin:8px 2px 0;font-size:14px;font-weight:600}.splh.ok{color:var(--green)}.splh.rd{color:var(--red)}.splh.lw{color:var(--amber)}.splh b{direction:ltr;unicode-bidi:isolate}
+.rates{margin-top:8px;font-size:13px;color:var(--muted)}.rates summary{cursor:pointer}
+.daycash{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:8px 0}.daycash b{background:var(--green-soft,rgba(14,124,102,.15));color:var(--green);border-radius:8px;padding:3px 9px;direction:ltr}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -800,7 +804,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ط العدّ بالتواريخ';
+const APP_V = '14-10ي دفع بأكتر من عملة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -921,9 +925,11 @@ function vSales(){
   if(raw===null){$app.innerHTML=h+'<p class="hint">جاري تحميل اليوم ده…</p>';return}
   const list=raw.filter(s=>matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))).sort((a,b)=>b.t-a.t);
   if(list.length){
+    {const T={};invGroups(raw).forEach(g=>{const d=g.inv&&S.invs[g.inv];if(d&&d.pay)Object.entries(d.pay).forEach(([c,v])=>T[c]=(T[c]||0)+(+v||0));else if(g.cur){const v=g.inv?invTotalOf(g):lineSum(g.lines);if(v>0)T[g.cur]=(T[g.cur]||0)+v}});
+      const ks=PCUR.filter(c=>T[c]>0);if(ks.length)h+=`<div class="daycash"><span>💰 اتحصّل ${isT?'النهارده':'اليوم ده'}:</span>${ks.map(c=>`<b>${fmtPx(Math.round(T[c]*100)/100,c)}</b>`).join('')}</div>`}
     h+=`<div class="chips"><button class="chip" data-act="smode2" data-k="inv" aria-pressed="${mode==='inv'}">🧾 بالفواتير</button><button class="chip" data-act="smode2" data-k="item" aria-pressed="${mode==='item'}">📦 حسب الصنف</button></div>
       <div class="toolbar"><button class="btn" data-act="rep-sales" data-k="copy">نسخ</button><button class="btn" data-act="rep-sales" data-k="pdf">PDF</button><button class="btn" data-act="rep-sales" data-k="wa">واتساب</button></div>`;
-    if(mode==='inv')h+=invGroups(list).map(g=>`<section class="invc"><header><b>${g.inv?'🧾 فاتورة #'+(g.no||''):'🛒 بيعة'}</b><span>🕒 ${fmtTime(g.t)}</span><span>👤 ${esc(g.by||'—')}</span>${g.cur?`<span class="cu">${g.cur==='VISA'?'💳 فيزا':CUR[g.cur].s+' '+CUR[g.cur].l}</span>`:''}${g.inv?`<button class="icon" data-act="undo-inv" data-inv="${g.inv}" aria-label="إلغاء الفاتورة">⋯</button>`:''}</header>${g.inv&&g.lines.some(s=>s.price>0)?`<button class="itot" data-act="inv-total" data-inv="${g.inv}"><span>الإجمالي${S.invs[g.inv]&&S.invs[g.inv].total!=null&&+S.invs[g.inv].total!==lineSum(g.lines)?' (بعد التعديل)':''}</span><b>${fmtPx(invTotalOf(g),g.cur)}</b><i>✏️</i></button>`:''}${g.guest?`<div class="gst">👤 ${esc(g.guest)}</div>`:''}
+    if(mode==='inv')h+=invGroups(list).map(g=>`<section class="invc"><header><b>${g.inv?'🧾 فاتورة #'+(g.no||''):'🛒 بيعة'}</b><span>🕒 ${fmtTime(g.t)}</span><span>👤 ${esc(g.by||'—')}</span>${g.cur?`<span class="cu">${g.cur==='VISA'?'💳 فيزا':CUR[g.cur].s+' '+CUR[g.cur].l}</span>`:''}${g.inv?`<button class="icon" data-act="undo-inv" data-inv="${g.inv}" aria-label="إلغاء الفاتورة">⋯</button>`:''}</header>${g.inv&&g.lines.some(s=>s.price>0)?`<button class="itot" data-act="inv-total" data-inv="${g.inv}"><span>الإجمالي${S.invs[g.inv]&&S.invs[g.inv].total!=null&&+S.invs[g.inv].total!==lineSum(g.lines)?' (بعد التعديل)':''}</span><b>${fmtPx(invTotalOf(g),g.cur)}</b><i>✏️</i></button>`:''}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].pay?`<div class="gst">💰 اتدفع: <b>${payTxt(S.invs[g.inv].pay)}</b></div>`:''}${g.guest?`<div class="gst">👤 ${esc(g.guest)}</div>`:''}
       ${g.lines.map(s=>`<div class="row slim">${ico(S.items.find(i=>i.id===s.id)||{type:s.type})}<div class="kit"><b>${esc(s.name)}</b><div class="meta">${Object.keys(s.alloc||{}).filter(k=>k!=='x').map(k=>`<span>⏳ ${bkShort(k)}${s.alloc[k]>1?' ×'+s.alloc[k]:''}</span>`).join('')}${s.short?`<span class="rd">${s.short} مكانوش في المخزن</span>`:''}</div></div><div class="ipx"><span class="q">× ${s.qty}${s.unit==="strip"?" شريط":(spb(S.items.find(i=>i.id===s.id))>1?" علبة":"")}</span><b>${fmtPx(s.price,s.cur)}</b><small>${s.price?(s.unit==='strip'?'للشريط':spb(S.items.find(i=>i.id===s.id))>1?'للعلبة':'للقطعة'):''}</small></div><button class="icon" data-act="undo-sale" data-sid="${s.sid}" aria-label="إلغاء الصنف ده">↶</button></div>`).join('')}</section>`).join('');
     else{const agg=aggSales(list);h+=`<div class="rows">${agg.map(a=>`<div class="row">${ico(S.items.find(i=>i.id===a.id)||{type:a.type})}<div class="kit"><b>${esc(a.name)}</b>${Object.keys(a.d).length?`<div class="bts">${dChips(a.d)}</div>`:''}</div><span class="qty">${fmtQs(S.items.find(i=>i.id===a.id),a.qty)}</span><button class="icon" data-act="undo-sale" data-sid="${a.last.sid}" aria-label="تراجع عن آخر تسجيل">↶</button></div>`).join('')}</div>`}
     h+=`<p class="hint">↶ بيلغي الصنف ده بس، و⋯ بيلغي الفاتورة كلها — والكمية بترجع للمخزن.</p>`;
@@ -1110,10 +1116,10 @@ function repSales(){
   if((S.salesMode||'inv')!=='item'){
     const G=invGroups(list).sort((a,b)=>a.t-b.t);
     let t=`*🧾 مبيعات ${SHOP_NAME}*\n${dayName(d)} ${fmtDay(d)} — ${G.filter(g=>g.inv).length} فاتورة\n`;
-    G.forEach(g=>{t+=`\n*${g.inv?'فاتورة #'+(g.no||''):'بيعة'}*${g.inv&&g.lines.some(s=>s.price>0)?' — الإجمالي '+fmtPx(invTotalOf(g),g.cur):''} — 🕒 ${fmtTime(g.t)}${g.cur?' — '+(g.cur==='VISA'?'💳 فيزا':CUR[g.cur].l):''}${g.guest?' — '+g.guest:''}${g.by?' ('+g.by+')':''}\n`;
+    G.forEach(g=>{t+=`\n*${g.inv?'فاتورة #'+(g.no||''):'بيعة'}*${g.inv&&g.lines.some(s=>s.price>0)?' — الإجمالي '+fmtPx(invTotalOf(g),g.cur):''} — 🕒 ${fmtTime(g.t)}${g.cur?' — '+(g.cur==='VISA'?'💳 فيزا':CUR[g.cur].l):''}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].pay?' — اتدفع '+payTxt(S.invs[g.inv].pay):''}${g.guest?' — '+g.guest:''}${g.by?' ('+g.by+')':''}\n`;
       g.lines.forEach(s=>{const x=dText(s.alloc||{});t+=`• ${s.name} × ${s.qty} — ${fmtPx(s.price,s.cur)}${s.price?' للقطعة':''}${x?` (${x})`:''}\n`})});
     return {title:'المبيعات',sub:`${G.filter(g=>g.inv).length} فاتورة`,text:t.trim(),
-      sections:G.map(g=>({title:`${g.inv?'فاتورة #'+(g.no||''):'بيعة'}${g.inv&&g.lines.some(s=>s.price>0)?' — الإجمالي '+fmtPx(invTotalOf(g),g.cur):''} — ${fmtTime(g.t)}${g.cur?' — '+(g.cur==='VISA'?'فيزا':CUR[g.cur].l):''}${g.guest?' — '+g.guest:''}${g.by?' — '+g.by:''}`,
+      sections:G.map(g=>({title:`${g.inv?'فاتورة #'+(g.no||''):'بيعة'}${g.inv&&g.lines.some(s=>s.price>0)?' — الإجمالي '+fmtPx(invTotalOf(g),g.cur):''} — ${fmtTime(g.t)}${g.cur?' — '+(g.cur==='VISA'?'فيزا':CUR[g.cur].l):''}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].pay?' — اتدفع '+payTxt(S.invs[g.inv].pay):''}${g.guest?' — '+g.guest:''}${g.by?' — '+g.by:''}`,
         head:[{t:'#',w:'22px'},'الصنف',{t:'العدد',w:'50px'},{t:'سعر القطعة',w:'90px'},'التواريخ'],
         rows:g.lines.map((s,i)=>[{h:i+1,c:'n'},{h:esc(s.name),c:'nm'},{h:s.qty,c:'q'},{h:esc(fmtPx(s.price,s.cur)),c:'c'},{h:Object.keys(s.alloc||{}).filter(k=>k!=='x').map(k=>`<span class="ex">${bkShort(k)} ×${s.alloc[k]}</span>`).join('')||'—'}])}))};
   }
@@ -2625,6 +2631,12 @@ function setCur(c){CART.cur=c;LS.set('drc.cur',c);saveCart()}
 function cartAdd(p,q,start,px,quiet,unit){unit=unit||'box';const ex=CART.lines.find(l=>l.id===p.id&&l.start===start&&+l.price===+px&&(l.unit||'box')===unit);if(ex)ex.qty+=q;else CART.lines.push({id:p.id,qty:q,start:start||'',price:px,unit});saveCart();if(!quiet)toast(`🧾 ${p.name} × ${q} اتضاف للفاتورة (${CART.lines.length} صنف)`)}
 function renderInvBar(){const el=$('invbar');if(!el)return;const n=CART.lines.length,show=n&&S.ready&&$login.hidden;el.hidden=!show;document.body.classList.toggle('hasinv',!!show);
   if(show)el.innerHTML=`<span>🧾 فاتورة مفتوحة${CART.guest?' — '+esc(CART.guest):''}</span><b>${n} صنف · ${CUR[CART.cur].l}</b><i>عرض وإنهاء ‹</i>`}
+/* الدفع بأكتر من عملة (مثلاً 8€ + 2$) — أسعار الصرف بتتحفظ للفريق كله */
+const PCUR=['EUR','USD','VISA','EGP'];
+const rates=()=>({usd:+((S.cfg||{}).rates||{}).usd||1.17,egp:+((S.cfg||{}).rates||{}).egp||55});
+const toE=(v,c)=>{const R_=rates();return c==='USD'?v/R_.usd:c==='EGP'?v/R_.egp:v};
+const fromE=(v,c)=>{const R_=rates();return c==='USD'?v*R_.usd:c==='EGP'?v*R_.egp:v};
+const payTxt=p=>PCUR.filter(c=>+p[c]>0).map(c=>fmtPx(+p[c],c)).join(' + ');
 function invSheet(o){o=o&&o.focus?o:{};
   const lines=CART.lines.map((l,i)=>({...l,i,p:S.items.find(x=>x.id===l.id)})).filter(l=>l.p);
   const sumNow=()=>lineSum(CART.lines),allPx=()=>CART.lines.length&&CART.lines.every(l=>+l.price>0);
@@ -2632,7 +2644,11 @@ function invSheet(o){o=o&&o.focus?o:{};
     <div class="sellacts top"><button class="btn big" data-m="scan">🔳 امسح صنف تاني</button><button class="btn big" data-m="addp">🔍 ضيف بالاسم</button></div>
     <div class="rows">${lines.length?lines.map(l=>`<div class="row slim iln" data-i="${l.i}">${ico(l.p)}<div class="kit"><b>${esc(l.p.name)}</b><div class="meta">${l.start&&l.start!=='x'?`<span>⏳ ${bkLabel(l.start)}</span>`:''}<span>عندك ${fmtQs(l.p,good(l.p))}</span>${spb(l.p)>1?`<span>${l.unit==='strip'?'💊 بالشريط':'📦 بالعلبة'}</span>`:''}</div></div>
       <div class="ilc"><div class="stepper sm"><button class="icon" data-m="q-:${l.i}">−</button><input type="number" inputmode="numeric" data-q="${l.i}" value="${l.qty}"><button class="icon" data-m="q+:${l.i}">+</button></div><div class="pxin"><span>${CUR[CART.cur].s}</span><input type="number" inputmode="decimal" step="0.01" data-px="${l.i}" value="${+l.price>0?l.price:''}" placeholder="سعر؟"></div><button class="icon" data-m="rm:${l.i}" aria-label="شيل">✕</button></div></div>`).join(''):'<div class="empty">الفاتورة فاضية — امسح أول صنف</div>'}</div>
-    ${lines.length?`<div class="gtot"><label for="cT">💰 إجمالي الفاتورة (بعد الخصم)</label><div class="seg cursel" id="iCur">${curBtns(CART.cur)}</div><div class="pxin big"><span id="cTs">${CUR[CART.cur].s}</span><input id="cT" type="number" inputmode="decimal" step="0.01" value="${CART.total!=null&&CART.total!==''?CART.total:allPx()?num(sumNow()).replace(/,/g,''):''}" placeholder="اكتب الإجمالي"></div><p class="hint" id="cTh" style="margin:6px 2px 0"></p></div>`:''}
+    ${lines.length?`<div class="gtot"><label for="cT">💰 إجمالي الفاتورة (بعد الخصم)</label><div class="seg cursel" id="iCur">${curBtns(CART.cur)}</div><div class="pxin big"><span id="cTs">${CUR[CART.cur].s}</span><input id="cT" type="number" inputmode="decimal" step="0.01" value="${CART.total!=null&&CART.total!==''?CART.total:allPx()?num(sumNow()).replace(/,/g,''):''}" placeholder="اكتب الإجمالي"></div><p class="hint" id="cTh" style="margin:6px 2px 0"></p>
+      <button class="linkb" data-m="split" style="margin-top:6px">${CART.split?'✕ دفع بعملة واحدة':'💶💵 دفع بأكتر من عملة (مثلاً يورو + دولار)'}</button>
+      ${CART.split?`<div class="spl">${PCUR.map(c=>`<div class="pxin"><span>${CUR[c].s}</span><input type="number" inputmode="decimal" step="0.01" data-pc="${c}" value="${CART.pay&&+CART.pay[c]>0?CART.pay[c]:''}" placeholder="${CUR[c].l}"></div>`).join('')}</div>
+      <p class="splh" id="splH"></p>
+      <details class="rates"><summary>سعر الصرف: 1€ = ${num(rates().usd)}$ = ${num(rates().egp)} ج.م ✏️</summary><div class="two"><div><label>1€ = كام دولار</label><input type="number" inputmode="decimal" step="0.01" id="rUsd" value="${rates().usd}"></div><div><label>1€ = كام جنيه</label><input type="number" inputmode="decimal" step="0.01" id="rEgp" value="${rates().egp}"></div></div></details>`:''}</div>`:''}
     <button class="linkb" data-m="gshow" ${CART.guest?'hidden':''}>＋ اسم الجيست أو رقم الأوضة (اختياري)</button><div id="gBox" ${CART.guest?'':'hidden'}><label for="gN">اسم الجيست أو رقم الأوضة</label><input id="gN" value="${esc(CART.guest||'')}" placeholder="مثلاً: Room 214 — Anna"></div>
     <button class="btn primary sellbig" data-m="done" ${lines.length?'':'disabled'}>✓ تم — سجّل الفاتورة</button>
     <div class="actions minor"><button class="btn" data-m="clr" ${lines.length?'':'disabled'}>🗑 إلغاء الفاتورة</button><button class="btn" data-cancel>رجوع</button></div>`,
@@ -2643,14 +2659,20 @@ function invSheet(o){o=o&&o.focus?o:{};
     if(k==='q+'||k==='q-'){const l=CART.lines[+i];l.qty=Math.max(1,l.qty+(k==='q+'?1:-1));if(!CART.totEd)CART.total=null;saveCart();return invSheet()}
     if(k==='rm'){CART.lines.splice(+i,1);if(!CART.totEd)CART.total=null;saveCart();return invSheet()}
     if(m==='addp')return pickItemSheet();
+    if(m==='split'){CART.split=!CART.split;if(CART.split&&!CART.pay){const t=CART.total!=null&&CART.total!==''?+CART.total:(allPx()?sumNow():0);CART.pay=t>0?{[CART.cur]:t}:{}}if(!CART.split)CART.pay=null;saveCart();return invSheet()}
     if(m==='scan'){closeSheet();LS.set('drc.scmode','sell');return openScanner({title:'امسح الصنف للفاتورة',onCode:(c,g)=>{const l=itemsByCode(c);if(l.length===1)sellSheet(l[0],{start:g&&g.y?bk(g.y,g.m):null,back:'inv',scan:true});else handleSellCode(c,g)},onItem:p=>sellSheet(p,{back:'inv'})})}
     if(m==='clr')return openSheet('<h4>تلغي الفاتورة المفتوحة؟</h4><p class="hint" style="margin-top:0">مفيش حاجة اتخصمت من المخزون لسه.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">ألغيها</button></div>',()=>{CART.lines=[];CART.guest='';CART.total=null;CART.totEd=false;saveCart();closeSheet();toast('الفاتورة اتلغت')});
     if(m==='done'){const t=CART.total!=null&&CART.total!==''?+CART.total:(allPx()?sumNow():0);if(!(t>0)){toast('اكتب إجمالي الفاتورة');const ct=root.querySelector('#cT');if(ct)ct.focus();return}finishInvoice()}});
   function sync(){const g=r.querySelector('#gN');if(g)CART.guest=g.value.trim();r.querySelectorAll('[data-q]').forEach(x=>{const l=CART.lines[+x.dataset.q];if(l)l.qty=Math.max(1,int(x.value))});r.querySelectorAll('[data-px]').forEach(x=>{const l=CART.lines[+x.dataset.px];if(l)l.price=flt(x.value)>0?flt(x.value):''});
-    const ct=r.querySelector('#cT');if(ct){if(!CART.totEd&&allPx()&&document.activeElement!==ct)ct.value=num(sumNow()).replace(/,/g,'');CART.total=ct.value===''?null:flt(ct.value)}saveCart();hint()}
+    const ct=r.querySelector('#cT');if(ct){if(!CART.totEd&&allPx()&&document.activeElement!==ct)ct.value=num(sumNow()).replace(/,/g,'');CART.total=ct.value===''?null:flt(ct.value)}
+    if(CART.split){CART.pay={};r.querySelectorAll('[data-pc]').forEach(x=>{const v=flt(x.value);if(v>0)CART.pay[x.dataset.pc]=v})}saveCart();hint();splHint()}
+  function splHint(){const h=r.querySelector('#splH');if(!h)return;const t=CART.total!=null&&CART.total!==''?+CART.total:(allPx()?sumNow():0),P=CART.pay||{};
+    const paidE=PCUR.reduce((a,c)=>a+toE(+P[c]||0,c),0),remE=toE(t,CART.cur)-paidE,show=v=>['EUR','USD','EGP'].map(c=>fmtPx(Math.round(fromE(v,c)*100)/100,c)).join(' = ');
+    h.className='splh '+(Math.abs(remE)<.05?'ok':remE>0?'rd':'lw');
+    h.innerHTML=!paidE?'اكتب اللي دفعه بكل عملة':Math.abs(remE)<.05?`✓ دفع الحساب كله (${payTxt(P)})`:remE>0?`⏳ لسه باقي: <b>${show(remE)}</b>`:`↩️ يرجعله: <b>${show(-remE)}</b>`}
   function hint(){const h=r.querySelector('#cTh');if(!h)return;const priced=CART.lines.filter(l=>+l.price>0),un=CART.lines.length-priced.length,sm=lineSum(priced),t=CART.total;
     h.innerHTML=priced.length?`مجموع الأسعار: <b>${fmtPx(sm,CART.cur)}</b>${un?` + ${un} صنف من غير سعر`:''}${t>0&&!un&&Math.abs(t-sm)>.009?` — <b class="${t<sm?'ok':'rd'}">${t<sm?'خصم':'زيادة'} ${fmtPx(Math.abs(sm-t),CART.cur)}</b>`:''}`:'مش لازم تكتب سعر كل صنف — اكتب الإجمالي بس'}
-  r.addEventListener('input',e=>{if(e.target.id==='cT')CART.totEd=e.target.value!=='';sync()});r.addEventListener('change',sync);hint();
+  r.addEventListener('input',e=>{if(e.target.id==='cT')CART.totEd=e.target.value!=='';sync()});r.addEventListener('change',e=>{if(e.target.id==='rUsd'||e.target.id==='rEgp'){const u=flt(r.querySelector('#rUsd').value),g=flt(r.querySelector('#rEgp').value);if(u>0&&g>0){S.cfg={...(S.cfg||{}),rates:{usd:u,egp:g}};run(ref('settings/app').set({rates:{usd:u,egp:g}},{merge:true}),'سعر الصرف اتحفظ ✓')}splHint();return}sync()});hint();splHint();
   const ct=r.querySelector('#cT');if(ct&&o.focus&&!ct.value)setTimeout(()=>{try{ct.focus()}catch(e){}},250);
 }
 function pickItemSheet(){
@@ -2667,9 +2689,10 @@ function finishInvoice(){
   if(un.length){const rest=Math.max(0,(given||0)-lineSum(priced)),nq=un.reduce((a,l)=>a+(+l.qty||1),0);un.forEach(l=>{l.price=Math.round(rest/nq*100)/100;l.pxa=1})}
   L.forEach(l=>{const p=S.items.find(x=>x.id===l.id);if(p&&doSell(p,l.qty*(l.unit==='strip'?1:spb(p)),l.start||null,true,{inv,invNo:no,cur:CART.cur,price:+l.price,guest:CART.guest||'',qty:l.qty,unit:l.unit||'box',...(l.pxa?{pxa:1}:{})}))al++});
   const auto=lineSum(L),tot=given!=null?given:auto;
-  run(ref('invoices/'+inv).set({t:Date.now(),day:today(),no,cur:CART.cur,auto,total:tot,guest:CART.guest||'',by:me(),...(tot!==auto?{edited:{by:me(),t:Date.now()}}:{})}));
-  CART.lines=[];CART.guest='';CART.total=null;CART.totEd=false;saveCart();closeSheet();S.day=today();
-  toast(`✓ فاتورة #${no} اتسجلت (${L.length} صنف) — الإجمالي ${fmtPx(tot,CART.cur)}${al?' — واتبعت تنبيه للكل':''}`);go('sales');
+  const pay=CART.split&&CART.pay&&Object.keys(CART.pay).filter(c=>+CART.pay[c]>0).length?Object.fromEntries(Object.entries(CART.pay).filter(([,v])=>+v>0)):null;
+  run(ref('invoices/'+inv).set({t:Date.now(),day:today(),no,cur:CART.cur,auto,total:tot,guest:CART.guest||'',by:me(),...(pay?{pay}:{}),...(tot!==auto?{edited:{by:me(),t:Date.now()}}:{})}));
+  CART.lines=[];CART.guest='';CART.total=null;CART.totEd=false;CART.split=false;CART.pay=null;saveCart();closeSheet();S.day=today();
+  toast(`✓ فاتورة #${no} اتسجلت (${L.length} صنف) — الإجمالي ${fmtPx(tot,CART.cur)}${pay?' — اتدفع '+payTxt(pay):''}${al?' — واتبعت تنبيه للكل':''}`);go('sales');
 }
 $('invbar').addEventListener('click',()=>invSheet());
 /* فحص التحديثات: بيقارن نسخة التطبيق اللي على الموقع باللي مفتوحة، ولو فيه جديد يظهر شريط تدوس عليه */
