@@ -512,6 +512,9 @@ body.hasinv .wrap{padding-bottom:230px}
 .ctot .pxin input{width:100%}
 .pxin.big input{font-size:22px;font-weight:800;width:100%}
 
+.sellh{font-size:17px;line-height:1.3}.sellh>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.sellh .zimgbtn img{width:52px;height:52px}
+.sellacts:first-of-type{margin-top:4px}
+.stock.line{margin:10px 0 6px}.stock.line div{padding:5px 9px;border-radius:10px}.stock.line small{font-size:11px}.stock.line b{font-size:17px}.stock.line .sx b{font-size:15px}.stock.line .sx em,.stock.line .sx .more{font-size:11px}
 .stock.sm{margin:0 0 8px}.stock.sm div{padding:6px 10px}.stock.sm b{font-size:20px}.stock.sm .sx b{font-size:16px}
 .sellacts{display:flex;gap:8px;margin-top:12px}.sellacts .btn.big{flex:1;padding:14px 8px;font-size:16px;font-weight:800;border-radius:14px}.sellacts.top{margin:0 0 10px}
 .gtot{margin-top:12px;background:var(--bg);border:2px solid var(--green);border-radius:16px;padding:10px 12px}.gtot>label{font-size:15px;font-weight:800;color:var(--ink,inherit);margin:0 0 6px}
@@ -797,7 +800,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ز إنتاج + مدة صلاحية';
+const APP_V = '14-10ح زراير البيع فوق';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1191,19 +1194,18 @@ function itemSheet(p){
 function sellSheet(p,o={}){
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const K=spb(p),tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty*(l.unit==='strip'?1:K),0);let unit='box';const mul=()=>unit==='strip'?1:K;
-  const r=openSheet(`<h4 class="withimg">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">${esc(p.name)}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
-    <div class="stock sm"><div><small>عندك</small><b>${fmtQs(p,tot)}</b>${dq?`<em>+${fmtQs(p,dq)} منتهي</em>`:''}</div><div><small>بعد البيع</small><b id="fLeft">${fmtQs(p,Math.max(0,tot-K))}</b></div><div class="sx" data-m="bx" role="button" tabindex="0" aria-label="كل التواريخ"><small>⏳ الإكسباير</small><b id="fExp"></b><em id="fExpN"></em><span class="more" id="fMore"></span></div></div>
-    <div class="bxl" id="bxl" hidden><p>📅 كل التواريخ اللي عندك — دوس على تاريخ تبيع منه</p>${bl.map(([k,v])=>{const c=expCls(k);return `<button class="bxr" data-m="pk:${k}"><span class="d ${c}">${k==='x'?'بدون تاريخ':bkLabel(k)}</span><span class="n">${v} قطعة</span><span class="st ${c}">${EXPW[c]||''}</span><span class="ck">✓</span></button>`}).join('')}${dq?`<p class="rd" style="margin-top:6px">فيهم ${dq} منتهي — مش بيتحسبوا في الإجمالي</p>`:''}</div>
+  const r=openSheet(`<h4 class="withimg sellh">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">${esc(p.name)}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
+    <div class="sellacts"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
+    ${CART.lines.length||inCart?`<p class="hint" style="margin:6px 2px 0;text-align:center">🧾 في الفاتورة دلوقتي ${CART.lines.length} صنف${inCart?` — منه ${inCart} من الصنف ده`:''}</p>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
     ${K>1?`<div class="seg unitsel" id="fUnit"><button data-m="u:box" aria-pressed="true">📦 علبة (${K} شريط)</button><button data-m="u:strip" aria-pressed="false">💊 شريط</button></div>`:''}
     <div class="two"><div><label for="fN">العدد</label><div class="stepper"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fN" type="number" inputmode="numeric" value="1" min="1"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div></div>
     <div><label for="fPx" id="fPxL">${K>1?'سعر العلبة':'سعر القطعة'} <small>(اختياري)</small></label><div class="pxin"><span>${CUR[CART.cur].s}</span><input id="fPx" type="number" inputmode="decimal" step="0.01" placeholder="—"></div></div></div>
     <p class="hint" id="fLast" style="margin:4px 2px 0"></p>
-    ${o.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}
-    ${can('info')?`<details class="pidet"><summary>📋 ${p.info?'الفوايد والجرعة':'فوايد وجرعة'} · 🌍 سعره في أوروبا</summary>${infoHtml(p)}</details>`:''}
-    <div class="sellacts"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
-    ${CART.lines.length||inCart?`<p class="hint" style="margin:6px 2px 0;text-align:center">🧾 في الفاتورة دلوقتي ${CART.lines.length} صنف${inCart?` — منه ${inCart} من الصنف ده`:''}</p>`:''}
-    <div class="actions minor"><button class="btn" data-cancel>إلغاء</button>${can('coach')?'<button class="btn" data-m="nobuy">😕 ماشتراش</button>':''}<button class="btn" data-m="ok">🔍 ضيف وكمّل بالاسم</button></div>`,
+    <div class="stock sm line"><div><small>عندك</small><b>${fmtQs(p,tot)}</b>${dq?`<em>+${fmtQs(p,dq)} منتهي</em>`:''}</div><div><small>بعد البيع</small><b id="fLeft">${fmtQs(p,Math.max(0,tot-K))}</b></div><div class="sx" data-m="bx" role="button" tabindex="0" aria-label="كل التواريخ"><small>⏳ الإكسباير</small><b id="fExp"></b><em id="fExpN"></em><span class="more" id="fMore"></span></div></div>
+    <div class="bxl" id="bxl" hidden><p>📅 كل التواريخ اللي عندك — دوس على تاريخ تبيع منه</p>${bl.map(([k,v])=>{const c=expCls(k);return `<button class="bxr" data-m="pk:${k}"><span class="d ${c}">${k==='x'?'بدون تاريخ':bkLabel(k)}</span><span class="n">${v} قطعة</span><span class="st ${c}">${EXPW[c]||''}</span><span class="ck">✓</span></button>`}).join('')}${dq?`<p class="rd" style="margin-top:6px">فيهم ${dq} منتهي — مش بيتحسبوا في الإجمالي</p>`:''}</div>
+    <div class="actions minor"><button class="btn" data-cancel>إلغاء</button>${can('coach')?'<button class="btn" data-m="nobuy">😕 ماشتراش</button>':''}<button class="btn" data-m="ok">🔍 ضيف وكمّل بالاسم</button></div>
+    ${can('info')?`<details class="pidet"><summary>📋 ${p.info?'الفوايد والجرعة':'فوايد وجرعة'} · 🌍 سعره في أوروبا</summary>${infoHtml(p)}</details>`:''}`,
   (m,root,b)=>{const n=root.querySelector('#fN');
     if(m==='edit')return itemForm(p,{after:np=>sellSheet(np,o)});
     if(m==='pitch')return pitchSheet(p);
