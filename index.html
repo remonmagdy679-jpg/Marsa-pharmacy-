@@ -809,7 +809,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ل الآجل';
+const APP_V = '14-10م الحجم من صورة التاريخ';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1325,8 +1325,9 @@ function itemForm(p,preset){
         if(!row){r.querySelector('#fB').insertAdjacentHTML('beforeend',brow('',''));row=[...r.querySelectorAll('.brow')].pop()}
         applyExp(row.querySelector('.ex'),x);const q=row.querySelector('.bq');q.value=1;q.classList.add('aifill');seen[key]=row;ok++});
       if(code){const i=r.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(code)){l.push(code);i.value=l.join(', ');i.classList.add('aifill')}}
+      const sz=(res.find(x=>x.size)||{}).size;if(sz){const fs_=r.querySelector('#fSize');if(fs_&&!fs_.value.trim()){fs_.value=sz;fs_.classList.add('aifill')}const fn=r.querySelector('#fName');if(fn&&fn.value.trim()&&!fn.value.toLowerCase().replace(/\s/g,'').includes(sz.toLowerCase().replace(/\s/g,''))){fn.value=fn.value.trim()+' '+sz;fn.classList.add('aifill')}}
       medT();const tot=Object.values(seen).reduce((a,w)=>a+int(w.querySelector('.bq').value),0);
-      st.innerHTML=(ok?`✓ عدّيت ${tot} قطعة في ${ok} تاريخ (كل صورة = قطعة) — راجع الأعداد`:'مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ')+(bad?` — <b class="rd">${bad} صورة ما اتقرتش ومش محسوبة</b>`:'')},d=>readDates(d,p&&p.life))}
+      st.innerHTML=(sz?`⚖️ الحجم: <b>${esc(sz)}</b> — `:'')+(ok?`✓ عدّيت ${tot} قطعة في ${ok} تاريخ (كل صورة = قطعة) — راجع الأعداد`:'مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ')+(bad?` — <b class="rd">${bad} صورة ما اتقرتش ومش محسوبة</b>`:'')},d=>readDates(d,p&&p.life))}
     if(m==='dphoto'){const rows=[...r.querySelectorAll('.brow')],row=rows.find(x=>!x.querySelector('[data-x=m]').value)||rows[rows.length-1];return datePhoto(row&&row.querySelector('.ex'),r.querySelector('#fCode'),p&&p.life,r.querySelector('#dSt'))}
     if(m==='setkey'){const keep=pimg&&pimg!=='del'?pimg:'';return keySheet(()=>itemForm(p,{...(preset||{}),img:keep||(preset&&preset.img),auto:true}))}
     if(m==='pdel'){pimg='del';r.querySelector('#fImg').hidden=true;b.hidden=true;r.querySelector('[data-m=ai]').hidden=true;return}
@@ -2877,7 +2878,7 @@ function invTotalSheet(inv){
 /* ---------- صورة تاريخ الصلاحية/الإنتاج → الإكسباير لوحده ---------- */
 const DATE_PROMPT=`This is a close-up photo of the back or bottom of a pharmacy / cosmetics package showing printed codes and dates.
 Return ONLY one JSON object, no markdown:
-{"expiry":"MM/YYYY of the EXPIRY / EXP / Use before date ONLY if an expiry date is actually printed, else null","production":"MM/YYYY of the production / manufacturing date (MFG, MFD, PD, PROD, Prod., or a code like P.07/26 or P 07/26 inside a batch code such as BXY0208-P.03/26 meaning produced 03/2026), or null","shelf_life_months":number if a shelf life is printed anywhere on the pack — English or Arabic, e.g. "Shelf life is 30 months from production date", "Best before 36 months from manufacturing", "الصلاحية ٣٠ شهر من تاريخ الإنتاج", "صالح لمدة ٣ سنوات" (= 36) — else null. IGNORE the open-jar symbol (12M / 24M = period after opening), it is NOT the shelf life.,"batch":"batch / lot number or null","barcode":"digits printed under the barcode, or null"}
+{"expiry":"MM/YYYY of the EXPIRY / EXP / Use before date ONLY if an expiry date is actually printed, else null","production":"MM/YYYY of the production / manufacturing date (MFG, MFD, PD, PROD, Prod., or a code like P.07/26 or P 07/26 inside a batch code such as BXY0208-P.03/26 meaning produced 03/2026), or null","shelf_life_months":number if a shelf life is printed anywhere on the pack — English or Arabic, e.g. "Shelf life is 30 months from production date", "Best before 36 months from manufacturing", "الصلاحية ٣٠ شهر من تاريخ الإنتاج", "صالح لمدة ٣ سنوات" (= 36) — else null. IGNORE the open-jar symbol (12M / 24M = period after opening), it is NOT the shelf life.,"batch":"batch / lot number or null","barcode":"digits printed under the barcode, or null","size":"net weight / volume / count of the pack exactly as printed (e.g. \"225g\", \"100ml\", \"NET WT. 450 g\" → \"450g\", \"30 tablets\"), or null"}
 Read Arabic-Indic digits too (٣٠ = 30). Dates printed as MM/YY mean month/20YY. Never guess: use null if not clearly printed.`;
 function parseDatesText(t){t=toEn(String(t||'')).replace(/[Oo](?=\d)/g,'0').replace(/(\d)[Oo]/g,(m,x)=>x+'0');const out={};
   const ym=(m,y)=>{m=+m;y=+y;if(y<100)y+=2000;return m>=1&&m<=12&&y>=2015&&y<=2045?{m,y}:null};
@@ -2894,7 +2895,7 @@ async function readDates(d,life,onStep){
   if(!res.k&&getKey()){onStep&&onStep('🤖 بيقرا التاريخ…');try{const j=await askVision(d,DATE_PROMPT,400);
     const e=j.expiry&&parseExp(String(j.expiry));if(e&&e!=='x'){res.k=e;res.how='من تاريخ الإكسباير'}
     else if(j.production){const pp=bkParse(parseExp(String(j.production))||'');if(pp){res.prod=pp;res.life=+j.shelf_life_months||0}}
-    if(!res.code&&j.barcode){const c=normCode(j.barcode);if(c&&c.length>=8)res.code=c}}catch(e){res.aiErr=e}}
+    if(!res.code&&j.barcode){const c=normCode(j.barcode);if(c&&c.length>=8)res.code=c}if(j.size)res.size=String(j.size).replace(/^(net\s*(wt|weight|vol)?\.?\s*)/i,'').replace(/\s+(?=(g|kg|mg|ml|l|oz)\b)/i,'').trim()}catch(e){res.aiErr=e}}
   if(!res.k&&!res.prod){onStep&&onStep('🔍 بيقرا التاريخ من الصورة (أول مرة بتاخد شوية)…');try{await loadTess();const {data}=await Tesseract.recognize(d,'eng');const o=parseDatesText(data&&data.text);
     if(o.exp)res.k=bk(o.exp.y,o.exp.m),res.how='من تاريخ الإكسباير';else if(o.prod){res.prod=o.prod;res.life=o.life||0}if(!res.code&&o.code)res.code=normCode(o.code)}catch(e){res.ocrErr=1}}
   if(!res.k&&res.prod){const L=res.life||+life||+LS.get('drc.life')||0;if(L){const i=res.prod.y*12+res.prod.m-1+L;res.k=bk(Math.floor(i/12),i%12+1);res.how=`إنتاج ${pad(res.prod.m)}/${res.prod.y} + ${L} شهر`;res.life=L}}
@@ -2910,7 +2911,7 @@ function multiCam(title,cb,read){
   const lab=x=>x.busy?'<b class="wt"><span class="spin"></span>بيقرا…</b>':!x.res?'':x.res.k?`<b class="ok">${x.res.k==='x'?'—':bkLabel(x.res.k)}</b>${x.res.prod?`<small class="mch">إنتاج ${pad(x.res.prod.m)}/${String(x.res.prod.y).slice(2)} + ${x.res.life} شهر</small>`:''}`:x.res.prod?`<b class="lw">إنتاج ${pad(x.res.prod.m)}/${x.res.prod.y}</b>`:'<b class="rd">⚠️ مش واضح</b>';
   const upd=()=>{ov.querySelector('.mcs').innerHTML=shots.map((x,i)=>`<span class="mci"><img src="${x.d}" alt=""><button class="rm" data-x="rm:${i}" aria-label="شيل">✕</button><i>${i+1}</i>${read?`${lab(x)}${x.busy?'':`<button class="rr" data-x="rr:${i}">↻ اقرا تاني</button>`}`:''}</span>`).join('');
     const busy=shots.some(x=>x.busy),b=ov.querySelector('[data-x=ok]');b.disabled=!shots.length||busy;b.textContent=busy?'⏳ استنى القراية…':`✓ تمام (${shots.length})`;
-    const l=ov.querySelector('.mclast'),x=shots[shots.length-1];if(read&&x){l.hidden=false;l.innerHTML=`صورة ${shots.length}: ${lab(x)}${!x.busy&&x.res&&!x.res.k&&!x.res.prod?' — قرّب على التاريخ وصوّر تاني أو دوس ↻':''}`}else l.hidden=true;
+    const l=ov.querySelector('.mclast'),x=shots[shots.length-1];if(read&&x){l.hidden=false;l.innerHTML=`صورة ${shots.length}: ${lab(x)}${x.res&&x.res.size?`<small class="mch">⚖️ ${esc(x.res.size)}</small>`:''}${!x.busy&&x.res&&!x.res.k&&!x.res.prod?' — قرّب على التاريخ وصوّر تاني أو دوس ↻':''}`}else l.hidden=true;
     if(read){const T={};let un=0;shots.forEach(x=>{if(x.busy)return;const k=x.res&&x.res.k;if(k)T[k]=(T[k]||0)+1;else un++});const busyN=shots.filter(x=>x.busy).length;
       ov.querySelector('.mctal').innerHTML=shots.length?`<span>العدد:</span>${Object.keys(T).sort((a,b)=>bkIdx(a)-bkIdx(b)).map(k=>`<b>${bkLabel(k)} <i>×${T[k]}</i></b>`).join('')}${busyN?`<em>⏳ ${busyN}</em>`:''}${un?`<em class="rd">⚠️ ${un} مش متقري</em>`:''}`:'<span>كل صورة = قطعة واحدة — صوّر تاريخ كل قطعة</span>'}
     const sc=ov.querySelector('.mcs');sc.scrollLeft=-sc.scrollWidth};
