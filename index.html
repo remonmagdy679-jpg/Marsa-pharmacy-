@@ -811,7 +811,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ف الفاتورة كاملة مع البحث';
+const APP_V = '14-10ص البراند كله تحت بعضه';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -958,13 +958,17 @@ const CATRXM=[['pain',/paracetamol|panadol|ibuprofen|brufen|diclofenac|voltaren|
 function guessCat(p){const t=[p.name,p.alias,p.grp,p.ing].filter(Boolean).join(' ');if(tOf(p)==='med'){for(const [k,re] of CATRXM)if(re.test(t))return k}for(const [k,re] of CATRX)if(re.test(t))return k;if(tOf(p)==='med')for(const [k,re] of CATRXM)if(re.test(t))return k;return ''}
 const catOf=p=>CATM[p.cat]?p.cat:(guessCat(p)||'other');
 const catLabel=k=>CATM[k]?CATM[k].i+' '+CATM[k].n:k;
-const secOf=catOf;
+/* البراند كله يتحط في قسم واحد: القسم اللي فيه أغلب أصناف البراند ده */
+let _bc={ref:null,m:null};
+function brandCats(){if(_bc.ref===S.items&&_bc.m)return _bc.m;const cnt={};S.items.forEach(p=>{const b=brandOf(p);if(!b)return;const c=catOf(p);(cnt[b]=cnt[b]||{})[c]=(cnt[b][c]||0)+1});
+  const m={};for(const b in cnt){const e=Object.entries(cnt[b]);if(e.length>1)m[b]=e.sort((x,y)=>y[1]-x[1]||CATM[x[0]].o-CATM[y[0]].o)[0][0]}_bc={ref:S.items,m};return m}
+const secOf=p=>{const b=brandOf(p);return (b&&brandCats()[b])||catOf(p)};
 const KINDS=[['mask',/hair\s*mask|hot\s*oil|cream\s*bath|حمام\s*كريم|ماسك/i],['shampoo',/shampoo|شامبو/i],['cond',/condition|بلسم|كونديشنر/i],['serum',/serum|سيروم/i],['oil',/\boil\b|زيت|اويل|أويل/i],['leave',/leave[\s-]*in|cream|كريم/i],['lotion',/lotion|لوشن/i],['gel',/\bgel\b|جل/i],['spray',/spray|mist|سبراي/i],['wash',/wash|cleanser|soap|غسول|صابون/i],['tooth',/tooth|معجون/i]];
 const kindOf=p=>{const t=(p.name||'')+' '+(p.alias||'');const i=KINDS.findIndex(([,re])=>re.test(t));return i<0?99:i};
 const brandOf=p=>{if(p.brand)return norm(p.brand);const w=String(p.name||'').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/).filter(Boolean);if(!w.length)return '';return w[0].length>=3?w[0]:w.slice(0,2).join(' ')};
 const sizeVal=p=>{const m=/(\d+(?:[.,]\d+)?)\s*(kg|g|gm|gr|mg|ml|l|ltr|tabs?|caps?|pcs|قرص)\b/i.exec(String(p.size||'')+' '+String(p.name||''));if(!m)return 0;const v=parseFloat(m[1].replace(',','.')),u=m[2].toLowerCase();return u==='kg'||u==='l'||u==='ltr'?v*1000:v};
 const baseName=p=>String(p.name||'').toLowerCase().replace(/\d+(?:[.,]\d+)?\s*(kg|g|gm|gr|mg|ml|l|ltr)\b/gi,'').trim();
-const bySec=(a,b)=>CATM[catOf(a)].o-CATM[catOf(b)].o||brandOf(a).localeCompare(brandOf(b))||kindOf(a)-kindOf(b)||baseName(a).localeCompare(baseName(b))||sizeVal(a)-sizeVal(b);
+const bySec=(a,b)=>CATM[secOf(a)].o-CATM[secOf(b)].o||brandOf(a).localeCompare(brandOf(b))||kindOf(a)-kindOf(b)||baseName(a).localeCompare(baseName(b))||sizeVal(a)-sizeVal(b);
 const catOpts=(sel,auto)=>`${auto?`<option value="">🤖 أوتوماتيك (${catLabel(auto)})</option>`:''}${CATS.map(([k,i,n])=>`<option value="${k}" ${k===sel?'selected':''}>${i} ${n}</option>`).join('')}`;
 function catPick(p,after){openSheet(`<h4>🏷️ قسم «${esc(p.name)}»</h4><div class="catgrid">${CATS.map(([k,i,n])=>`<button class="btn ${catOf(p)===k?'primary':''}" data-m="c:${k}">${i} ${n}</button>`).join('')}</div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
   m=>{if(!m.startsWith('c:'))return;const k=m.slice(2);closeSheet();p.cat=k;run(ref('items/'+p.id).update({cat:k}),'القسم اتغير: '+catLabel(k));if(after)after()})}
