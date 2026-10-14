@@ -550,6 +550,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .gst.rd{color:var(--red)}.daycash small{color:var(--muted)}
 .prow{cursor:pointer;text-align:start}.prow:active{background:var(--bg)}
 .row.qhit{background:rgba(240,170,40,.12)}
+.gby{align-items:center}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -811,7 +812,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ص البراند كله تحت بعضه';
+const APP_V = '14-10ق ترتيب بالبراند أو النوع';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -920,7 +921,8 @@ function vItems(){
   if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>دوس «＋ إضافة» وابدأ.</div>`;
   else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
   else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
-  else h+=grouped(list,p=>p.grp||TYPES[tOf(p)].name,rowItem);
+  else{list.sort((a,b)=>itemCmp(a,b)||byName(a,b));const secs=[];list.forEach(p=>{const g=secKey(p);let x=secs.find(y=>y.g===g);if(!x){x={g,l:[]};secs.push(x)}x.l.push(p)});
+    h+=gbyChips()+secs.map(({g,l})=>`<section class="group"><h3>${esc(secLabel(g,l[0]))} (${l.length})</h3><div class="rows">${l.map(rowItem).join('')}</div></section>`).join('')}
   $app.innerHTML=h;
 }
 function aggSales(list){const m={};list.forEach(s=>{const key=s.id||s.name;const a=m[key]=m[key]||{id:s.id,name:s.name,type:s.type||'cos',qty:0,d:{},short:0,last:null};a.qty+=+(s.units!=null?s.units:s.qty)||0;a.short+=+s.short||0;for(const k in (s.alloc||{}))a.d[k]=(a.d[k]||0)+s.alloc[k];if(!a.last||s.t>a.last.t)a.last=s});return Object.values(m).sort(byName)}
@@ -963,11 +965,18 @@ let _bc={ref:null,m:null};
 function brandCats(){if(_bc.ref===S.items&&_bc.m)return _bc.m;const cnt={};S.items.forEach(p=>{const b=brandOf(p);if(!b)return;const c=catOf(p);(cnt[b]=cnt[b]||{})[c]=(cnt[b][c]||0)+1});
   const m={};for(const b in cnt){const e=Object.entries(cnt[b]);if(e.length>1)m[b]=e.sort((x,y)=>y[1]-x[1]||CATM[x[0]].o-CATM[y[0]].o)[0][0]}_bc={ref:S.items,m};return m}
 const secOf=p=>{const b=brandOf(p);return (b&&brandCats()[b])||catOf(p)};
-const KINDS=[['mask',/hair\s*mask|hot\s*oil|cream\s*bath|حمام\s*كريم|ماسك/i],['shampoo',/shampoo|شامبو/i],['cond',/condition|بلسم|كونديشنر/i],['serum',/serum|سيروم/i],['oil',/\boil\b|زيت|اويل|أويل/i],['leave',/leave[\s-]*in|cream|كريم/i],['lotion',/lotion|لوشن/i],['gel',/\bgel\b|جل/i],['spray',/spray|mist|سبراي/i],['wash',/wash|cleanser|soap|غسول|صابون/i],['tooth',/tooth|معجون/i]];
-const kindOf=p=>{const t=(p.name||'')+' '+(p.alias||'');const i=KINDS.findIndex(([,re])=>re.test(t));return i<0?99:i};
+const KINDS=[['deo','مزيل عرق',/deodor|antiperspir|anti-perspir|مزيل\s*(ال)?عرق|roll[\s-]?on/i],['sun','واقي شمس',/\bspf|sun\s*(block|screen|cream|lotion|spray)|sunscreen|after\s*sun|واقي|صن\s*بلوك/i],['mask','حمام كريم وماسك',/hair\s*mask|hot\s*oil|cream\s*bath|حمام\s*كريم|ماسك/i],['shampoo','شامبو',/shampoo|شامبو/i],['cond','بلسم',/condition|بلسم|كونديشنر/i],['serum','سيروم',/serum|سيروم/i],['oil','زيوت',/\boil\b|زيت|اويل|أويل/i],['tooth','معجون وفم',/tooth|mouth\s*wash|معجون|غسول\s*فم/i],['lip','شفايف',/\blip|شفا/i],['wash','غسول وصابون',/wash|cleanser|soap|غسول|صابون|شاور/i],['lotion','لوشن',/lotion|لوشن/i],['gel','جل',/\bgel\b|جل\b/i],['spray','سبراي وبرفان',/spray|mist|perfume|cologne|سبراي|برفان|بارفان/i],['pad','فوط وتامبون',/\bpads?\b|liners?|tampon|فوط|تامبون/i],['wipe','مناديل',/wipes?|مناديل/i],['diaper','حفاضات',/diaper|pampers|حفاض/i],['leave','كريمات',/cream|كريم/i]];
+const kindOf=p=>{const t=(p.name||'')+' '+(p.alias||'');const i=KINDS.findIndex(([,,re])=>re.test(t));return i<0?99:i};
 const brandOf=p=>{if(p.brand)return norm(p.brand);const w=String(p.name||'').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/).filter(Boolean);if(!w.length)return '';return w[0].length>=3?w[0]:w.slice(0,2).join(' ')};
 const sizeVal=p=>{const m=/(\d+(?:[.,]\d+)?)\s*(kg|g|gm|gr|mg|ml|l|ltr|tabs?|caps?|pcs|قرص)\b/i.exec(String(p.size||'')+' '+String(p.name||''));if(!m)return 0;const v=parseFloat(m[1].replace(',','.')),u=m[2].toLowerCase();return u==='kg'||u==='l'||u==='ltr'?v*1000:v};
 const baseName=p=>String(p.name||'').toLowerCase().replace(/\d+(?:[.,]\d+)?\s*(kg|g|gm|gr|mg|ml|l|ltr)\b/gi,'').trim();
+const GBY=()=>LS.get('drc.grpby')||'brand';
+const brandLabel=p=>{if(p.brand)return p.brand;const w=String(p.name||'').trim().split(/\s+/);return w[0]&&w[0].length>=3?w[0]:w.slice(0,2).join(' ')};
+const secKey=(p,m)=>{m=m||GBY();return m==='kind'?'k'+String(kindOf(p)).padStart(2,'0'):m==='cat'?secOf(p):'b'+brandOf(p)};
+const secLabel=(k,p)=>k[0]==='k'?'🧴 '+(KINDS[+k.slice(1)]||[0,'تانية'])[1]:k[0]==='b'?'🏷️ '+(p?brandLabel(p):k.slice(1)):catLabel(k);
+const tail=(a,b)=>baseName(a).localeCompare(baseName(b))||sizeVal(a)-sizeVal(b);
+const itemCmp=(a,b,m)=>{m=m||GBY();if(m==='kind')return kindOf(a)-kindOf(b)||brandOf(a).localeCompare(brandOf(b))||tail(a,b);if(m==='cat')return bySec(a,b);return brandOf(a).localeCompare(brandOf(b))||kindOf(a)-kindOf(b)||tail(a,b)};
+const gbyChips=()=>`<div class="chips gby"><span class="hint" style="margin:0">رتّب حسب:</span>${[['brand','🏷️ البراند'],['kind','🧴 النوع'],['cat','🗂️ القسم']].map(([k,l])=>`<button class="chip" data-act="gby" data-k="${k}" aria-pressed="${GBY()===k}">${l}</button>`).join('')}</div>`;
 const bySec=(a,b)=>CATM[secOf(a)].o-CATM[secOf(b)].o||brandOf(a).localeCompare(brandOf(b))||kindOf(a)-kindOf(b)||baseName(a).localeCompare(baseName(b))||sizeVal(a)-sizeVal(b);
 const catOpts=(sel,auto)=>`${auto?`<option value="">🤖 أوتوماتيك (${catLabel(auto)})</option>`:''}${CATS.map(([k,i,n])=>`<option value="${k}" ${k===sel?'selected':''}>${i} ${n}</option>`).join('')}`;
 function catPick(p,after){openSheet(`<h4>🏷️ قسم «${esc(p.name)}»</h4><div class="catgrid">${CATS.map(([k,i,n])=>`<button class="btn ${catOf(p)===k?'primary':''}" data-m="c:${k}">${i} ${n}</button>`).join('')}</div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
@@ -982,7 +991,7 @@ function shortList(){
   if(S.shortMode==='out')l=l.filter(p=>!good(p));
   if(S.shortMode==='low')l=l.filter(p=>good(p)>0);
   if(S.shortMode==='todo')l=l.filter(p=>!p.ordered);
-  return l.sort((a,b)=>bySec(a,b)||byName(a,b));
+  return l.sort((a,b)=>itemCmp(a,b)||byName(a,b));
 }
 /* تحديد الأصناف اللي هتتبعت + كمية كل صنف (بالعلبة) */
 let SHQ=(()=>{try{return JSON.parse(LS.get('drc.shq')||'{}')}catch(e){return {}}})();
@@ -1007,14 +1016,14 @@ function vShort(){
     const n=list.filter(shSel).length;
     const unk=S.items.filter(p=>!p.cat&&!guessCat(p)).length;if(unk&&getKey())h+=`<div class="setbn">🏷️ فيه ${unk} صنف مش متصنّف (نازلين في «تانية»). <button class="btn sm primary" data-act="sh-aicat">🤖 صنّفهم بالذكاء الاصطناعي</button></div>`;
     h+=`<div class="shtop"><button class="linkb" data-act="sh-all">${n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}</button><span class="hint" style="margin:0">علّم على اللي هتبعته وظبط الكمية</span></div>`;
-    const secs=[];list.forEach(p=>{const g=secOf(p);let s_=secs.find(x=>x.g===g);if(!s_){s_={g,l:[]};secs.push(s_)}s_.l.push(p)});
-    h+=secs.map(({g,l})=>{const on=l.filter(shSel).length;return `<section class="shsec" data-g="${esc(g)}"><header><button class="sck sm ${on===l.length?'all':on?'some':''}" data-act="sh-gtog" data-g="${esc(g)}" aria-label="حدد القسم">${on===l.length?'✓':on?'–':''}</button><b>${catLabel(g)}</b><small>${l.length} صنف</small><button class="btn sm primary" data-act="sh-gsend" data-g="${esc(g)}">📤 ابعت القسم</button></header><div class="rows">${l.map(rowShort).join('')}</div></section>`}).join('');
+    h+=gbyChips();const secs=[];list.forEach(p=>{const g=secKey(p);let s_=secs.find(x=>x.g===g);if(!s_){s_={g,l:[]};secs.push(s_)}s_.l.push(p)});
+    h+=secs.map(({g,l})=>{const on=l.filter(shSel).length;return `<section class="shsec" data-g="${esc(g)}"><header><button class="sck sm ${on===l.length?'all':on?'some':''}" data-act="sh-gtog" data-g="${esc(g)}" aria-label="حدد القسم">${on===l.length?'✓':on?'–':''}</button><b>${secLabel(g,l[0])}</b><small>${l.length} صنف</small><button class="btn sm primary" data-act="sh-gsend" data-g="${esc(g)}">📤 ابعت القسم</button></header><div class="rows">${l.map(rowShort).join('')}</div></section>`}).join('');
     h+=`<div class="toolbar" style="margin-top:12px"><button class="btn" data-act="rep-short" data-k="copy">نسخ</button><button class="btn" data-act="rep-short" data-k="pdf">PDF</button>${out?`<button class="btn" data-act="alert-out">🔔 نبّه الكل بالخلصان</button>`:''}</div>`;
     h+=`<div class="shbar"><b id="shN">${n}</b><span>صنف متحدد</span><button class="btn" data-act="sh-text">📋 نص</button><button class="btn primary" data-act="sh-send">📤 ابعت صور</button></div>`;
   }else h+=`<div class="empty">${S.items.length?'مفيش نواقص هنا 👌':'لسه مفيش أصناف'}</div>`;
   $app.innerHTML=h;
 }
-function shRefreshBar(){const list=shortList(),n=list.filter(shSel).length,el=$('shN');if(el)el.textContent=n;$app.querySelectorAll('.shsec').forEach(sec=>{const l=list.filter(p=>secOf(p)===sec.dataset.g),on=l.filter(shSel).length,b=sec.querySelector('[data-act=sh-gtog]');if(b){b.className='sck sm '+(on===l.length?'all':on?'some':'');b.textContent=on===l.length?'✓':on?'–':''}});const a=$app.querySelector('[data-act="sh-all"]');if(a)a.textContent=n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}
+function shRefreshBar(){const list=shortList(),n=list.filter(shSel).length,el=$('shN');if(el)el.textContent=n;$app.querySelectorAll('.shsec').forEach(sec=>{const l=list.filter(p=>secKey(p)===sec.dataset.g),on=l.filter(shSel).length,b=sec.querySelector('[data-act=sh-gtog]');if(b){b.className='sck sm '+(on===l.length?'all':on?'some':'');b.textContent=on===l.length?'✓':on?'–':''}});const a=$app.querySelector('[data-act="sh-all"]');if(a)a.textContent=n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}
 function shMore(p){openSheet(`<h4>${esc(p.name)}</h4><div class="menu">
     <button data-m="in"><span>📦</span><b>اتورد</b><small>ضيف الكمية اللي وصلت</small></button>
     <button data-m="ord"><span>✓</span><b>${p.ordered?'شيل «اتطلب»':'اتطلب'}</b><small>علّم إنه اتطلب من المورد</small></button>
@@ -1053,11 +1062,11 @@ async function makeShortList(sel,pi,pn,aud){aud=aud||'co';
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
 }
 async function shSend(grp){
-  let sel=shSelected();if(grp)sel=sel.filter(x=>secOf(x.p)===grp);
-  if(!sel.length){if(grp){const l=shortList().filter(p=>secOf(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>secOf(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
-  sel.sort((a,b)=>bySec(a.p,b.p));
+  let sel=shSelected();if(grp)sel=sel.filter(x=>secKey(x.p)===grp);
+  if(!sel.length){if(grp){const l=shortList().filter(p=>secKey(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>secKey(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
+  sel.sort((a,b)=>itemCmp(a.p,b.p));
   let aud=LS.get('drc.aud')||'co',mode='each';const PER=12;
-  const r=openSheet(`<h4>📤 ابعت ${grp?`${catLabel(grp)} — `:''}${sel.length} صنف</h4>
+  const r=openSheet(`<h4>📤 ابعت ${grp?`${secLabel(grp,sel[0]&&sel[0].p)} — `:''}${sel.length} صنف</h4>
     <div class="seg audsel"><button data-m="a:mgr" aria-pressed="${aud==='mgr'}">👔 للمدير<small>الكمية مكتوبة تحت الصورة</small></button><button data-m="a:co" aria-pressed="${aud==='co'}">🏭 للشركة<small>عايزين بس</small></button></div>
     <div class="pvrow" id="saPrev"></div><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصور…</p>
     <label class="check" id="saOrdL"><input type="checkbox" id="saOrd" checked> علّمهم «اتطلب» بعد الإرسال للشركة</label>
@@ -3467,7 +3476,8 @@ $app.addEventListener('click',e=>{
   else if(act==='sh-send')shSend();
   else if(act==='sh-gsend')shSend(b.dataset.g);
   else if(act==='sh-aicat'){b.disabled=true;const l=S.items.filter(p=>!p.cat&&!guessCat(p));aiCats(l,b.parentElement).then(n=>{toast(`✓ اتصنّف ${n} صنف`);render()})}
-  else if(act==='sh-gtog'){const l=shortList().filter(p=>secOf(p)===b.dataset.g),allOn=l.every(shSel);l.forEach(x=>shSet(x.id,{on:!allOn}));render()}
+  else if(act==='gby'){LS.set('drc.grpby',b.dataset.k);render()}
+  else if(act==='sh-gtog'){const l=shortList().filter(p=>secKey(p)===b.dataset.g),allOn=l.every(shSel);l.forEach(x=>shSet(x.id,{on:!allOn}));render()}
   else if(act==='sh-text'){const sel=shSelected();if(!sel.length)return toast('علّم على صنف واحد على الأقل');textSheet('نواقص',shText(sel))}
   else if(act==='inv-total')invTotalSheet(b.dataset.inv);
   else if(act==='urgent'&&p)urgent(p);
