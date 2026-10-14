@@ -534,7 +534,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .mct{color:#fff;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;font-weight:700}
 .mcwrap{position:relative;flex:1;min-height:0;display:flex}.mclast{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(0,0,0,.72);color:#fff;border-radius:12px;padding:10px 12px;font-size:16px;text-align:center}.mclast b{font-size:20px;direction:ltr;unicode-bidi:isolate}
 .mcs{display:flex;gap:8px;overflow-x:auto;padding:8px;min-height:78px;background:#111}.mci{position:relative;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;width:92px}.mci img{width:92px;height:66px;object-fit:cover;border-radius:8px;border:2px solid #3cc}.mci .rm{position:absolute;top:-4px;left:-4px;width:22px;height:22px;border-radius:50%;border:0;background:#c33;color:#fff;font-size:11px;padding:0}.mci i{position:absolute;top:46px;right:5px;color:#fff;font-style:normal;font-weight:800;text-shadow:0 0 3px #000}
-.mci b{font-size:14px;color:#fff;direction:ltr;white-space:nowrap}.mci b.ok,.mclast b.ok{color:#5be3b5}.mci b.rd,.mclast b.rd{color:#ff8a8a}.mci b.lw,.mclast b.lw{color:#ffcc66}.mci b.wt{font-size:12px;color:#ccc}.mch{display:block;font-size:11px;color:#bbb;direction:rtl}.mclast .mch{font-size:13px}.mci .rr{border:1px solid #555;background:#222;color:#fff;border-radius:8px;font-size:11.5px;padding:3px 6px;cursor:pointer}
+.mci b{font-size:14px;color:#fff;direction:ltr;white-space:nowrap}.mci b.ok,.mclast b.ok{color:#5be3b5}.mci b.rd,.mclast b.rd{color:#ff8a8a}.mci b.lw,.mclast b.lw{color:#ffcc66}.mci b.wt{font-size:12px;color:#ccc}.mctal{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:#0b1f1c;color:#fff;font-size:14px;min-height:20px}.mctal b{background:#13463c;border-radius:10px;padding:4px 10px;direction:ltr}.mctal b i{font-style:normal;color:#5be3b5;font-size:17px}.mctal em{font-style:normal;color:#ccc}.mctal em.rd{color:#ff8a8a}.mch{display:block;font-size:11px;color:#bbb;direction:rtl}.mclast .mch{font-size:13px}.mci .rr{border:1px solid #555;background:#222;color:#fff;border-radius:8px;font-size:11.5px;padding:3px 6px;cursor:pointer}
 .mcb{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 14px);background:#111}.mcb .btn{min-width:96px}
 .mcshot{width:74px;height:74px;border-radius:50%;border:5px solid #fff;background:#fff;box-shadow:inset 0 0 0 4px #111;cursor:pointer}.mcshot:active{transform:scale(.92)}
 .mrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.mrow>b{flex:1;font-size:18px;direction:ltr;text-align:right}.mrow b.dead,.mrow b.now{color:var(--red)}.mrow b.soon{color:var(--amber)}
@@ -800,7 +800,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ح زراير البيع فوق';
+const APP_V = '14-10ط العدّ بالتواريخ';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1251,9 +1251,9 @@ function restockSheet(p,pre={}){
     if(m==='edit'&&p){const keep={q:int(qi.value)||1,k:readExp(r.querySelector('#fE'))};return itemForm(p,{after:np=>restockSheet(np,{...pre,q:keep.q,k:keep.k&&keep.k!=='x'?keep.k:pre.k})})}
     if(m==='mdates'){const it=p||findByName((r.querySelector('#fItem')||{}).value||'');if(!it){toast('اختار الصنف الأول');return}
       if(!getKey()){r.querySelector('#rdSt').textContent='🔑 محتاج مفتاح الذكاء الاصطناعي';return}
-      return multiCam('صوّر كل تاريخ صلاحية — التاريخ بيظهر تحت كل صورة',async(shots,res0)=>{const st=r.querySelector('#rdSt');
+      return multiCam('صوّر تاريخ كل قطعة — كل صورة = قطعة',async(shots,res0)=>{const st=r.querySelector('#rdSt');
         if(!res0)st.innerHTML=`<span class="spin"></span>بيقرا ${shots.length} صورة…`;const res=res0||await readMany(shots,it.life),L=[],seen={};let bad=0;
-        res.forEach(x=>{if(!x.k){bad++;return}if(seen[x.k])return;seen[x.k]=1;L.push({k:x.k,life:x.life})});
+        res.forEach(x=>{if(!x.k){bad++;return}if(seen[x.k]){seen[x.k].n++;return}seen[x.k]={k:x.k,life:x.life,n:1};L.push(seen[x.k])});
         if(!L.length){st.textContent='مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ';return}
         multiRestock(it,L.sort((a,b)=>bkIdx(a.k)-bkIdx(b.k)),bad)},d=>readDates(d,it.life))}
     if(m==='dph')return datePhoto(r.querySelector('#fE .ex'),null,p&&p.life,r.querySelector('#rdSt'));
@@ -1301,16 +1301,18 @@ function itemForm(p,preset){
       const med=r.querySelector('#fType').value==='med';return (async()=>{const ref=pimg&&pimg!=='del'?pimg:(p&&p.img?((await fullImg(p.id))||p.img):'');countPhoto({input:row.querySelector('.bq'),st:r.querySelector('#cntSt'),name:r.querySelector('#fName').value.trim(),ref,unit:med?'box':'piece',add:m==='cnt+'})})()}
     if(m==='cntz')return openZoomSrc(r.querySelector('#cntSt').dataset.img,'صورة العدّ');
     if(m==='mdates'){if(!getKey()){r.querySelector('#dSt').textContent='🔑 قراية التواريخ محتاجة مفتاح الذكاء الاصطناعي';return}
-      return multiCam('صوّر كل تاريخ صلاحية — التاريخ بيظهر تحت كل صورة',async(shots,res0)=>{const st=r.querySelector('#dSt');
+      return multiCam('صوّر تاريخ كل قطعة — كل صورة = قطعة',async(shots,res0)=>{const st=r.querySelector('#dSt');
       if(!res0)st.innerHTML=`<span class="spin"></span>بيقرا ${shots.length} صورة…`;const res=res0||await readMany(shots,p&&p.life);if(!r.isConnected)return;
-      const seen={};let ok=0,bad=0,dup=0,code='';
-      res.forEach(x=>{if(x.code&&!code)code=x.code;const key=x.k||(x.prod?'p'+x.prod.y+'-'+x.prod.m:'');if(!key){bad++;return}if(seen[key]){dup++;return}
-        let row=[...r.querySelectorAll('.brow')].find(w=>!w.querySelector('[data-x=m]').value&&!int(w.querySelector('.bq').value));
+      const seen={};let ok=0,bad=0,code='';
+      res.forEach(x=>{if(x.code&&!code)code=x.code;const key=x.k||(x.prod?'p'+x.prod.y+'-'+x.prod.m:'');if(!key){bad++;return}
+        if(seen[key]){const q=seen[key].querySelector('.bq');q.value=int(q.value)+1;return}
+        let row=x.k?[...r.querySelectorAll('.brow')].find(w=>w.querySelector('[data-x=m]').value&&readExp(w)===x.k):null;
+        if(!row)row=[...r.querySelectorAll('.brow')].find(w=>!w.querySelector('[data-x=m]').value&&!int(w.querySelector('.bq').value));
         if(!row){r.querySelector('#fB').insertAdjacentHTML('beforeend',brow('',''));row=[...r.querySelectorAll('.brow')].pop()}
-        applyExp(row.querySelector('.ex'),x);row.querySelector('.bq').classList.add('need');seen[key]=1;ok++});
+        applyExp(row.querySelector('.ex'),x);const q=row.querySelector('.bq');q.value=1;q.classList.add('aifill');seen[key]=row;ok++});
       if(code){const i=r.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(code)){l.push(code);i.value=l.join(', ');i.classList.add('aifill')}}
-      medT();st.innerHTML=(ok?`✓ اتضاف ${ok} تاريخ — اكتب العدد قدام كل تاريخ`:'مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ')+(dup?` — ${dup} صورة مكررة بنفس التاريخ`:'')+(bad?` — ${bad} صورة ما اتقرتش`:'');
-      const q=r.querySelector('.bq.need');if(q)setTimeout(()=>{try{q.focus()}catch(e){}},200)},d=>readDates(d,p&&p.life))}
+      medT();const tot=Object.values(seen).reduce((a,w)=>a+int(w.querySelector('.bq').value),0);
+      st.innerHTML=(ok?`✓ عدّيت ${tot} قطعة في ${ok} تاريخ (كل صورة = قطعة) — راجع الأعداد`:'مقدرتش أقرا ولا تاريخ — قرّب الكاميرا على التاريخ')+(bad?` — <b class="rd">${bad} صورة ما اتقرتش ومش محسوبة</b>`:'')},d=>readDates(d,p&&p.life))}
     if(m==='dphoto'){const rows=[...r.querySelectorAll('.brow')],row=rows.find(x=>!x.querySelector('[data-x=m]').value)||rows[rows.length-1];return datePhoto(row&&row.querySelector('.ex'),r.querySelector('#fCode'),p&&p.life,r.querySelector('#dSt'))}
     if(m==='setkey'){const keep=pimg&&pimg!=='del'?pimg:'';return keySheet(()=>itemForm(p,{...(preset||{}),img:keep||(preset&&preset.img),auto:true}))}
     if(m==='pdel'){pimg='del';r.querySelector('#fImg').hidden=true;b.hidden=true;r.querySelector('[data-m=ai]').hidden=true;return}
@@ -2808,13 +2810,15 @@ function applyExp(ex,res){if(!ex)return;
   if(res.prod){const pn=ex.querySelector('.prod'),lk=ex.querySelector('[data-prod]');if(pn&&pn.hidden&&lk)lk.click();ex.querySelector('[data-x=pm]').value=String(res.prod.m);const py=ex.querySelector('[data-x=py]');if(![...py.options].some(o=>o.value===String(res.prod.y)))py.insertAdjacentHTML('beforeend',`<option>${res.prod.y}</option>`);py.value=String(res.prod.y);calcProd(ex)}}
 /* كاميرا بتصوّر كذا صورة ورا بعض من غير ما تقفل */
 function multiCam(title,cb,read){
-  const ov=document.createElement('div');ov.className='mcam';ov.innerHTML=`<div class="mct">${esc(title)}</div><div class="mcwrap"><video playsinline muted autoplay></video><div class="mclast" hidden></div></div><div class="mcs"></div><div class="mcb"><button class="btn" data-x="no">✕ إلغاء</button><button class="mcshot" data-x="shot" aria-label="صوّر"></button><button class="btn primary" data-x="ok" disabled>✓ تمام (0)</button></div>`;
+  const ov=document.createElement('div');ov.className='mcam';ov.innerHTML=`<div class="mct">${esc(title)}</div><div class="mcwrap"><video playsinline muted autoplay></video><div class="mclast" hidden></div></div><div class="mctal"></div><div class="mcs"></div><div class="mcb"><button class="btn" data-x="no">✕ إلغاء</button><button class="mcshot" data-x="shot" aria-label="صوّر"></button><button class="btn primary" data-x="ok" disabled>✓ تمام (0)</button></div>`;
   document.body.appendChild(ov);const v=ov.querySelector('video'),shots=[];let st=null;
   const end=ok=>{try{st&&st.getTracks().forEach(t=>t.stop())}catch(e){}ov.remove();if(ok&&shots.length)cb(shots.map(x=>x.d),read?shots.map(x=>x.res||{}):null)};
   const lab=x=>x.busy?'<b class="wt"><span class="spin"></span>بيقرا…</b>':!x.res?'':x.res.k?`<b class="ok">${x.res.k==='x'?'—':bkLabel(x.res.k)}</b>${x.res.prod?`<small class="mch">إنتاج ${pad(x.res.prod.m)}/${String(x.res.prod.y).slice(2)} + ${x.res.life} شهر</small>`:''}`:x.res.prod?`<b class="lw">إنتاج ${pad(x.res.prod.m)}/${x.res.prod.y}</b>`:'<b class="rd">⚠️ مش واضح</b>';
   const upd=()=>{ov.querySelector('.mcs').innerHTML=shots.map((x,i)=>`<span class="mci"><img src="${x.d}" alt=""><button class="rm" data-x="rm:${i}" aria-label="شيل">✕</button><i>${i+1}</i>${read?`${lab(x)}${x.busy?'':`<button class="rr" data-x="rr:${i}">↻ اقرا تاني</button>`}`:''}</span>`).join('');
     const busy=shots.some(x=>x.busy),b=ov.querySelector('[data-x=ok]');b.disabled=!shots.length||busy;b.textContent=busy?'⏳ استنى القراية…':`✓ تمام (${shots.length})`;
     const l=ov.querySelector('.mclast'),x=shots[shots.length-1];if(read&&x){l.hidden=false;l.innerHTML=`صورة ${shots.length}: ${lab(x)}${!x.busy&&x.res&&!x.res.k&&!x.res.prod?' — قرّب على التاريخ وصوّر تاني أو دوس ↻':''}`}else l.hidden=true;
+    if(read){const T={};let un=0;shots.forEach(x=>{if(x.busy)return;const k=x.res&&x.res.k;if(k)T[k]=(T[k]||0)+1;else un++});const busyN=shots.filter(x=>x.busy).length;
+      ov.querySelector('.mctal').innerHTML=shots.length?`<span>العدد:</span>${Object.keys(T).sort((a,b)=>bkIdx(a)-bkIdx(b)).map(k=>`<b>${bkLabel(k)} <i>×${T[k]}</i></b>`).join('')}${busyN?`<em>⏳ ${busyN}</em>`:''}${un?`<em class="rd">⚠️ ${un} مش متقري</em>`:''}`:'<span>كل صورة = قطعة واحدة — صوّر تاريخ كل قطعة</span>'}
     const sc=ov.querySelector('.mcs');sc.scrollLeft=-sc.scrollWidth};
   const go=async x=>{const tk=x.tk=(x.tk||0)+1;x.busy=true;upd();let r={};try{r=await read(x.d)}catch(e){}if(x.tk!==tk)return;x.res=r||{};x.busy=false;if(ov.isConnected)upd()};
   ov.addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b)return;const x=b.dataset.x;
@@ -2828,8 +2832,8 @@ function multiCam(title,cb,read){
     catch(e){end(false);toast('الكاميرا المباشرة مش متاحة — اختار الصور من الجاليري');pickFiles({cam:false,multiple:true},async fl=>{const out=[];for(const f of fl){try{out.push(await toJpeg(f,1600,.85))}catch(_){}}if(out.length)cb(out,null)})}})()}
 async function readMany(shots,life){return Promise.all(shots.map(d=>readDates(d,life).catch(()=>({}))))}
 function multiRestock(it,L,bad){const K=spb(it);
-  openSheet(`<h4>📦 استلام — ${esc(it.name)}</h4><p class="hint" style="margin-top:0">✓ اتقرا ${L.length} تاريخ${bad?` — ${bad} صورة ما اتقرتش`:''}. اكتب العدد${K>1?' (علب)':''} قدام كل تاريخ:</p>
-    ${L.map((x,i)=>`<div class="mrow"><b class="${expCls(x.k)}">${bkLabel(x.k)}</b><div class="stepper"><button class="icon" data-m="d:${i}" aria-label="أقل">−</button><input type="number" inputmode="numeric" data-q="${i}" value="1"><button class="icon" data-m="u:${i}" aria-label="أكتر">+</button></div><button class="icon" data-m="x:${i}" aria-label="شيل">✕</button></div>`).join('')}
+  openSheet(`<h4>📦 استلام — ${esc(it.name)}</h4><p class="hint" style="margin-top:0">✓ عدّيت ${L.reduce((a,x)=>a+x.n,0)} قطعة في ${L.length} تاريخ (كل صورة = قطعة)${bad?` — <b class="rd">${bad} صورة ما اتقرتش ومش محسوبة</b>`:''}. راجع العدد${K>1?' (علب)':''}:</p>
+    ${L.map((x,i)=>`<div class="mrow"><b class="${expCls(x.k)}">${bkLabel(x.k)}</b><div class="stepper"><button class="icon" data-m="d:${i}" aria-label="أقل">−</button><input type="number" inputmode="numeric" data-q="${i}" value="${x.n||1}"><button class="icon" data-m="u:${i}" aria-label="أكتر">+</button></div><button class="icon" data-m="x:${i}" aria-label="شيل">✕</button></div>`).join('')}
     <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">✓ أضف الكل للمخزن</button></div>`,
   (m,r)=>{const [a,i]=m.split(':');if(a==='d'||a==='u'){const el=r.querySelector(`[data-q="${i}"]`);el.value=Math.max(0,int(el.value)+(a==='u'?1:-1));return}
     if(a==='x'){r.querySelector(`[data-q="${i}"]`).closest('.mrow').remove();return}
