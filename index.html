@@ -548,6 +548,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .dtot{font-weight:800;color:var(--amber);direction:ltr;white-space:nowrap}.dcard.paid .dtot{color:var(--green)}
 .dl{display:flex;gap:8px;align-items:flex-start;width:100%;background:none;border:0;border-top:1px dashed var(--line);padding:7px 0;text-align:start;color:inherit;font:inherit;cursor:pointer}.dl .dd{font-size:12px;color:var(--muted);min-width:62px}.dl .di{flex:1;font-size:14px}.dl .di small{display:block;color:var(--muted);font-size:12px}.dl>b{direction:ltr;white-space:nowrap;text-align:left}.dl>b small{display:block;color:var(--amber);font-size:11.5px;direction:rtl}
 .gst.rd{color:var(--red)}.daycash small{color:var(--muted)}
+.prow{cursor:pointer;text-align:start}.prow:active{background:var(--bg)}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -809,7 +810,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10س ترتيب البراند + الحد الأدنى';
+const APP_V = '14-10ع إصلاح الإضافة بالاسم';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -2612,11 +2613,11 @@ $('scPhoto').addEventListener('click',()=>{const cb=scCb;pickFiles({cam:true},as
     try{const raw=await decodeImageFile(f);if(!raw)throw 0;scCb=cb;scGot(raw)}catch(e){$('scHint').textContent='مقدرتش أقرا الكود — قرّب الكاميرا وخلي الباركود واضح، أو اكتبه بإيدك'}})});
 
 function scanSell(){openScanner({modes:true,title:scMode()==='in'?'امسح الصنف اللي وصل':'امسح الصنف عشان تبيعه',onCode:(c,g)=>scMode()==='in'?handleInCode(c,g):handleSellCode(c,g),onItem:p=>scMode()==='in'?restockSheet(p):sellSheet(p)})}
-function handleInCode(code,g){const l=itemsByCode(code),k=g&&g.y?bk(g.y,g.m):'';if(l.length===1)return restockSheet(l[0],{k,scan:true});if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<button class="row linkbtn" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></button>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)restockSheet(p,{k,scan:true})});unknownCode(code,g,'in')}
+function handleInCode(code,g){const l=itemsByCode(code),k=g&&g.y?bk(g.y,g.m):'';if(l.length===1)return restockSheet(l[0],{k,scan:true});if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<div class="row linkbtn prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></div>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)restockSheet(p,{k,scan:true})});unknownCode(code,g,'in')}
 function handleSellCode(code,g){
   const l=itemsByCode(code),start=g&&g.y?bk(g.y,g.m):null;
   if(l.length===1)return sellSheet(l[0],{scan:true,start});
-  if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<button class="row linkbtn" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></button>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)sellSheet(p,{scan:true,start})});
+  if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<div class="row linkbtn prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></div>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)sellSheet(p,{scan:true,start})});
   unknownCode(code,g);
 }
 /* تأكيد الكود: لازم يتقرا نفس الرقم مرتين قبل ما يتسجل على صنف */
@@ -2760,7 +2761,7 @@ function pickItemSheet(){
   const r=openSheet(`<h4>🛒 اختار الصنف</h4><div class="vrow"><input id="pkQ" placeholder="دوّر بالاسم أو الباركود…"><button class="icon" data-m="scan" aria-label="امسح">🔳</button></div><div class="rows" id="pkL" style="margin-top:8px;max-height:52vh;overflow:auto"></div><div class="actions"><button class="btn" data-m="back">رجوع للفاتورة</button></div>`,
   m=>{if(m==='scan'){closeSheet();return scanSell()}if(m==='back')return CART.lines.length?invSheet():closeSheet();if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)sellSheet(p,{back:'inv'})}});
   const draw=()=>{const q=norm(r.querySelector('#pkQ').value);const l=S.items.filter(p=>!q||norm(hay(p)).includes(q)).sort(byName).slice(0,60);
-    r.querySelector('#pkL').innerHTML=l.map(p=>`<button class="row slim linkbtn" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta">${nearExp(p)}</div></div><span class="qty">${good(p)}</span></button>`).join('')||'<div class="empty">مفيش نتايج</div>'};
+    r.querySelector('#pkL').innerHTML=l.map(p=>`<div class="row slim linkbtn prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta">${nearExp(p)}</div></div><span class="qty">${good(p)}</span></div>`).join('')||'<div class="empty">مفيش نتايج</div>'};
   r.querySelector('#pkQ').addEventListener('input',draw);draw();
 }
 function finishInvoice(){
@@ -3145,7 +3146,7 @@ List up to 5 matches, best first; only include real candidates (score ≥ 40). U
     if(j.read){live.map(p=>({p,s:Math.round(scoreItem(j.read,p)*100)})).filter(o=>o.s>=60&&!seen.has(o.p.id)).sort((a,b)=>b.s-a.s).slice(0,3).forEach(o=>{seen.add(o.p.id);list.push({p:o.p,s:Math.min(o.s,list.length?60:75)})})}
     list.sort((a,b)=>b.s-a.s);
     openSheet(`<h4>🤖 ${esc(title||'بحث بالصورة')}</h4><div class="cntbox"><img src="${d}" alt=""><div>اتقرا: <b>${esc(j.read||'—')}</b>${j.note?`<br><small class="mu">${esc(j.note)}</small>`:''}</div></div>
-      ${list.length?`<label>اختار الصنف</label><div class="rows">${list.map(({p,s},k)=>`<div class="vsrow"><button class="row linkbtn vsr ${k===0&&s>=80?'best':''}" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta"><span>عندك ${fmtQs(p,good(p))}</span>${nearExp(p)}</div></div><span class="vsc">${s>=80?'✓ ':''}${s}%</span></button><button class="icon vse" data-m="e:${p.id}" aria-label="تعديل الصنف">✏️</button></div>`).join('')}</div>`
+      ${list.length?`<label>اختار الصنف</label><div class="rows">${list.map(({p,s},k)=>`<div class="vsrow"><div class="row linkbtn vsr ${k===0&&s>=80?'best':''} prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta"><span>عندك ${fmtQs(p,good(p))}</span>${nearExp(p)}</div></div><span class="vsc">${s>=80?'✓ ':''}${s}%</span></div><button class="icon vse" data-m="e:${p.id}" aria-label="تعديل الصنف">✏️</button></div>`).join('')}</div>`
         :'<div class="empty">مالقتش المنتج ده في الأصناف</div>'}
       <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="again">📷 صورة تانية</button></div>`,
     m=>{if(m.startsWith('e:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)return itemForm(p,{after:np=>onPick(np)});return}
@@ -3181,7 +3182,7 @@ Return ONLY JSON, no markdown:
   let j;try{j=await askVision(img?[img]:[],prompt,900)}catch(e){out.innerHTML=`<p class="rd">مقدرتش أدوّر</p>${visionErr?`<small class="verr">${esc(visionErr)}</small>`:''}`;return}
   if(!root.isConnected)return;
   const L={same:[],diff:[],alt:[]},seen=new Set();(j.matches||[]).forEach(m=>{const p=cat[+m.i];if(p&&!seen.has(p.id)&&L[m.kind]){seen.add(p.id);L[m.kind].push({p,why:m.why||''})}});
-  const sec=(k,t,cls)=>L[k].length?`<label class="igl ${cls}">${t}</label><div class="rows">${L[k].map(({p,why})=>`<button class="row linkbtn" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta">${p.ing?`<span class="ltr">${esc(p.ing)}</span>`:''}${why?`<span>${esc(why)}</span>`:''}</div></div><span class="qty ${good(p)?'':'zero'}">${fmtQs(p,good(p))}</span></button>`).join('')}</div>`:'';
+  const sec=(k,t,cls)=>L[k].length?`<label class="igl ${cls}">${t}</label><div class="rows">${L[k].map(({p,why})=>`<div class="row linkbtn prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta">${p.ing?`<span class="ltr">${esc(p.ing)}</span>`:''}${why?`<span>${esc(why)}</span>`:''}</div></div><span class="qty ${good(p)?'':'zero'}">${fmtQs(p,good(p))}</span></div>`).join('')}</div>`:'';
   out.innerHTML=`<div class="igneed">المطلوب: <b class="ltr">${esc(j.needed||q||'—')}</b>${j.foreign?` <small>(${esc(j.foreign)})</small>`:''}</div>
     ${sec('same','✅ نفس المادة ونفس التركيز','ok')}${sec('diff','🟡 نفس المادة بتركيز أو شكل مختلف','lw')}${sec('alt','🔄 بديل قريب (مادة تانية من نفس النوع)','mu')}
     ${!seen.size?'<div class="empty">مفيش حاجة عندك بنفس المادة دي</div>':''}
@@ -3238,7 +3239,7 @@ function sellCoach(){if(!can('coach'))return toast('الميزة دي مقفول
   openSheet(`<h4>🚀 مساعد البيع</h4><p class="hint" style="margin-top:0">من بيانات البيع بتاعتك: إيه المنتج البطل، والجيست بيتردد ليه، وتقول له إيه بلغته.</p>
     <div class="coachsum"><div><small>فواتير آخر 30 يوم</small><b>${H.length?H[0].N:0}</b></div><div><small>«ماشتراش» متسجلة</small><b>${noBuy.length}</b></div><div><small>أكتر اعتراض</small><b>${topK(allObj)[0]?esc(OBJ[topK(allObj)[0][0]]||''):'—'}</b></div></div>
     <label>⭐ المنتجات البطلة (ترتيب Wilson — الأكتر ثقة مش بس الأكتر بيع)</label>
-    ${H.length?`<div class="rows">${H.slice(0,15).map((h,i)=>`<button class="row linkbtn" data-m="p:${h.p.id}">${ico(h.p)}<div class="kit"><b>${i<3?['🥇','🥈','🥉'][i]+' ':''}${esc(h.p.name)}</b><div class="meta"><span>في ${h.k} من ${h.N} فاتورة</span>${h.conv!=null?`<span>نسبة الشراء ≥ ${Math.round(h.conv*100)}%</span>`:''}${topK(h.obj)[0]?`<span class="rd">${esc(OBJ[topK(h.obj)[0][0]]||'')}</span>`:''}</div></div><span class="qty">${Math.round(h.pop*100)}</span></button>`).join('')}</div>`:'<div class="empty">لسه مفيش مبيعات كفاية — ابدأ بيع بالفواتير والمساعد هيتعلم</div>'}
+    ${H.length?`<div class="rows">${H.slice(0,15).map((h,i)=>`<div class="row linkbtn prow" role="button" tabindex="0" data-m="p:${h.p.id}">${ico(h.p)}<div class="kit"><b>${i<3?['🥇','🥈','🥉'][i]+' ':''}${esc(h.p.name)}</b><div class="meta"><span>في ${h.k} من ${h.N} فاتورة</span>${h.conv!=null?`<span>نسبة الشراء ≥ ${Math.round(h.conv*100)}%</span>`:''}${topK(h.obj)[0]?`<span class="rd">${esc(OBJ[topK(h.obj)[0][0]]||'')}</span>`:''}</div></div><span class="qty">${Math.round(h.pop*100)}</span></div>`).join('')}</div>`:'<div class="empty">لسه مفيش مبيعات كفاية — ابدأ بيع بالفواتير والمساعد هيتعلم</div>'}
     <p class="hint">💡 كل ما تسجّل «😕 ماشتراش» من شاشة البيع، المساعد بيفهم أكتر الجيست بيتردد ليه.</p>
     <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
   m=>{if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)pitchSheet(p)}});
