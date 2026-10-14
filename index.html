@@ -526,6 +526,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .pid{display:flex;gap:6px;flex-wrap:wrap}.pid>div{flex:1 1 30%;background:var(--card,transparent);border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:13px}.pid small{display:block;color:var(--muted);font-size:11.5px}
 .euc{margin:4px 0 8px}.eup{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px}.eubig{font-size:22px;font-weight:800;direction:ltr;text-align:start}.eubig small{display:block;font-size:13px;color:var(--muted);font-weight:600}
 .eusrc{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:12px}.eusrc a{color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:start}
+.updbar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:12px;right:12px;z-index:9999;background:#0E7C66;color:#fff;border:0;border-radius:14px;padding:12px 14px;font:inherit;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -787,7 +788,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ب فوايد وجرعة وأسعار أوروبا';
+const APP_V = '14-10د بحث أسعار أوروبا';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -2640,6 +2641,11 @@ function finishInvoice(){
   toast(`✓ فاتورة #${no} اتسجلت (${L.length} صنف) — الإجمالي ${fmtPx(tot,CART.cur)}${al?' — واتبعت تنبيه للكل':''}`);go('sales');
 }
 $('invbar').addEventListener('click',()=>invSheet());
+/* فحص التحديثات: بيقارن نسخة التطبيق اللي على الموقع باللي مفتوحة، ولو فيه جديد يظهر شريط تدوس عليه */
+async function checkUpd(){try{const r=await fetch('index.html?u='+Date.now(),{cache:'no-store'});if(!r.ok)return;const m=/const APP_V = '([^']*)'/.exec(await r.text());if(!m||m[1]===APP_V)return;
+  let el=document.getElementById('updbar');if(!el){el=document.createElement('button');el.id='updbar';el.className='updbar';document.body.appendChild(el);el.addEventListener('click',()=>{el.textContent='⏳ جاري التحديث…';location.replace(location.pathname+'?v='+Date.now())})}
+  el.innerHTML=`🔄 فيه نسخة جديدة: <b>${esc(m[1])}</b> — دوس هنا للتحديث`}catch(e){}}
+setTimeout(checkUpd,4000);setInterval(checkUpd,10*6e4);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpd()});
 
 
 // تكبير صورة أي صنف من جوه أي نافذة (الفاتورة، اختيار صنف…)
@@ -3099,20 +3105,23 @@ async function askWeb(prompt){const key=getKey(),kind=keyKind(key);if(!key)throw
   if(kind==='anthropic'){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:2000,tools:[{type:'web_search_20250305',name:'web_search',max_uses:4}],messages:[{role:'user',content:prompt}]})});
     if(!r.ok){visionErr=await errText(r);throw 'http'}const d=await r.json(),src=[];(d.content||[]).forEach(x=>(x.citations||[]).forEach(c=>c.url&&src.push({u:c.url,t:c.title||''})));
     return {j:parseJSONText((d.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('')),src}}
-  const model=LS.get('drc.gmodel')||'gemini-2.5-flash',url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,body=JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],tools:[{google_search:{}}],generationConfig:{temperature:0.1,maxOutputTokens:3000}});
-  const go=q=>{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),45000);return fetch(q?url+'?key='+encodeURIComponent(key):url,{method:'POST',signal:ac.signal,headers:q?{'content-type':'application/json'}:{'content-type':'application/json','x-goog-api-key':key},body}).finally(()=>clearTimeout(tm))};
-  let r=await go(LS.get('drc.gauth')==='q');if(r.status===401||r.status===403)r=await go(LS.get('drc.gauth')!=='q');
-  if(!r.ok){visionErr=await errText(r);throw r.status===429?'quota':'http'}
-  const d=await r.json(),c=(d.candidates||[])[0]||{},t=((c.content||{}).parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('');
-  const src=((c.groundingMetadata||{}).groundingChunks||[]).map(g=>g.web).filter(Boolean).map(w=>({u:w.uri,t:w.title||''}));
-  return {j:parseJSONText(t),src}}
+  // البحث على جوجل (Grounding): بعض الموديلات مالهاش حد مجاني للبحث — بنجرب كذا موديل لحد ما واحد يشتغل
+  const cm=LS.get('drc.wmodel'),models=[...new Set([cm,'gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash',LS.get('drc.gmodel')].filter(Boolean))];let last='http';const errs=[];
+  for(const model of models){const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,tool=/gemini-1\./.test(model)?{google_search_retrieval:{}}:{google_search:{}},body=JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],tools:[tool],generationConfig:{temperature:0.1,maxOutputTokens:3000}});
+    const go=q=>{const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),45000);return fetch(q?url+'?key='+encodeURIComponent(key):url,{method:'POST',signal:ac.signal,headers:q?{'content-type':'application/json'}:{'content-type':'application/json','x-goog-api-key':key},body}).finally(()=>clearTimeout(tm))};
+    let r;try{r=await go(LS.get('drc.gauth')==='q');if(r.status===401||r.status===403)r=await go(LS.get('drc.gauth')!=='q')}catch(e){errs.push(model+': مش قادر يوصل');last='net';continue}
+    if(!r.ok){errs.push(`${model} ${r.status}: ${(await errText(r)).slice(0,90)}`);last=r.status===429?'quota':'http';continue}
+    const d=await r.json(),c=(d.candidates||[])[0]||{},t=((c.content||{}).parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('');
+    const src=((c.groundingMetadata||{}).groundingChunks||[]).map(g=>g.web).filter(Boolean).map(w=>({u:w.uri,t:w.title||''}));
+    try{const j=parseJSONText(t);LS.set('drc.wmodel',model);return {j,src}}catch(e){errs.push(model+': رد مش مفهوم');last='parse'}}
+  visionErr=errs.join(' | ');throw last}
 async function euPrice(p,C){const [,,en]=EUC[C];
   const pr=`Find the CURRENT retail price of this exact product in ${en}: "${p.name}"${p.alias?` (${p.alias})`:''}. Look at pharmacies, drugstores and online shops in ${en} (e.g. dm, Rossmann, Müller, DocMorris, Shop Apotheke, Notino, Dr.Max, apteka, lékárna, farmacia, Amazon of that country). Same size/pack if possible.
 Return ONLY one JSON object, no markdown:
 {"found":true or false,"low":lowest price number,"high":highest price number,"currency":"local currency code (EUR, CZK, PLN, GBP)","eur_low":low converted to EUR,"eur_high":high converted to EUR,"size":"pack size the prices refer to","shops":["up to 3 shop names"]}
 Never invent prices — if you cannot find real prices set "found":false.`;
   let out,est=false;
-  try{out=await askWeb(pr)}catch(e){if(e==='key'||e==='quota')throw e;est=true;out={j:await askText(pr.replace('Never invent prices','Give your best estimate from knowledge (no web access). Never invent precise numbers you do not know'),600),src:[]}}
+  try{out=await askWeb(pr)}catch(e){if(e==='key')throw e;est=true;out={j:await askText(pr.replace('Never invent prices','Give your best estimate from knowledge (no web access). Never invent precise numbers you do not know'),600),src:[]}}
   const j=out.j||{};if(!j.found||!(+j.low>0))return {none:1,t:Date.now(),est};
   const v={low:+j.low,high:+j.high||+j.low,cur:String(j.currency||'EUR').toUpperCase(),el:+j.eur_low||0,eh:+j.eur_high||+j.eur_low||0,size:j.size?String(j.size):'',shops:(Array.isArray(j.shops)?j.shops:[]).map(String).slice(0,3),src:out.src.slice(0,3),t:Date.now(),...(est?{est:1}:{})};
   await ref('items/'+p.id).set({eu:{[C]:v}},{merge:true});const it=S.items.find(x=>x.id===p.id);if(it)it.eu={...(it.eu||{}),[C]:v};return v}
@@ -3126,7 +3135,7 @@ function infoHtml(p){const i=p.info,C=LS.get('drc.euc')||'DE',e=(p.eu||{})[C],ou
   h+=`<b class="pih" style="margin-top:12px">🌍 سعره في أوروبا</b><div class="chips euc">${Object.entries(EUC).map(([k,[f,n]])=>`<button class="chip" data-inf="c:${k}" aria-pressed="${k===C}">${f} ${n}${(p.eu||{})[k]&&!(p.eu||{})[k].none?' ✓':''}</button>`).join('')}</div>`;
   if(e&&!e.none){const pc=our&&e.el?Math.round((1-our/((e.el+e.eh)/2))*100):null;
     h+=`<div class="eup"><div class="eubig">${EUC[C][0]} ${fmtR(e.low,e.high,e.cur)}${e.cur!=='EUR'&&e.el?`<small>≈ ${fmtR(e.el,e.eh,'EUR')}</small>`:''}</div>
-      <div class="meta">${e.size?`<span>${esc(e.size)}</span>`:''}${e.shops.length?`<span>${esc(e.shops.join('، '))}</span>`:''}<span>${ago(e.t)}</span>${e.est?'<span class="rd">تقدير — من غير بحث</span>':''}</div>
+      <div class="meta">${e.size?`<span>${esc(e.size)}</span>`:''}${e.shops.length?`<span>${esc(e.shops.join('، '))}</span>`:''}<span>${ago(e.t)}</span>${e.est?'<span class="rd">تقدير من الذكاء الاصطناعي — البحث على النت مش متاح للمفتاح ده</span>':''}</div>
       ${our?`<p class="${pc>0?'ok':'rd'}" style="margin:6px 0 0">عندنا €${num(our)} — ${pc>0?`أرخص من ${EUC[C][1]} بـ ${pc}% 👌`:pc<0?`أغلى بـ ${-pc}%`:'نفس السعر'}</p>`:''}
       ${e.src.length?`<div class="eusrc">${e.src.map(s_=>`<a href="${esc(s_.u)}" target="_blank" rel="noopener">${esc((s_.t||s_.u).slice(0,40))}</a>`).join('')}</div>`:''}</div>`}
   else if(e&&e.none)h+=`<p class="hint">ملقيتش سعر أكيد في ${EUC[C][1]}${e.est?' (من غير بحث)':''}.</p>`;
@@ -3138,7 +3147,7 @@ document.addEventListener('click',async ev=>{const b=ev.target.closest('[data-in
   if(!getKey()){st.textContent='🔑 محتاج مفتاح الذكاء الاصطناعي';return}
   b.disabled=true;
   if(k==='ai'){st.innerHTML='<span class="spin"></span>🤖 بيكتب الفوايد والجرعة…';try{await aiInfo(p);redraw()}catch(e){st.textContent='مقدرتش — جرب تاني';b.disabled=false}return}
-  if(k==='eu'){const C=LS.get('drc.euc')||'DE';st.innerHTML=`<span class="spin"></span>🔎 بيدوّر على أسعاره في ${EUC[C][1]}… (ممكن ياخد 20 ثانية)`;try{const v=await euPrice(p,C);if(!v.el&&!v.none&&v.cur==='EUR'){v.el=v.low;v.eh=v.high}p.eu={...(p.eu||{}),[C]:v};redraw()}catch(e){st.textContent=e==='quota'?'⏳ الحد المسموح للمفتاح خلص':'مقدرتش أدوّر دلوقتي — جرب تاني';b.disabled=false}}},true);
+  if(k==='eu'){const C=LS.get('drc.euc')||'DE';st.innerHTML=`<span class="spin"></span>🔎 بيدوّر على أسعاره في ${EUC[C][1]}… (ممكن ياخد 20 ثانية)`;try{const v=await euPrice(p,C);if(!v.el&&!v.none&&v.cur==='EUR'){v.el=v.low;v.eh=v.high}p.eu={...(p.eu||{}),[C]:v};redraw()}catch(e){st.innerHTML=(e==='quota'?'⏳ الحد المسموح للمفتاح خلص':'مقدرتش أدوّر دلوقتي — جرب تاني')+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'');b.disabled=false}}},true);
 async function pitchSheet(p,lang){
   lang=lang||LS.get('drc.nat')||'de';
   const h=heroStats().find(x=>x.p.id===p.id)||{obj:{},why:{},nat:{},k:0,N:0};
