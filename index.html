@@ -553,6 +553,10 @@ body.hasinv .wrap{padding-bottom:230px}
 .gby{align-items:center}
 .shsec.fresh{border:2px solid var(--red);border-radius:14px;padding:4px 6px;background:rgba(198,42,47,.06)}.shsec.fresh header b{color:var(--red)}
 .pill.new{background:var(--red);color:#fff}
+.shban{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:2px solid var(--red);background:rgba(198,42,47,.08);border-radius:12px;padding:8px 10px;margin:4px 0 8px;font-size:14px}.shban.done{border-color:var(--green);background:rgba(14,124,102,.08)}.shban .sbb{display:flex;gap:6px}
+.minq.big .chip{min-width:46px;font-size:17px;font-weight:700}.minq.need{outline:2px solid var(--red);border-radius:10px}
+.expban{border:2px solid var(--amber);background:rgba(240,170,40,.12);border-radius:12px;padding:10px 12px;margin:4px 0 8px;font-size:15px}.expban.hot{border-color:var(--red);background:rgba(198,42,47,.1);font-size:16px;animation:ebp 1.2s ease-in-out 3}
+@keyframes ebp{50%{transform:scale(1.02)}}.ebl{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.eb{border-radius:8px;padding:4px 9px;background:var(--bg);border:1px solid var(--line);direction:ltr;font-weight:700}.eb i{font-style:normal;color:var(--muted)}.eb.dead,.eb.now{background:var(--red);color:#fff;border-color:var(--red)}.eb.soon{background:var(--amber);color:#111;border-color:var(--amber)}.eb.dead i,.eb.now i,.eb.soon i{color:inherit}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -814,7 +818,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '16-10 النواقص الجديدة أول القايمة + تذكير';
+const APP_V = '16-10ج تنبيه التواريخ + النواقص عند المسح';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1235,10 +1239,34 @@ function itemSheet(p){
     else if(m==='ord'){closeSheet();toggleOrdered(x)}else if(m==='del')delSheet(x);else if(m.startsWith('out:'))outSheet(x,m.slice(4))});
   if(p.img)fullImg(p.id).then(d=>{const im=sh.querySelector('.hero img');if(d&&im)im.src=d});
 }
-function sellSheet(p,o={}){
+/* الحد الأدنى إجباري عند مسح أي صنف مالوش حد أدنى */
+const hasMin=p=>p.min!=null&&p.min!=='';
+function minGate(p,cont){let v=null;
+  const r=openSheet(`<h4>📉 الحد الأدنى — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">الصنف ده مالوش حد أدنى. لما الكمية توصل للرقم ده هينزل في النواقص ويوصلك تنبيه. <b>لازم تحدده الأول.</b></p>
+    <div class="chips minq big">${[1,2,3,4,5,6,8,10].map(n=>`<button class="chip" data-m="mq:${n}" aria-pressed="false">${n}</button>`).join('')}</div>
+    <input id="mgV" type="number" inputmode="numeric" placeholder="أو اكتب رقم تاني" style="margin-top:8px">
+    <p class="hint">عندك دلوقتي: <b>${fmtQ(p,good(p))}</b></p>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok" disabled>✓ احفظ وكمّل</button></div>`,
+  (m,root,b)=>{if(m.startsWith('mq:')){v=+m.slice(3);root.querySelector('#mgV').value='';root.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));root.querySelector('[data-m=ok]').disabled=false;return}
+    if(m!=='ok')return;const t=root.querySelector('#mgV').value.trim();const n=t!==''?int(t):v;if(n==null||n<0){toast('اختار الحد الأدنى');return}
+    closeSheet();p.min=n;run(ref('items/'+p.id).update({min:n}),`📉 الحد الأدنى لـ ${p.name} = ${n}`);setTimeout(()=>cont(p),150)},false);
+  r.querySelector('#mgV').addEventListener('input',e=>{const ok=e.target.value.trim()!=='';if(ok)r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed','false'));r.querySelector('[data-m=ok]').disabled=!ok&&v==null})}
+/* حالة الصنف في النواقص — بتظهر أول ما تمسحه */
+function shortBanner(p){if(!isShort(p))return '';const q=good(p),d=t=>fmtDay(dayKey(new Date(t)));
+  const st=p.ordered?`<span class="ok">✓ اتطلب من الشركة${p.ordered.t?' '+d(p.ordered.t):''}</span>`:p.shortSent&&!p.shortAt?`<span class="ok">📤 اتبعت للمدير ${d(p.shortSent.t)}${p.shortSent.by?' — '+esc(p.shortSent.by):''}</span>`:`<b class="rd">لسه ما اتبعتش للمدير</b>`;
+  return `<div class="shban ${p.ordered||(p.shortSent&&!p.shortAt)?'done':''}" data-sbid="${p.id}"><div>⚠️ <b>من النواقص</b> — ${q?'فاضل '+fmtQ(p,q):'خلصان'} (الحد الأدنى ${minOf(p)})<br>${st}</div>${p.ordered||(p.shortSent&&!p.shortAt)?'':`<div class="sbb"><button class="btn sm primary" data-sb="mgr">📤 ابعته للمدير</button><button class="btn sm" data-sb="sent">✓ اتبعت</button></div>`}</div>`}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-sb]');if(!b)return;const box=b.closest('[data-sbid]');if(!box)return;e.stopPropagation();const p=S.items.find(x=>x.id===box.dataset.sbid);if(!p)return;
+  if(b.dataset.sb==='mgr')return shareShortSheet(p);
+  p.shortSent={t:Date.now(),by:me()};delete p.shortAt;run(ref('items/'+p.id).update({shortAt:FV().delete(),shortSent:p.shortSent}),'✓ اتعلّم «اتبعت للمدير»');box.outerHTML=shortBanner(p)},true);
+/* تنبيه كبير لو الصنف ليه أكتر من تاريخ صلاحية — عشان تبيع الأقرب الأول */
+function expBanner(p){const bl=bats(p).filter(([k,v])=>v>0&&k!=='x');if(bl.length<2)return '';const n=nowIdx(),near=bl.filter(([k])=>bkIdx(k)<=n+6);
+  const row=([k,v])=>{const c=expCls(k);return `<span class="eb ${c||(bkIdx(k)<=n+6?'soon':'')}">${bkLabel(k)} <i>×${v}</i>${c==='dead'?' منتهي':c==='now'?' الشهر ده':''}</span>`};
+  return `<div class="expban ${near.length?'hot':''}">⏳ <b>${near.length?`خلي بالك! عندك ${near.reduce((a,[,v])=>a+v,0)} قطعة تاريخها قريب`:`الصنف ده ليه ${bl.length} تواريخ`}</b> — بيع الأقرب الأول<div class="ebl">${bl.map(row).join('')}</div></div>`}
+function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(np,o));
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const K=spb(p),tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty*(l.unit==='strip'?1:K),0);let unit='box';const mul=()=>unit==='strip'?1:K;
   const r=openSheet(`<h4 class="withimg sellh">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1"><em class="snm">${esc(p.name)}</em>${medInfo(p)?`<small class="szc">${esc(medInfo(p))}</small>`:''}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
+    ${expBanner(p)}${shortBanner(p)}
     <div class="sellacts"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
     ${CART.lines.length||inCart?`<p class="hint" style="margin:6px 2px 0;text-align:center">🧾 في الفاتورة دلوقتي ${CART.lines.length} صنف${inCart?` — منه ${inCart} من الصنف ده`:''}</p>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
@@ -1276,10 +1304,10 @@ function sellSheet(p,o={}){
     const op=!r.querySelector('#bxl').hidden;r.querySelector('#fMore').textContent=op?'▴ إخفاء':(bl.length>1?`▾ كل التواريخ (${bl.length})`:'▾ التفاصيل');r.querySelector('.sx').classList.toggle('on',op)}
   r.querySelector('#fN').addEventListener('input',updLeft);updLeft();fillPx();
 }
-function restockSheet(p,pre={}){
+function restockSheet(p,pre={}){if(p&&pre.scan&&!hasMin(p))return minGate(p,np=>restockSheet(np,pre));
   const pick=!p,isMed=p?tOf(p)==='med':!!(pre.name&&findByName(pre.name)&&tOf(findByName(pre.name))==='med');
   const lastK=p?(pre.k||p.lastK||(bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0])||''):(pre.k||'');
-  openSheet(`<h4 class="withimg">${p&&p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">📦 استلام${p?' — '+esc(p.name):''}</span>${p?'<button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button>':''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}${pre.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}
+  openSheet(`<h4 class="withimg">${p&&p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">📦 استلام${p?' — '+esc(p.name):''}</span>${p?'<button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button>':''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}${pre.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}${p?shortBanner(p):''}
     ${pick?`<label for="fItem">الصنف</label><div class="vrow"><input id="fItem" list="ilist" value="${esc(pre.name||'')}" placeholder="اكتب اسم الصنف أو امسحه"><button class="icon" data-m="scan" aria-label="امسح الباركود">🔳</button></div><datalist id="ilist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`:`<div class="stock"><div><small>عندك دلوقتي</small><b>${good(p)}</b></div><div><small>بعد الاستلام</small><b id="fAfter">${fmtQs(p,good(p)+(+pre.q||1)*spb(p))}</b></div></div>`}
     <label for="fQ">العدد اللي وصل${p&&spb(p)>1?' (علب)':''}</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fQ" type="number" inputmode="numeric" value="${pre.q||1}"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
     <button class="btn sm cntbtn" data-m="cnt">📸 عدّ بالصورة</button><div id="cntSt" class="cntst"></div>
@@ -2655,10 +2683,11 @@ function scanTwice(title,cb,reads){reads=reads||[];
 function unknownCode(code,g,mode){
   openSheet(`<h4>🔳 كود جديد</h4><p class="hint" style="margin-top:0">الكود <b class="ltr">${esc(code)}</b> مش متسجل على أي صنف لسه.</p>
     <label for="ucI">اربطه بصنف موجود</label><input id="ucI" list="uclist" placeholder="اكتب اسم الصنف"><datalist id="uclist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>
-    <label>📉 لو صنف جديد — الحد الأدنى كام؟</label><div class="chips minq">${[1,2,3,5,10].map(n=>`<button class="chip" data-m="mq:${n}" aria-pressed="${n===2}">${n}</button>`).join('')}</div>
+    <label>📉 لو صنف جديد — الحد الأدنى كام؟ <b class="rd">(لازم)</b></label><div class="chips minq">${[1,2,3,4,5,6,8,10].map(n=>`<button class="chip" data-m="mq:${n}" aria-pressed="false">${n}</button>`).join('')}</div>
     <p class="hint">المرة الجاية لما تمسحه هيفتح الصنف على طول. <b>هتمسحه مرة كمان للتأكيد</b> عشان الكود ما يتسجلش غلط.</p>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="vs">🤖 لاقيه بالصورة</button><button class="btn" data-m="new">🆕 صنف جديد بالكود ده</button><button class="btn primary" data-m="link">🔗 اربط و${mode==='in'?'استلم':'بيع'}</button></div>`,
-  (m,r,b)=>{if(m.startsWith('mq:')){r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}const mq=+((r.querySelector('.minq [aria-pressed=true]')||{}).dataset||{m:'mq:2'}).m.slice(3)||2;if(m==='vs')return visualSearch(p=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},'لاقي الصنف واربط الكود');
+  (m,r,b)=>{if(m.startsWith('mq:')){r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}const mqb=r.querySelector('.minq [aria-pressed=true]'),mq=mqb?+mqb.dataset.m.slice(3):null;if(m==='vs')return visualSearch(p=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},'لاقي الصنف واربط الكود');
+    if(m==='new'&&mq==null){toast('📉 اختار الحد الأدنى الأول');r.querySelector('.minq').classList.add('need');return}
     if(m==='new'){closeSheet();return scanTwice('',c=>{const ex=itemsByCode(c);if(ex.length){toast('الكود ده متسجل على: '+ex[0].name);return mode==='in'?restockSheet(ex[0],{scan:true}):sellSheet(ex[0],{scan:true})}itemForm(null,{codes:[c],codeOk:1,min:mq,k:g&&g.y?bk(g.y,g.m):'',q:mode==='in'?'':undefined})},[code])}
     if(m!=='link')return;const p=findByName(r.querySelector('#ucI').value);if(!p){toast('اختار الصنف من القايمة');return}
     closeSheet();return scanTwice('',code=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},[code])});
