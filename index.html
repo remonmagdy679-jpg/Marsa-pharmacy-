@@ -551,6 +551,8 @@ body.hasinv .wrap{padding-bottom:230px}
 .prow{cursor:pointer;text-align:start}.prow:active{background:var(--bg)}
 .row.qhit{background:rgba(240,170,40,.12)}
 .gby{align-items:center}
+.shsec.fresh{border:2px solid var(--red);border-radius:14px;padding:4px 6px;background:rgba(198,42,47,.06)}.shsec.fresh header b{color:var(--red)}
+.pill.new{background:var(--red);color:#fff}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -812,7 +814,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '14-10ر النواقص للمدير مرة واحدة';
+const APP_V = '16-10 النواقص الجديدة أول القايمة + تذكير';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -885,7 +887,7 @@ function renderTop(){
   const sc=S.items.filter(p=>typeOk(tOf(p))&&isShort(p)).length;
   const n=nowIdx();let ec=0;S.items.forEach(p=>{if(typeOk(tOf(p)))bats(p).forEach(([k])=>{if(bkIdx(k)<=n)ec++})});
   const dn=debtPeople(true).length;
-  const tabs=[['items','الأصناف'],['sales','المبيعات'],['debt','الآجل',dn?`<span class="pill amber">${dn}</span>`:''],['short','النواقص',sc?`<span class="pill">${sc}</span>`:''],['exp','الإكسباير',ec?`<span class="pill amber">${ec}</span>`:''],['acc','الحسابات'],['log','السجل']];
+  const tabs=[['items','الأصناف'],['sales','المبيعات'],['debt','الآجل',dn?`<span class="pill amber">${dn}</span>`:''],['short','النواقص',(()=>{const fr=S.items.filter(p=>p.shortAt&&typeOk(tOf(p))).length;return fr?`<span class="pill new">🆕${fr}</span>`:sc?`<span class="pill">${sc}</span>`:''})()],['exp','الإكسباير',ec?`<span class="pill amber">${ec}</span>`:''],['acc','الحسابات'],['log','السجل']];
   $tabs.innerHTML=show?tabs.map(([k,l,p])=>`<button data-tab="${k}" ${S.view===k?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TICON[k]}</svg><span>${l}</span>${p||''}</button>`).join(''):'';
   $sb.hidden=!show;
   $seg.hidden=['acc','log','notes','sales','short','debt'].includes(S.view);
@@ -973,7 +975,9 @@ const baseName=p=>String(p.name||'').toLowerCase().replace(/\d+(?:[.,]\d+)?\s*(k
 const GBY=()=>LS.get('drc.grpby')||'brand';
 const brandLabel=p=>{if(p.brand)return p.brand;const w=String(p.name||'').trim().split(/\s+/);return w[0]&&w[0].length>=3?w[0]:w.slice(0,2).join(' ')};
 const secKey=(p,m)=>{m=m||GBY();return m==='kind'?'k'+String(kindOf(p)).padStart(2,'0'):m==='cat'?secOf(p):'b'+brandOf(p)};
-const secLabel=(k,p)=>k[0]==='k'?'🧴 '+(KINDS[+k.slice(1)]||[0,'تانية'])[1]:k[0]==='b'?'🏷️ '+(p?brandLabel(p):k.slice(1)):catLabel(k);
+const shKey=p=>p.shortAt?'__new':secKey(p);
+function markSent(ps){const b=fs.batch();let n=0;ps.forEach(p=>{if(p&&p.shortAt){b.update(ref('items/'+p.id),{shortAt:FV().delete(),shortSent:{t:Date.now(),by:me()}});n++}});if(n)commit(b,`✓ ${n} صنف اتعلّم «اتبعت للمدير»`);return n}
+const secLabel=(k,p)=>k==='__new'?'🆕 نزل نواقص جديد — لسه ما اتبعتش للمدير':k[0]==='k'?'🧴 '+(KINDS[+k.slice(1)]||[0,'تانية'])[1]:k[0]==='b'?'🏷️ '+(p?brandLabel(p):k.slice(1)):catLabel(k);
 const tail=(a,b)=>baseName(a).localeCompare(baseName(b))||sizeVal(a)-sizeVal(b);
 const itemCmp=(a,b,m)=>{m=m||GBY();if(m==='kind')return kindOf(a)-kindOf(b)||brandOf(a).localeCompare(brandOf(b))||tail(a,b);if(m==='cat')return bySec(a,b);return brandOf(a).localeCompare(brandOf(b))||kindOf(a)-kindOf(b)||tail(a,b)};
 const gbyChips=()=>`<div class="chips gby"><span class="hint" style="margin:0">رتّب حسب:</span>${[['brand','🏷️ البراند'],['kind','🧴 النوع'],['cat','🗂️ القسم']].map(([k,l])=>`<button class="chip" data-act="gby" data-k="${k}" aria-pressed="${GBY()===k}">${l}</button>`).join('')}</div>`;
@@ -991,7 +995,7 @@ function shortList(){
   if(S.shortMode==='out')l=l.filter(p=>!good(p));
   if(S.shortMode==='low')l=l.filter(p=>good(p)>0);
   if(S.shortMode==='todo')l=l.filter(p=>!p.ordered);
-  return l.sort((a,b)=>itemCmp(a,b)||byName(a,b));
+  return l.sort((a,b)=>(b.shortAt?1:0)-(a.shortAt?1:0)||(a.shortAt&&b.shortAt?(b.shortAt.t||0)-(a.shortAt.t||0):0)||itemCmp(a,b)||byName(a,b));
 }
 /* تحديد الأصناف اللي هتتبعت + كمية كل صنف (بالعلبة) */
 let SHQ=(()=>{try{return JSON.parse(LS.get('drc.shq')||'{}')}catch(e){return {}}})();
@@ -1016,14 +1020,14 @@ function vShort(){
     const n=list.filter(shSel).length;
     const unk=S.items.filter(p=>!p.cat&&!guessCat(p)).length;if(unk&&getKey())h+=`<div class="setbn">🏷️ فيه ${unk} صنف مش متصنّف (نازلين في «تانية»). <button class="btn sm primary" data-act="sh-aicat">🤖 صنّفهم بالذكاء الاصطناعي</button></div>`;
     h+=`<div class="shtop"><button class="linkb" data-act="sh-all">${n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}</button><span class="hint" style="margin:0">علّم على اللي هتبعته وظبط الكمية</span></div>`;
-    h+=gbyChips();const secs=[];list.forEach(p=>{const g=secKey(p);let s_=secs.find(x=>x.g===g);if(!s_){s_={g,l:[]};secs.push(s_)}s_.l.push(p)});
-    h+=secs.map(({g,l})=>{const on=l.filter(shSel).length;return `<section class="shsec" data-g="${esc(g)}"><header><button class="sck sm ${on===l.length?'all':on?'some':''}" data-act="sh-gtog" data-g="${esc(g)}" aria-label="حدد القسم">${on===l.length?'✓':on?'–':''}</button><b>${secLabel(g,l[0])}</b><small>${l.length} صنف</small><button class="btn sm primary" data-act="sh-gsend" data-g="${esc(g)}">📤 ابعت القسم</button></header><div class="rows">${l.map(rowShort).join('')}</div></section>`}).join('');
+    h+=gbyChips();const secs=[];list.forEach(p=>{const g=shKey(p);let s_=secs.find(x=>x.g===g);if(!s_){s_={g,l:[]};secs.push(s_)}s_.l.push(p)});
+    h+=secs.map(({g,l})=>{const on=l.filter(shSel).length;return `<section class="shsec${g==='__new'?' fresh':''}" data-g="${esc(g)}"><header><button class="sck sm ${on===l.length?'all':on?'some':''}" data-act="sh-gtog" data-g="${esc(g)}" aria-label="حدد القسم">${on===l.length?'✓':on?'–':''}</button><b>${secLabel(g,l[0])}</b><small>${l.length} صنف</small>${g==='__new'?'<button class="btn sm" data-act="sh-sent">✓ اتبعتوا</button>':''}<button class="btn sm primary" data-act="sh-gsend" data-g="${esc(g)}">📤 ابعت${g==='__new'?'هم للمدير':' القسم'}</button></header><div class="rows">${l.map(rowShort).join('')}</div></section>`}).join('');
     h+=`<div class="toolbar" style="margin-top:12px"><button class="btn" data-act="rep-short" data-k="copy">نسخ</button><button class="btn" data-act="rep-short" data-k="pdf">PDF</button>${out?`<button class="btn" data-act="alert-out">🔔 نبّه الكل بالخلصان</button>`:''}</div>`;
     h+=`<div class="shbar"><b id="shN">${n}</b><span>صنف متحدد</span><button class="btn" data-act="sh-text">📋 نص</button><button class="btn primary" data-act="sh-send">📤 ابعت صور</button></div>`;
   }else h+=`<div class="empty">${S.items.length?'مفيش نواقص هنا 👌':'لسه مفيش أصناف'}</div>`;
   $app.innerHTML=h;
 }
-function shRefreshBar(){const list=shortList(),n=list.filter(shSel).length,el=$('shN');if(el)el.textContent=n;$app.querySelectorAll('.shsec').forEach(sec=>{const l=list.filter(p=>secKey(p)===sec.dataset.g),on=l.filter(shSel).length,b=sec.querySelector('[data-act=sh-gtog]');if(b){b.className='sck sm '+(on===l.length?'all':on?'some':'');b.textContent=on===l.length?'✓':on?'–':''}});const a=$app.querySelector('[data-act="sh-all"]');if(a)a.textContent=n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}
+function shRefreshBar(){const list=shortList(),n=list.filter(shSel).length,el=$('shN');if(el)el.textContent=n;$app.querySelectorAll('.shsec').forEach(sec=>{const l=list.filter(p=>shKey(p)===sec.dataset.g),on=l.filter(shSel).length,b=sec.querySelector('[data-act=sh-gtog]');if(b){b.className='sck sm '+(on===l.length?'all':on?'some':'');b.textContent=on===l.length?'✓':on?'–':''}});const a=$app.querySelector('[data-act="sh-all"]');if(a)a.textContent=n===list.length?'✕ إلغاء تحديد الكل':'✓ تحديد الكل'}
 function shMore(p){openSheet(`<h4>${esc(p.name)}</h4><div class="menu">
     <button data-m="in"><span>📦</span><b>اتورد</b><small>ضيف الكمية اللي وصلت</small></button>
     <button data-m="ord"><span>✓</span><b>${p.ordered?'شيل «اتطلب»':'اتطلب'}</b><small>علّم إنه اتطلب من المورد</small></button>
@@ -1062,8 +1066,8 @@ async function makeShortList(sel,pi,pn,aud){aud=aud||'co';
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
 }
 async function shSend(grp){
-  let sel=shSelected();if(grp)sel=sel.filter(x=>secKey(x.p)===grp);
-  if(!sel.length){if(grp){const l=shortList().filter(p=>secKey(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>secKey(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
+  let sel=shSelected();if(grp)sel=sel.filter(x=>shKey(x.p)===grp);
+  if(!sel.length){if(grp){const l=shortList().filter(p=>shKey(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>shKey(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
   sel.sort((a,b)=>itemCmp(a.p,b.p));
   let aud=LS.get('drc.aud')||'co',mode='each';const PER=12;
   const r=openSheet(`<h4>📤 ابعت ${grp?`${secLabel(grp,sel[0]&&sel[0].p)} — `:''}${sel.length} صنف</h4>
@@ -1075,11 +1079,11 @@ async function shSend(grp){
   async m=>{const mark=()=>{if(aud==='co'&&r.querySelector('#saOrd').checked){const b=fs.batch();sel.forEach(x=>{if(!x.p.ordered)b.update(ref('items/'+x.p.id),{ordered:{by:me(),t:Date.now()}})});commit(b)}};
     if(m.startsWith('a:')){aud=m.slice(2);LS.set('drc.aud',aud);r.querySelectorAll('.audsel button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));build();return}
     if(m==='one'){mode=mode==='one'?'each':'one';r.querySelector('[data-m=one]').textContent=mode==='one'?'🖼️ بدلها: صورة لكل صنف':'🧾 بدلها: صورة واحدة فيها الكل';build();return}
-    if(m.startsWith('b:')){const i=+m.slice(2),fl=cache[aud+mode];await shareFiles(fl.slice(i,i+10),'');r.querySelector(`[data-m="${m}"]`).classList.add('sent');if(i+10>=fl.length)mark()}
+    if(m.startsWith('b:')){const i=+m.slice(2),fl=cache[aud+mode];await shareFiles(fl.slice(i,i+10),'');r.querySelector(`[data-m="${m}"]`).classList.add('sent');if(aud==='mgr'){if(mode==='each')markSent(sel.slice(i,i+10).map(x=>x.p));else if(i+10>=fl.length)markSent(sel.map(x=>x.p))}if(i+10>=fl.length)mark()}
     if(m.startsWith('all:')){const i=+m.slice(4),fl=cache[aud+mode],part=sel.slice(i,i+30);
       const t=`📋 نواقص ${fmtDay(today())}${fl.length>30?` (${i+1}–${Math.min(i+30,fl.length)})`:''}\n\n`+part.map((x,j)=>`${i+j+1}. ${x.p.name} — عندنا ${fmtQ(x.p,good(x.p))}`).join('\n');
-      await shareFiles(fl.slice(i,i+30),t,true);const bb=r.querySelector(`[data-m="${m}"]`);if(bb)bb.classList.add('sent');return}
-    if(m==='nx'){const fl=cache[aud+mode];if(!fl||nxi>=fl.length)return;const x=sel[nxi];await shareFiles([fl[nxi]],mgrCap(x.p),true);nxi++;drawNx()}
+      await shareFiles(fl.slice(i,i+30),t,true);markSent(part.map(x=>x.p));const bb=r.querySelector(`[data-m="${m}"]`);if(bb)bb.classList.add('sent');return}
+    if(m==='nx'){const fl=cache[aud+mode];if(!fl||nxi>=fl.length)return;const x=sel[nxi];await shareFiles([fl[nxi]],mgrCap(x.p),true);markSent([x.p]);nxi++;drawNx()}
     if(m==='qtxt'){const t=sel.map((x,i)=>`${i+1}. ${x.p.name} — عندنا ${fmtQ(x.p,good(x.p))}`).join('\n');if(await copyText(t))toast('الكميات اتنسخت ✓ — الصقها في الشات');else textSheet('الكميات',t)}});
   let nxi=0;const drawNx=()=>{const bt=r.querySelector('#saBtns'),fl=cache[aud+mode];if(!bt||!fl)return;
     const B=30;let all='';for(let i=0;i<fl.length;i+=B)all+=`<button class="btn primary big" data-m="all:${i}" style="flex:1 1 100%;padding:14px">📤 ابعت ${fl.length>B?`${i+1}–${Math.min(i+B,fl.length)}`:'الكل'} مرة واحدة<br><small>${Math.min(B,fl.length-i)} صورة مترقمة + رسالة فيها الكمية لكل رقم</small></button>`;
@@ -1469,6 +1473,7 @@ function doSell(p,n,start,quiet,extra){
   if(extra&&extra.cur&&extra.price>0&&!extra.pxa)b.set(ref('items/'+p.id),{px:{[extra.cur+(extra.unit==='strip'?'_s':'')]:extra.price}},{merge:true});
   evt(b,'sale',p.name,n,Object.keys(alloc).filter(k=>k!=='x').map(bkLabel).join('، '));
   let al=false;
+  {const mk=minOf(p)*spb(p);if(before>mk&&after<=mk&&!p.ordered&&!p.shortAt){p.shortAt={t:Date.now(),by:me()};b.set(ref('items/'+p.id),{shortAt:p.shortAt},{merge:true});if(!(after===0)&&!(p.critical))push('📉 نزل نواقص — '+SHOP_NAME,`${p.name} — فاضل ${fmtQ(p,after)} (الحد الأدنى ${minOf(p)})\nلسه ما اتبعتش للمدير`,{prio:4,tags:['chart_with_downwards_trend'],all:true})}}
   if(after===0&&before>0)al=newAlert(b,p,0,true,'خلص من المخزن');
   else if(p.critical&&after<=minOf(p)&&before>minOf(p))al=newAlert(b,p,after,true,'وصل للحد الأدنى');
   commit(b);
@@ -1491,7 +1496,7 @@ function undoSale(s){
 }
 function resolveAlerts(b,p){openAlerts().filter(a=>a.id===p.id).forEach(a=>b.update(ref('alerts/'+a.aid),{done:true,doneBy:me(),doneT:Date.now()}))}
 function restock(p,q,k,price,life){
-  const b=fs.batch();const d={b:{[k]:FV().increment(q)},ordered:FV().delete(),lastK:k};if(price>0)d.price=price;if(life)d.life=life;
+  const b=fs.batch();const d={b:{[k]:FV().increment(q)},ordered:FV().delete(),shortAt:FV().delete(),lastK:k};if(price>0)d.price=price;if(life)d.life=life;
   b.set(ref('items/'+p.id),d,{merge:true});resolveAlerts(b,p);evt(b,'in',p.name,q,bkLabel(k));commit(b,`اتضاف ${q} — ${p.name}`);
 }
 function removeBatch(p,k,q,why){
@@ -1517,7 +1522,7 @@ async function bulkAdd(type,rows){
     toast(`تمام — ${added} صنف جديد، و${upd} اتضافلهم كمية`);
   }catch(e){console.error(e);toast('حصلت مشكلة في الحفظ — جرب تاني')}
 }
-function toggleOrdered(p){const b=fs.batch();b.update(ref('items/'+p.id),{ordered:p.ordered?FV().delete():{by:me(),t:Date.now()}});if(!p.ordered)evt(b,'ord',p.name,'');commit(b,p.ordered?'اتشالت علامة «اتطلب»':'اتعلّم «اتطلب» عند الكل')}
+function toggleOrdered(p){const b=fs.batch();b.update(ref('items/'+p.id),{ordered:p.ordered?FV().delete():{by:me(),t:Date.now()},...(p.ordered?{}:{shortAt:FV().delete()})});if(!p.ordered)evt(b,'ord',p.name,'');commit(b,p.ordered?'اتشالت علامة «اتطلب»':'اتعلّم «اتطلب» عند الكل')}
 function urgent(p){const b=fs.batch();if(newAlert(b,p,good(p),false,'عاجل')){commit(b,'التنبيه وصل لكل اللي فاتحين الموقع')}else toast('في تنبيه مفتوح للصنف ده بالفعل')}
 function alertAllOut(){const b=fs.batch();const ns=[];S.items.filter(p=>mItem(p)&&!good(p)).forEach(p=>{if(newAlert(b,p,0,false,'خلصان',true))ns.push(p.name)});const c=ns.length;if(c){commit(b,`اتبعت ${c} تنبيه للكل`);push(`🔔 ${c} صنف خلصان — ${SHOP_NAME}`,ns.join('\n'),{prio:5,tags:['rotating_light']})}else toast('كله متبعتله تنبيه بالفعل')}
 function fullPayload(withImg){
@@ -2799,6 +2804,12 @@ function finishInvoice(){
   toast(`✓ فاتورة #${no} اتسجلت (${L.length} صنف) — الإجمالي ${fmtPx(tot,CART.cur)}${cr?` — 📒 آجل على ${cr.name}`:pay?' — اتدفع '+payTxt(pay):''}${al?' — واتبعت تنبيه للكل':''}`);go('sales');
 }
 $('invbar').addEventListener('click',()=>invSheet());
+/* تذكير بالنواقص الجديدة اللي لسه ما اتبعتتش للمدير — كل 30 دقيقة لحد ما تتبعت */
+const SHREM=30*6e4;
+function shortRemind(force){if(!S.ready)return;const L=S.items.filter(p=>p.shortAt);if(!L.length)return;const last=+LS.get('drc.shrem')||0;if(!force&&Date.now()-last<SHREM)return;LS.set('drc.shrem',Date.now());
+  const msg=`📉 ${L.length} صنف نزل نواقص ولسه ما اتبعتش للمدير: ${L.slice(0,3).map(p=>p.name).join('، ')}${L.length>3?'…':''}`;
+  toast(msg);if(S.role==='admin'||isOwner())sysNote('📉 نواقص لسه ما اتبعتتش',{body:msg,tag:'shrem',renotify:true});}
+setInterval(()=>shortRemind(),5*6e4);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>shortRemind(),3000)});
 /* فحص التحديثات: بيقارن نسخة التطبيق اللي على الموقع باللي مفتوحة، ولو فيه جديد يظهر شريط تدوس عليه */
 async function checkUpd(){try{const r=await fetch('index.html?u='+Date.now(),{cache:'no-store'});if(!r.ok)return;const m=/const APP_V = '([^']*)'/.exec(await r.text());if(!m||m[1]===APP_V)return;
   let el=document.getElementById('updbar');if(!el){el=document.createElement('button');el.id='updbar';el.className='updbar';document.body.appendChild(el);el.addEventListener('click',()=>{el.textContent='⏳ جاري التحديث…';location.replace(location.pathname+'?v='+Date.now())})}
@@ -2879,7 +2890,7 @@ function shareShortSheet(p){
   async m=>{if(!m.startsWith('go'))return;const aud=m.split(':')[1]||'co';const t=Math.max(0,int(r.querySelector('#ssT').value))*spb(p);
     if(r.querySelector('#ssSave').checked&&t/spb(p)!==p.target)run(ref('items/'+p.id).update({target:t/spb(p)}));else if(!r.querySelector('#ssSave').checked&&p.target)run(ref('items/'+p.id).update({target:FV().delete()}));
     target=t;const bl=await makeShortCard(p,target,aud);
-    await shareFiles([new File([bl],fileName(p.name)+'.jpg',{type:'image/jpeg'})],aud==='mgr'?mgrCap(p):'',aud==='mgr')});
+    await shareFiles([new File([bl],fileName(p.name)+'.jpg',{type:'image/jpeg'})],aud==='mgr'?mgrCap(p):'',aud==='mgr');if(aud==='mgr')markSent([p])});
   const draw=async()=>{blob=await makeShortCard(p,target,'mgr');if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(blob);const im=r.querySelector('#ssImg');if(im){im.src=url;r.querySelector('#ssSt').textContent=''}};
   r.querySelector('#ssT').addEventListener('change',e=>{target=Math.max(0,int(e.target.value))*spb(p);r.querySelector('#ssN').textContent=fmtQ(p,Math.max(0,target-good(p)));draw()});
   draw();
@@ -3482,7 +3493,8 @@ $app.addEventListener('click',e=>{
   else if(act==='sh-gsend')shSend(b.dataset.g);
   else if(act==='sh-aicat'){b.disabled=true;const l=S.items.filter(p=>!p.cat&&!guessCat(p));aiCats(l,b.parentElement).then(n=>{toast(`✓ اتصنّف ${n} صنف`);render()})}
   else if(act==='gby'){LS.set('drc.grpby',b.dataset.k);render()}
-  else if(act==='sh-gtog'){const l=shortList().filter(p=>secKey(p)===b.dataset.g),allOn=l.every(shSel);l.forEach(x=>shSet(x.id,{on:!allOn}));render()}
+  else if(act==='sh-sent'){const l=shortList().filter(p=>p.shortAt);markSent(l)}
+  else if(act==='sh-gtog'){const l=shortList().filter(p=>shKey(p)===b.dataset.g),allOn=l.every(shSel);l.forEach(x=>shSet(x.id,{on:!allOn}));render()}
   else if(act==='sh-text'){const sel=shSelected();if(!sel.length)return toast('علّم على صنف واحد على الأقل');textSheet('نواقص',shText(sel))}
   else if(act==='inv-total')invTotalSheet(b.dataset.inv);
   else if(act==='urgent'&&p)urgent(p);
