@@ -843,7 +843,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ق كميات بالصور';
+const APP_V = '17-10ر الكمية على الصورة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1155,38 +1155,40 @@ async function shSend(grp,ids,opt={}){
   let sel=ids?ids.map(id=>S.items.find(x=>x.id===id)).filter(Boolean).map(p=>({p,boxes:shQty(p),need:shQty(p)*spb(p)})):shSelected();if(grp)sel=sel.filter(x=>shKey(x.p)===grp);
   if(!sel.length){if(grp){const l=shortList().filter(p=>shKey(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>shKey(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
   sel.sort((a,b)=>itemCmp(a.p,b.p));
-  let aud=opt.aud||LS.get('drc.aud')||'co',mode='each';const PER=12;
+  let aud=opt.aud||LS.get('drc.aud')||'co',mode='each',qOn=opt.qOn!=null?opt.qOn:LS.get('drc.qon')==='1';const PER=12;
   const r=openSheet(`<h4>📤 ابعت ${grp?`${secLabel(grp,sel[0]&&sel[0].p)} — `:''}${sel.length} صنف</h4>
     <div class="seg audsel"><button data-m="a:mgr" aria-pressed="${aud==='mgr'}">👔 للمدير<small>الكمية مكتوبة تحت الصورة</small></button><button data-m="a:co" aria-pressed="${aud==='co'}">🏭 للشركة<small>عايزين بس</small></button></div>
     <div class="pvrow" id="saPrev"></div><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصور…</p>
+    <label class="check" id="saQL"><input type="checkbox" id="saQ" ${qOn?'checked':''}> ✍️ اكتب الاسم والكمية على الصورة نفسها <small>(تبعتهم كلهم مرة واحدة من غير ما تكتب حاجة)</small></label>
     <label class="check" id="saOrdL"><input type="checkbox" id="saOrd" checked> علّمهم «اتطلب» بعد الإرسال للشركة</label>
     <div class="actions" id="saBtns"></div>
     <div class="actions"><button class="btn" data-m="one">🧾 بدلها: صورة واحدة فيها الكل</button><button class="btn" data-cancel>قفل</button></div>`,
   async m=>{const mark=()=>{if(aud==='co'&&r.querySelector('#saOrd').checked){const b=fs.batch();sel.forEach(x=>{if(!x.p.ordered)b.update(ref('items/'+x.p.id),{ordered:{by:me(),t:Date.now()}})});commit(b)}};
     if(m.startsWith('a:')){aud=m.slice(2);LS.set('drc.aud',aud);r.querySelectorAll('.audsel button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));build();return}
     if(m==='one'){mode=mode==='one'?'each':'one';r.querySelector('[data-m=one]').textContent=mode==='one'?'🖼️ بدلها: صورة لكل صنف':'🧾 بدلها: صورة واحدة فيها الكل';build();return}
-    if(m.startsWith('b:')){const i=+m.slice(2),fl=cache[aud+mode];await shareFiles(fl.slice(i,i+10),'');r.querySelector(`[data-m="${m}"]`).classList.add('sent');if(aud==='mgr'){if(mode==='each')markSent(sel.slice(i,i+10).map(x=>x.p));else if(i+10>=fl.length)markSent(sel.map(x=>x.p))}if(i+10>=fl.length)mark()}
-    if(m.startsWith('all:')){const i=+m.slice(4),fl=cache[aud+mode],part=sel.slice(i,i+30);
+    if(m.startsWith('b:')){const i=+m.slice(2),fl=cache[ck()];await shareFiles(fl.slice(i,i+10),'');r.querySelector(`[data-m="${m}"]`).classList.add('sent');if(aud==='mgr'){if(mode==='each')markSent(sel.slice(i,i+10).map(x=>x.p));else if(i+10>=fl.length)markSent(sel.map(x=>x.p))}if(i+10>=fl.length)mark()}
+    if(m.startsWith('all:')){const i=+m.slice(4),fl=cache[ck()],part=sel.slice(i,i+30);
       const t=`📋 ${opt.title||'نواقص'} ${fmtDay(today())}${fl.length>30?` (${i+1}–${Math.min(i+30,fl.length)})`:''}\n\n`+part.map((x,j)=>`${i+j+1}. ${x.p.name} — عندنا ${good(x.p)?fmtQ(x.p,good(x.p)):'خلصان ❌'}`).join('\n')+(opt.extra&&i+30>=fl.length?'\n\n'+opt.extra:'');
       await shareFiles(fl.slice(i,i+30),t,true);markSent(part.map(x=>x.p));const bb=r.querySelector(`[data-m="${m}"]`);if(bb)bb.classList.add('sent');return}
-    if(m==='nx'){const fl=cache[aud+mode];if(!fl||nxi>=fl.length)return;const x=sel[nxi];await shareFiles([fl[nxi]],mgrCap(x.p),true);markSent([x.p]);nxi++;drawNx()}
+    if(m==='nx'){const fl=cache[ck()];if(!fl||nxi>=fl.length)return;const x=sel[nxi];await shareFiles([fl[nxi]],mgrCap(x.p),true);markSent([x.p]);nxi++;drawNx()}
     if(m==='qtxt'){const t=sel.map((x,i)=>`${i+1}. ${x.p.name} — عندنا ${fmtQ(x.p,good(x.p))}`).join('\n');if(await copyText(t))toast('الكميات اتنسخت ✓ — الصقها في الشات');else textSheet('الكميات',t)}});
-  let nxi=0;const drawNx=()=>{const bt=r.querySelector('#saBtns'),fl=cache[aud+mode];if(!bt||!fl)return;
+  const ck=()=>aud+mode+(qOn&&aud==='mgr'?'q':'');let nxi=0;const drawNx=()=>{const bt=r.querySelector('#saBtns'),fl=cache[ck()];if(!bt||!fl)return;
     const B=30;let all='';for(let i=0;i<fl.length;i+=B)all+=`<button class="btn primary big" data-m="all:${i}" style="flex:1 1 100%;padding:14px">📤 ابعت ${fl.length>B?`${i+1}–${Math.min(i+B,fl.length)}`:'الكل'} مرة واحدة<br><small>${Math.min(B,fl.length-i)} صورة مترقمة + رسالة فيها الكمية لكل رقم</small></button>`;
     bt.innerHTML=all+`<p class="hint" style="flex:1 1 100%;margin:4px 2px">أو واحدة واحدة (الكمية تحت كل صورة):</p>`+(nxi<fl.length?`<button class="btn big" data-m="nx" style="flex:1 1 100%;padding:14px">📤 ابعت ${nxi+1} من ${fl.length}: ${esc(sel[nxi].p.name)}<br><small>الصورة + «عندنا ${esc(fmtQ(sel[nxi].p,good(sel[nxi].p)))}» تحتها</small></button>`:`<p class="ok" style="flex:1 1 100%;text-align:center">✓ اتبعتوا كلهم</p>`);
     bt.insertAdjacentHTML('beforeend',`<button class="btn" data-m="qtxt">📋 انسخ الكميات كنص</button>`)};
   const cache={};let tok=0;
-  async function build(){const my=++tok,key=aud+mode;r.querySelector('#saOrdL').hidden=aud!=='co';
+  async function build(){const my=++tok,key=ck();r.querySelector('#saOrdL').hidden=aud!=='co';r.querySelector('#saQL').hidden=aud!=='mgr'||mode!=='each';
     const st=r.querySelector('#saSt'),bt=r.querySelector('#saBtns'),pv=r.querySelector('#saPrev');bt.innerHTML='';pv.innerHTML='';
     if(!cache[key]){const fl=[];
-      if(mode==='each'){for(const x of sel){if(!r.isConnected||my!==tok)return;st.innerHTML=`<span class="spin"></span>جاري تجهيز ${fl.length+1} من ${sel.length}…`;const b=await makeShortCard(x.p,good(x.p)+x.need,aud,aud==='mgr'?fl.length+1:0);fl.push(new File([b],`${String(fl.length+1).padStart(2,'0')} ${fileName(x.p.name)}.jpg`,{type:'image/jpeg'}))}}
+      if(mode==='each'){for(const x of sel){if(!r.isConnected||my!==tok)return;st.innerHTML=`<span class="spin"></span>جاري تجهيز ${fl.length+1} من ${sel.length}…`;const b=await makeShortCard(x.p,good(x.p)+x.need,aud,aud==='mgr'?fl.length+1:0,qOn&&aud==='mgr');fl.push(new File([b],`${String(fl.length+1).padStart(2,'0')} ${fileName(x.p.name)}.jpg`,{type:'image/jpeg'}))}}
       else{const pn=Math.ceil(sel.length/PER);for(let i=0;i<pn;i++){if(!r.isConnected||my!==tok)return;const b=await makeShortList(sel.slice(i*PER,(i+1)*PER),i,pn,aud);fl.push(new File([b],`${aud==='mgr'?'نواقص':'طلبية'} ${today()}${pn>1?' - '+(i+1):''}.jpg`,{type:'image/jpeg'}))}}
       cache[key]=fl}
     if(my!==tok||!r.isConnected)return;const fl=cache[key];
     pv.innerHTML=fl.slice(0,12).map(f=>`<img src="${URL.createObjectURL(f)}" alt="">`).join('')+(fl.length>12?`<span>+${fl.length-12}</span>`:'');
     st.textContent=`✓ ${fl.length} ${mode==='each'?'صورة — صنف في كل صورة، بترتيب الأقسام':'صورة'} (${aud==='mgr'?'للمدير':'للشركة'})${fl.length>10?' — بتتبعت كل 10 مع بعض بالترتيب':''}`;
-    if(aud==='mgr'&&mode==='each'){nxi=0;st.textContent=`✓ ${fl.length} صورة من غير كميات — كل صورة عليها رقم، والكميات في رسالة بنفس الأرقام`;return drawNx()}
+    if(aud==='mgr'&&mode==='each'){nxi=0;st.textContent=qOn?`✓ ${fl.length} صورة — الاسم والكمية مكتوبين على كل صورة`:`✓ ${fl.length} صورة من غير كميات — كل صورة عليها رقم، والكميات في رسالة بنفس الأرقام`;return drawNx()}
     let h='';for(let i=0;i<fl.length;i+=10)h+=`<button class="btn primary" data-m="b:${i}">📤 ابعت ${aud==='mgr'?'للمدير':'للشركة'}${fl.length>10?` ${i+1}–${Math.min(i+10,fl.length)}`:''}</button>`;bt.innerHTML=h}
+  r.querySelector('#saQ').addEventListener('change',e=>{qOn=e.target.checked;LS.set('drc.qon',qOn?'1':'0');nxi=0;build()});
   build();
 }
 const mStart=i=>dayKey(new Date(Math.floor(i/12),i%12,1));
@@ -3052,14 +3054,14 @@ async function attachLedgerImg(e,cam){pickFiles({cam:!!cam,multiple:!cam},async 
 function sold30(p){const from=Date.now()-30*864e5;return S.sales.filter(s=>s.id===p.id&&s.t>=from).reduce((a,s)=>a+(+(s.units!=null?s.units:s.qty)||0),0)}
 function suggestTarget(p){const K=spb(p);if(p.target>0)return +p.target*K;const m=minOf(p)*K;return Math.max(m*2,m+K,Math.ceil(sold30(p)*0.75))}
 function rrPath(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
-async function makeShortCard(p,target,aud,badge){aud=aud||'co';
+async function makeShortCard(p,target,aud,badge,qOn){aud=aud||'co';
   try{await document.fonts.ready}catch(e){}
   const F='Alexandria, Tahoma, Arial, sans-serif',W=1080,q=good(p),need=Math.max(0,target-q),out=!q;
   const mx=document.createElement('canvas').getContext('2d');mx.font=`800 50px ${F}`;
   const lines=[];let ln='';for(const w of String(p.name).split(' ')){const t=ln?ln+' '+w:w;if(mx.measureText(t).width>W-200&&ln){lines.push(ln);ln=w}else ln=t}lines.push(ln);const L=lines.slice(0,2);
   const alias=p.alias&&/[\u0600-\u06FF]/.test(p.alias)?String(p.alias):'';
   const clean=aud==='mgr',pxl=clean&&+p.price>0?`جمهور ${num(p.price)} ج`:'';
-  const PY=180,PH=720,NY=PY+PH+70,TY=NY+L.length*62+(alias?56:0)+30,TH=clean?(pxl?70:0):200,H=TY+TH+(clean?90:130);
+  const PY=180,PH=720,NY=PY+PH+70,TY=NY+L.length*62+(alias?56:0)+30,TH=clean?(qOn?190:(pxl?70:0)):200,H=TY+TH+(clean?90:130);
   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
   // خلفية + كارت
   const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#E3F2EE');g.addColorStop(1,'#F4F8F7');x.fillStyle=g;x.fillRect(0,0,W,H);
@@ -3082,7 +3084,8 @@ async function makeShortCard(p,target,aud,badge){aud=aud||'co';
   const tw=aud==='mgr'?(W-152-24)/2:W-152,tile=(i,label,val,bg,fg,lab)=>{const tx=W-76-tw-i*(tw+24);x.fillStyle=bg;rrPath(x,tx,TY,tw,TH,30);x.fill();
     x.textAlign='center';x.direction='rtl';x.fillStyle=lab;x.font=`600 32px ${F}`;x.fillText(label,tx+tw/2,TY+58);x.fillStyle=fg;const sv=String(val);x.font=`800 ${sv.length>8?60:sv.length>5?80:110}px ${F}`;x.direction=/[\u0600-\u06FF]/.test(sv)?'rtl':'ltr';x.fillText(sv,tx+tw/2,TY+160)};
   if(badge){x.save();x.fillStyle='#0E7C66';x.beginPath();x.arc(W-110,108,40,0,Math.PI*2);x.fill();x.fillStyle='#fff';x.font=`800 40px ${F}`;x.textAlign='center';x.direction='ltr';x.textBaseline='middle';x.fillText(String(badge),W-110,110);x.restore()}
-  if(clean){if(pxl){x.direction='rtl';x.textAlign='center';x.fillStyle='#0E7C66';x.font=`800 44px ${F}`;x.fillText(pxl,W/2,TY+40)}}
+  if(clean&&qOn){const tx=76,tw2=W-152;x.fillStyle=q?'#0E7C66':'#C62A2F';rrPath(x,tx,TY,tw2,170,30);x.fill();x.textAlign='center';x.direction='rtl';x.fillStyle='#fff';const sv=q?fmtQ(p,q):'خلصان';x.font=`800 ${sv.length>10?70:96}px ${F}`;x.fillText((q?'عندنا ':'')+sv,W/2,TY+118)}
+  else if(clean){if(pxl){x.direction='rtl';x.textAlign='center';x.fillStyle='#0E7C66';x.font=`800 44px ${F}`;x.fillText(pxl,W/2,TY+40)}}
   else tile(0,'عايزين',fmtQ(p,need),'#0E7C66','#ffffff','#CDEFE5');
   // الفوتر
   x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 28px ${F}`;if(!clean)x.fillText(`طلبية ${fmtDay(today())}`,W/2,H-80);
@@ -3125,7 +3128,7 @@ function mgrReq(){if(!getKey())return keySheet(mgrReq);
       <div id="mqO" hidden><label for="mqT">الرد اللي هيتبعت <small>(تقدر تعدّل فيه)</small></label><textarea id="mqT" rows="8" dir="rtl"></textarea>
       <div class="actions"><button class="btn" data-m="copy">📋 نسخ</button><button class="btn" data-m="sh">📤 مشاركة</button><button class="btn" data-m="wa">🟢 نص بس</button></div><button class="btn primary big" data-m="imgs" style="width:100%;margin-top:6px">🖼️ ابعت صور + الكميات تحتها (زي النواقص)</button></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
     (m,root,b)=>{if(m==='copy')return copyText(root.querySelector('#mqT').value).then(ok=>toast(ok?'📋 اتنسخ — الزقه في الشات':'مقدرتش أنسخ'));if(m==='wa')return wa(root.querySelector('#mqT').value);
-      if(m==='imgs'){const ids=[...new Set(R.flatMap(x=>x.c.filter(c=>c.on).map(c=>c.p.id)))];const miss=R.filter(x=>!x.c.some(c=>c.on)).map(x=>`• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`);if(!ids.length){toast('مفيش أصناف متعلّم عليها');return}closeSheet();return shSend(null,ids,{aud:'mgr',title:'كميات',extra:miss.length?'❓ مش متسجلين:\n'+miss.join('\n'):''})}if(m==='sh'){const t=root.querySelector('#mqT').value;return navigator.share?navigator.share({text:t}).catch(()=>{}):copyText(t).then(()=>toast('📋 اتنسخ'))}
+      if(m==='imgs'){const ids=[...new Set(R.flatMap(x=>x.c.filter(c=>c.on).map(c=>c.p.id)))];const miss=R.filter(x=>!x.c.some(c=>c.on)).map(x=>`• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`);if(!ids.length){toast('مفيش أصناف متعلّم عليها');return}closeSheet();return shSend(null,ids,{aud:'mgr',qOn:true,title:'كميات',extra:miss.length?'❓ مش متسجلين:\n'+miss.join('\n'):''})}if(m==='sh'){const t=root.querySelector('#mqT').value;return navigator.share?navigator.share({text:t}).catch(()=>{}):copyText(t).then(()=>toast('📋 اتنسخ'))}
       if(m.startsWith('add:')){const [,i,id]=m.split(':');const p=S.items.find(x=>x.id===id);if(p&&!R[i].c.some(c=>c.p.id===id))R[i].c.unshift({p,s:9,on:true});else if(p)R[i].c.find(c=>c.p.id===id).on=true;draw();return}
       if(m.startsWith('tg:')){const [,i,id]=m.split(':');const c=R[i].c.find(x=>x.p.id===id);if(c)c.on=!c.on;draw()}});
     const line=x=>{const on=x.c.filter(c=>c.on);if(!on.length)return `• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`;return on.map(c=>`• ${c.p.name}: ${good(c.p)?fmtQ(c.p,good(c.p)):'خلصان ❌'}`).join('\n')};
