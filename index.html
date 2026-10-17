@@ -568,6 +568,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .kadv{margin-top:8px}.kadv summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}
 .pvb{position:relative;flex:none;padding:0;border:2px solid transparent;border-radius:12px;background:none;cursor:pointer}.pvb img{display:block}.pvb i{position:absolute;bottom:6px;left:6px;font-style:normal;background:#0E7C66;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px}.pvb.sent{border-color:var(--green);opacity:.55}.pvb.sent i::before{content:'✓'}.pvb.sent i{font-size:0}.pvb.sent i::before{font-size:16px}
 .drpeter{display:block;width:calc(100% - 16px);margin:8px;padding:12px;font-size:16px}.drpeter small{display:block;font-weight:400;opacity:.85;font-size:12.5px}
+.bxsrc button{display:flex;flex-direction:column;align-items:center}.bxsrc small{font-size:12px;opacity:.8}
 .mreqb{width:100%;margin:6px 0 10px;border:1px dashed var(--green);background:rgba(30,170,130,.08);font-size:15px}.mreqb b{color:var(--green)}
 .mqr{border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px}.mqh{font-weight:700;margin-bottom:6px}.mqh small{display:block;color:var(--muted);font-weight:400;font-size:12px}
 .mqc{display:flex;align-items:center;gap:8px;width:100%;text-align:start;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:5px 8px;margin-bottom:5px;cursor:pointer;opacity:.6}.mqc.on{opacity:1;border-color:var(--green);background:rgba(30,170,130,.1)}.mqc span{flex:1;font-size:14px}.mqc b{font-size:17px}.mqc i{font-style:normal;color:var(--green);font-weight:800}.mqc img{width:34px;height:34px;border-radius:6px;object-fit:cover}
@@ -845,7 +846,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ذ صورة بيتر بس';
+const APP_V = '17-10ض سكان البوكس';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1090,6 +1091,28 @@ async function makeDrList(L){try{await document.fonts.ready}catch(e){}
 async function drSendPeter(){const L=S.items.filter(p=>tOf(p)==='med'&&drLow(p)).sort((a,b)=>drNeed(b)-drNeed(a)||itemCmp(a,b));if(!L.length)return toast('البوكس كامل 👌');
   toast('جاري تجهيز الصورة…');const bl=await makeDrList(L);const f=new File([bl],`هات من المخزن ${today()}.jpg`,{type:'image/jpeg'});
   await shareFiles([f],'',false)}
+/* سكان من تاب البوكس: يزوّد في البوكس (من المخزن أو بضاعة جديدة) أو يسجل صنف جديد */
+function scanBox(){openScanner({title:'🗄️ امسح الدوا اللي هتحطه في البوكس',onCode:(c,g)=>handleBoxCode(c,g),onItem:p=>boxAdd(p)})}
+function handleBoxCode(code,g){const l=itemsByCode(code),k=g&&g.y?bk(g.y,g.m):'';if(l.length===1)return boxAdd(l[0],{k});if(l.length>1)return varPick(l,'البوكس — اختار',p=>boxAdd(p,{k}));unknownCode(code,g,'box')}
+function boxAdd(p,pre={}){const K=spb(p),u=K>1||tOf(p)==='med'?'علبة':'قطعة',st=Math.floor(drStore(p)/K),lastK=pre.k||(bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0])||'';
+  let src=p.needCount||st>0?'st':'new';
+  const r=openSheet(`<h4 class="withimg">${p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">🗄️ البوكس — ${esc(p.name)}</span></h4><div class="sellacts stk"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="ok">✓ ضيف للبوكس</button></div>${dStat(p)}
+    <label for="bxQ" style="margin-top:10px">كام ${u} هتحط في البوكس؟</label><div class="stepper big"><button class="icon" data-m="dec">−</button><input id="bxQ" type="number" inputmode="numeric" value="1"><button class="icon" data-m="inc">+</button></div>
+    <label>جاية منين؟</label><div class="seg bxsrc"><button data-m="s:st" aria-pressed="${src==='st'}">📦 من المخزن<small>${p.needCount?'لسه متعدّش':'فيه '+st}</small></button><button data-m="s:new" aria-pressed="${src==='new'}">🆕 بضاعة جديدة<small>بتزوّد الإجمالي</small></button></div>
+    <div id="bxE" ${src==='new'?'':'hidden'}><label>الإكسباير</label>${expSel(lastK,null,p.life)}</div>
+    ${hasDr(p)?'':`<label for="bxM">حد البوكس (لما يوصله ينبّه)</label><input id="bxM" type="number" inputmode="numeric" value="2">`}
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="exact">✏️ العدد بالظبط</button></div>`,
+  (m,r,b)=>{const qi=r.querySelector('#bxQ');if(m==='zoom')return openZoom(p);if(m==='inc'){qi.value=int(qi.value)+1;return}if(m==='dec'){qi.value=Math.max(1,int(qi.value)-1);return}
+    if(m==='exact')return drSetSheet(p);
+    if(m.startsWith('s:')){src=m.slice(2);r.querySelectorAll('.bxsrc button').forEach(x=>x.setAttribute('aria-pressed',x===b));r.querySelector('#bxE').hidden=src!=='new';return}
+    if(m!=='ok'&&m!=='okn')return;const q=int(qi.value)*K;if(q<1){toast('اكتب العدد');return}
+    const u2={dr:drQ(p)+q,drAt:FV().delete()};if(!hasDr(p))u2.drMin=Math.max(0,int(r.querySelector('#bxM').value));
+    const bb=fs.batch();
+    if(src==='st'){if(!p.needCount&&q>drStore(p)){toast(`المخزن فيه ${st} بس — لو بضاعة جديدة اختار «🆕 بضاعة جديدة»`);return}
+      if(p.needCount&&q>drStore(p)){const k=lastK||'x';u2['b.'+k]=FV().increment(q-drStore(p))}
+      bb.update(ref('items/'+p.id),u2);evt(bb,'in',p.name,q,'نقل من المخزن للبوكس')}
+    else{const k=readExp(r.querySelector('#bxE'));if(k==='x'&&tOf(p)==='med'){toast('اختار تاريخ الإكسباير');return}u2['b.'+k]=FV().increment(q);bb.update(ref('items/'+p.id),u2);evt(bb,'in',p.name,q,'استلام في البوكس')}
+    closeSheet();commit(bb,`🗄️ اتضاف ${fmtQ(p,q)} للبوكس — ${p.name}`);if(m==='okn')setTimeout(scanBox,250)})}
 function drSetSheet(p,after){const K=spb(p),lastK=bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0]||'';
   const r=openSheet(`<h4>🗄️ البوكس — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">إجمالي المتسجل: <b>${fmtQ(p,good(p))}</b>. اكتب اللي جوه البوكس دلوقتي، والحد اللي لما يوصله ينبّه يجيبوا من المخزن.</p>
     <div class="two"><div><label for="dsQ">في البوكس دلوقتي${K>1?' (علب)':''}</label><input id="dsQ" type="number" inputmode="numeric" value="${hasDr(p)?Math.floor(drQ(p)/K):''}"></div><div><label for="dsM">حد البوكس${K>1?' (علب)':''}</label><input id="dsM" type="number" inputmode="numeric" value="${hasDr(p)?p.drMin:2}" placeholder="مثلاً 2"></div></div>
@@ -2904,14 +2927,14 @@ function unknownCode(code,g,mode){
     <label for="ucI">اربطه بصنف موجود</label><input id="ucI" list="uclist" placeholder="اكتب اسم الصنف"><datalist id="uclist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>
     <label>📉 لو صنف جديد — الحد الأدنى كام؟ <b class="rd">(لازم)</b></label><div class="chips minq">${[1,2,3,4,5,6,8,10].map(n=>`<button class="chip" data-m="mq:${n}" aria-pressed="false">${n}</button>`).join('')}</div>
     <p class="hint">المرة الجاية لما تمسحه هيفتح الصنف على طول. <b>هتمسحه مرة كمان للتأكيد</b> عشان الكود ما يتسجلش غلط.</p>
-    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="vs">🤖 لاقيه بالصورة</button><button class="btn" data-m="new">🆕 صنف جديد بالكود ده</button><button class="btn primary" data-m="link">🔗 اربط و${mode==='in'?'استلم':'بيع'}</button></div>`,
-  (m,r,b)=>{if(m.startsWith('mq:')){r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}const mqb=r.querySelector('.minq [aria-pressed=true]'),mq=mqb?+mqb.dataset.m.slice(3):null;if(m==='vs')return visualSearch(p=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},'لاقي الصنف واربط الكود');
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="vs">🤖 لاقيه بالصورة</button><button class="btn" data-m="new">🆕 صنف جديد بالكود ده</button><button class="btn primary" data-m="link">🔗 اربط و${mode==='box'?'حطه في البوكس':mode==='in'?'استلم':'بيع'}</button></div>`,
+  (m,r,b)=>{if(m.startsWith('mq:')){r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}const mqb=r.querySelector('.minq [aria-pressed=true]'),mq=mqb?+mqb.dataset.m.slice(3):null;if(m==='vs')return visualSearch(p=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='box'?boxAdd(pp,{k:g&&g.y?bk(g.y,g.m):''}):mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},'لاقي الصنف واربط الكود');
     if(m==='new'&&mq==null){toast('📉 اختار الحد الأدنى الأول');r.querySelector('.minq').classList.add('need');return}
-    if(m==='new'){closeSheet();return scanTwice('',c=>{const ex=itemsByCode(c);if(ex.length){toast('الكود ده متسجل على: '+ex[0].name);return mode==='in'?restockSheet(ex[0],{scan:true}):sellSheet(ex[0],{scan:true})}itemForm(null,{codes:[c],codeOk:1,min:mq,k:g&&g.y?bk(g.y,g.m):'',q:mode==='in'?'':undefined})},[code])}
+    if(m==='new'){closeSheet();return scanTwice('',c=>{const ex=itemsByCode(c);if(ex.length){toast('الكود ده متسجل على: '+ex[0].name);return mode==='box'?boxAdd(ex[0]):mode==='in'?restockSheet(ex[0],{scan:true}):sellSheet(ex[0],{scan:true})}itemForm(null,{codes:[c],codeOk:1,min:mq,k:g&&g.y?bk(g.y,g.m):'',q:mode==='in'?'':undefined,...(mode==='box'?{type:'med',box:true}:{})})},[code])}
     if(m!=='link')return;const p=findByName(r.querySelector('#ucI').value);if(!p){toast('اختار الصنف من القايمة');return}
-    closeSheet();return scanTwice('',code=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},[code])});
+    closeSheet();return scanTwice('',code=>{run(ref('items/'+p.id).update({codes:FV().arrayUnion(code)}),'الكود اتربط بـ '+p.name);const pp={...p,codes:[...(p.codes||[]),code]};setTimeout(()=>mode==='box'?boxAdd(pp,{k:g&&g.y?bk(g.y,g.m):''}):mode==='in'?restockSheet(pp,{k:g&&g.y?bk(g.y,g.m):'',scan:true}):sellSheet(pp,{scan:true,start:g&&g.y?bk(g.y,g.m):null}),200)},[code])});
 }
-$('scanBtn').addEventListener('click',scanSell);
+$('scanBtn').addEventListener('click',()=>S.view==='drawer'?scanBox():scanSell());
 
 
 /* ---------- فاتورة لكل جيست ---------- */
