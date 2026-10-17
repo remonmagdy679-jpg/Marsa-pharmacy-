@@ -557,6 +557,9 @@ body.hasinv .wrap{padding-bottom:230px}
 .minq.big .chip{min-width:46px;font-size:17px;font-weight:700}.minq.need{outline:2px solid var(--red);border-radius:10px}
 .expban{border:2px solid var(--amber);background:rgba(240,170,40,.12);border-radius:12px;padding:10px 12px;margin:4px 0 8px;font-size:15px}.expban.hot{border-color:var(--red);background:rgba(198,42,47,.1);font-size:16px;animation:ebp 1.2s ease-in-out 3}
 @keyframes ebp{50%{transform:scale(1.02)}}.ebl{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.eb{border-radius:8px;padding:4px 9px;background:var(--bg);border:1px solid var(--line);direction:ltr;font-weight:700}.eb i{font-style:normal;color:var(--muted)}.eb.dead,.eb.now{background:var(--red);color:#fff;border-color:var(--red)}.eb.soon{background:var(--amber);color:#111;border-color:var(--amber)}.eb.dead i,.eb.now i,.eb.soon i{color:inherit}
+.shq{display:block;margin:4px 0 2px;border:1px solid var(--red);background:rgba(198,42,47,.1);color:var(--red);border-radius:8px;padding:4px 8px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;text-align:start}
+.shqall{display:block;width:calc(100% - 16px);margin:6px 8px;border:2px solid var(--red);background:rgba(198,42,47,.1);color:var(--red);border-radius:10px;padding:8px;font:inherit;font-weight:700;cursor:pointer}
+.setbn.shsb{border-color:var(--red)}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -818,7 +821,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '16-10ج تنبيه التواريخ + النواقص عند المسح';
+const APP_V = '17-10 النواقص من المبيعات';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -943,14 +946,15 @@ function vSales(){
   const hit=raw.filter(s=>matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))),hk=new Set(hit.map(s=>s.inv||('s_'+s.sid)));
   // في وضع الفواتير: لو صنف واحد في الفاتورة طابق البحث، تظهر الفاتورة كلها
   const list=(mode==='inv'?raw.filter(s=>hk.has(s.inv||('s_'+s.sid))):hit).sort((a,b)=>b.t-a.t);
+  {const ids=[...new Set(raw.map(s=>s.id))].filter(id=>shPend(S.items.find(i=>i.id===id)));if(ids.length)h+=`<div class="setbn shsb">📉 <b>${ids.length} صنف</b> من مبيعات ${isT?'النهارده':'اليوم ده'} نزلوا نواقص ولسه ما اتبعتوش للمدير <button class="btn sm primary" data-act="sh-ids" data-ids="${ids.join(',')}">📤 ابعتهم</button></div>`}
   if(S.q&&raw.length)h+=`<div class="setbn">🔍 بتدوّر على «${esc(S.q)}» — ظاهر ${hk.size} فاتورة بس <button class="btn sm" data-act="clearq">✕ اعرض الكل</button></div>`;
   if(list.length){
     {const T={};let dp=0;(S.debts||[]).forEach(x=>(x.pays||[]).forEach(p=>{if(p.day===d){T[p.c]=(T[p.c]||0)+(+p.a||0);dp++}}));invGroups(raw).forEach(g=>{const d=g.inv&&S.invs[g.inv];if(d&&d.credit)return;if(d&&d.pay)Object.entries(d.pay).forEach(([c,v])=>T[c]=(T[c]||0)+(+v||0));else if(g.cur){const v=g.inv?invTotalOf(g):lineSum(g.lines);if(v>0)T[g.cur]=(T[g.cur]||0)+v}});
       const ks=PCUR.filter(c=>T[c]>0);if(ks.length)h+=`<div class="daycash"><span>💰 اتحصّل ${isT?'النهارده':'اليوم ده'}:</span>${ks.map(c=>`<b>${fmtPx(Math.round(T[c]*100)/100,c)}</b>`).join('')}${dp?'<small>(فيها دفعات آجل)</small>':''}</div>`}
     h+=`<div class="chips"><button class="chip" data-act="smode2" data-k="inv" aria-pressed="${mode==='inv'}">🧾 بالفواتير</button><button class="chip" data-act="smode2" data-k="item" aria-pressed="${mode==='item'}">📦 حسب الصنف</button></div>
       <div class="toolbar"><button class="btn" data-act="rep-sales" data-k="copy">نسخ</button><button class="btn" data-act="rep-sales" data-k="pdf">PDF</button><button class="btn" data-act="rep-sales" data-k="wa">واتساب</button></div>`;
-    if(mode==='inv')h+=invGroups(list).map(g=>`<section class="invc"><header><b>${g.inv?'🧾 فاتورة #'+(g.no||''):'🛒 بيعة'}</b><span>🕒 ${fmtTime(g.t)}</span><span>👤 ${esc(g.by||'—')}</span>${g.cur?`<span class="cu">${g.cur==='VISA'?'💳 فيزا':CUR[g.cur].s+' '+CUR[g.cur].l}</span>`:''}${g.inv?`<button class="icon" data-act="undo-inv" data-inv="${g.inv}" aria-label="إلغاء الفاتورة">⋯</button>`:''}</header>${g.inv&&g.lines.some(s=>s.price>0)?`<button class="itot" data-act="inv-total" data-inv="${g.inv}"><span>الإجمالي${S.invs[g.inv]&&S.invs[g.inv].total!=null&&+S.invs[g.inv].total!==lineSum(g.lines)?' (بعد التعديل)':''}</span><b>${fmtPx(invTotalOf(g),g.cur)}</b><i>✏️</i></button>`:''}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].credit?`<div class="gst rd">📒 آجل على ${esc(S.invs[g.inv].credit.name)}${(()=>{const d=(S.debts||[]).find(x=>x.inv===g.inv);return d?(dLeft(d)?' — لسه ما دفعش':' — ✓ دفع'):''})()}</div>`:''}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].pay?`<div class="gst">💰 اتدفع: <b>${payTxt(S.invs[g.inv].pay)}</b></div>`:''}${g.guest?`<div class="gst">👤 ${esc(g.guest)}</div>`:''}
-      ${g.lines.map(s=>`<div class="row slim${S.q&&matchQ(s.name)?' qhit':''}">${ico(S.items.find(i=>i.id===s.id)||{type:s.type})}<div class="kit"><b>${esc(s.name)}</b><div class="meta">${Object.keys(s.alloc||{}).filter(k=>k!=='x').map(k=>`<span>⏳ ${bkShort(k)}${s.alloc[k]>1?' ×'+s.alloc[k]:''}</span>`).join('')}${s.short?`<span class="rd">${s.short} مكانوش في المخزن</span>`:''}</div></div><div class="ipx"><span class="q">× ${s.qty}${s.unit==="strip"?" شريط":(spb(S.items.find(i=>i.id===s.id))>1?" علبة":"")}</span><b>${fmtPx(s.price,s.cur)}</b><small>${s.price?(s.unit==='strip'?'للشريط':spb(S.items.find(i=>i.id===s.id))>1?'للعلبة':'للقطعة'):''}</small></div><button class="icon" data-act="undo-sale" data-sid="${s.sid}" aria-label="إلغاء الصنف ده">↶</button></div>`).join('')}</section>`).join('');
+    if(mode==='inv')h+=invGroups(list).map(g=>`<section class="invc"><header><b>${g.inv?'🧾 فاتورة #'+(g.no||''):'🛒 بيعة'}</b><span>🕒 ${fmtTime(g.t)}</span><span>👤 ${esc(g.by||'—')}</span>${g.cur?`<span class="cu">${g.cur==='VISA'?'💳 فيزا':CUR[g.cur].s+' '+CUR[g.cur].l}</span>`:''}${g.inv?`<button class="icon" data-act="undo-inv" data-inv="${g.inv}" aria-label="إلغاء الفاتورة">⋯</button>`:''}</header>${g.inv&&g.lines.some(s=>s.price>0)?`<button class="itot" data-act="inv-total" data-inv="${g.inv}"><span>الإجمالي${S.invs[g.inv]&&S.invs[g.inv].total!=null&&+S.invs[g.inv].total!==lineSum(g.lines)?' (بعد التعديل)':''}</span><b>${fmtPx(invTotalOf(g),g.cur)}</b><i>✏️</i></button>`:''}${(()=>{const ids=[...new Set(g.lines.map(s=>s.id))].filter(id=>shPend(S.items.find(i=>i.id===id)));return ids.length>1?`<button class="shqall" data-act="sh-ids" data-ids="${ids.join(',')}">⚠️ ${ids.length} صنف في الفاتورة دي نزلوا نواقص — 📤 ابعتهم للمدير مرة واحدة</button>`:''})()}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].credit?`<div class="gst rd">📒 آجل على ${esc(S.invs[g.inv].credit.name)}${(()=>{const d=(S.debts||[]).find(x=>x.inv===g.inv);return d?(dLeft(d)?' — لسه ما دفعش':' — ✓ دفع'):''})()}</div>`:''}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].pay?`<div class="gst">💰 اتدفع: <b>${payTxt(S.invs[g.inv].pay)}</b></div>`:''}${g.guest?`<div class="gst">👤 ${esc(g.guest)}</div>`:''}
+      ${g.lines.map(s=>`<div class="row slim${S.q&&matchQ(s.name)?' qhit':''}">${ico(S.items.find(i=>i.id===s.id)||{type:s.type})}<div class="kit"><b>${esc(s.name)}</b>${(()=>{const it=S.items.find(i=>i.id===s.id);return shPend(it)?`<button class="shq" data-act="sh-one" data-id="${it.id}">⚠️ ناقص (فاضل ${fmtQ(it,good(it))}) — 📤 ابعته للمدير</button>`:''})()}<div class="meta">${Object.keys(s.alloc||{}).filter(k=>k!=='x').map(k=>`<span>⏳ ${bkShort(k)}${s.alloc[k]>1?' ×'+s.alloc[k]:''}</span>`).join('')}${s.short?`<span class="rd">${s.short} مكانوش في المخزن</span>`:''}</div></div><div class="ipx"><span class="q">× ${s.qty}${s.unit==="strip"?" شريط":(spb(S.items.find(i=>i.id===s.id))>1?" علبة":"")}</span><b>${fmtPx(s.price,s.cur)}</b><small>${s.price?(s.unit==='strip'?'للشريط':spb(S.items.find(i=>i.id===s.id))>1?'للعلبة':'للقطعة'):''}</small></div><button class="icon" data-act="undo-sale" data-sid="${s.sid}" aria-label="إلغاء الصنف ده">↶</button></div>`).join('')}</section>`).join('');
     else{const agg=aggSales(list);h+=`<div class="rows">${agg.map(a=>`<div class="row">${ico(S.items.find(i=>i.id===a.id)||{type:a.type})}<div class="kit"><b>${esc(a.name)}</b>${Object.keys(a.d).length?`<div class="bts">${dChips(a.d)}</div>`:''}</div><span class="qty">${fmtQs(S.items.find(i=>i.id===a.id),a.qty)}</span><button class="icon" data-act="undo-sale" data-sid="${a.last.sid}" aria-label="تراجع عن آخر تسجيل">↶</button></div>`).join('')}</div>`}
     h+=`<p class="hint">↶ بيلغي الصنف ده بس، و⋯ بيلغي الفاتورة كلها — والكمية بترجع للمخزن.</p>`;
   }else h+=raw.length?`<div class="empty">فيه ${raw.length} بيعة في اليوم ده بس مش ظاهرين بسبب البحث «${esc(S.q)}»<br><button class="btn sm primary" data-act="clearq" style="margin-top:8px">✕ امسح البحث</button></div>`
@@ -980,7 +984,7 @@ const GBY=()=>LS.get('drc.grpby')||'brand';
 const brandLabel=p=>{if(p.brand)return p.brand;const w=String(p.name||'').trim().split(/\s+/);return w[0]&&w[0].length>=3?w[0]:w.slice(0,2).join(' ')};
 const secKey=(p,m)=>{m=m||GBY();return m==='kind'?'k'+String(kindOf(p)).padStart(2,'0'):m==='cat'?secOf(p):'b'+brandOf(p)};
 const shKey=p=>p.shortAt?'__new':secKey(p);
-function markSent(ps){const b=fs.batch();let n=0;ps.forEach(p=>{if(p&&p.shortAt){b.update(ref('items/'+p.id),{shortAt:FV().delete(),shortSent:{t:Date.now(),by:me()}});n++}});if(n)commit(b,`✓ ${n} صنف اتعلّم «اتبعت للمدير»`);return n}
+function markSent(ps){const b=fs.batch();let n=0;ps.forEach(p=>{if(p&&(p.shortAt||isShort(p))){const ss={t:Date.now(),by:me()};b.update(ref('items/'+p.id),{shortAt:FV().delete(),shortSent:ss});p.shortSent=ss;delete p.shortAt;n++}});if(n)commit(b,`✓ ${n} صنف اتعلّم «اتبعت للمدير»`);return n}
 const secLabel=(k,p)=>k==='__new'?'🆕 نزل نواقص جديد — لسه ما اتبعتش للمدير':k[0]==='k'?'🧴 '+(KINDS[+k.slice(1)]||[0,'تانية'])[1]:k[0]==='b'?'🏷️ '+(p?brandLabel(p):k.slice(1)):catLabel(k);
 const tail=(a,b)=>baseName(a).localeCompare(baseName(b))||sizeVal(a)-sizeVal(b);
 const itemCmp=(a,b,m)=>{m=m||GBY();if(m==='kind')return kindOf(a)-kindOf(b)||brandOf(a).localeCompare(brandOf(b))||tail(a,b);if(m==='cat')return bySec(a,b);return brandOf(a).localeCompare(brandOf(b))||kindOf(a)-kindOf(b)||tail(a,b)};
@@ -1069,8 +1073,9 @@ async function makeShortList(sel,pi,pn,aud){aud=aud||'co';
   x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 24px ${F}`;x.fillText(SHOP_NAME,W/2,H-38);
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
 }
-async function shSend(grp){
-  let sel=shSelected();if(grp)sel=sel.filter(x=>shKey(x.p)===grp);
+const shPend=p=>p&&isShort(p)&&!p.ordered&&!(p.shortSent&&!p.shortAt);
+async function shSend(grp,ids){
+  let sel=ids?ids.map(id=>S.items.find(x=>x.id===id)).filter(Boolean).map(p=>({p,boxes:shQty(p),need:shQty(p)*spb(p)})):shSelected();if(grp)sel=sel.filter(x=>shKey(x.p)===grp);
   if(!sel.length){if(grp){const l=shortList().filter(p=>shKey(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>shKey(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
   sel.sort((a,b)=>itemCmp(a.p,b.p));
   let aud=LS.get('drc.aud')||'co',mode='each';const PER=12;
@@ -3522,6 +3527,8 @@ $app.addEventListener('click',e=>{
   else if(act==='sh-gsend')shSend(b.dataset.g);
   else if(act==='sh-aicat'){b.disabled=true;const l=S.items.filter(p=>!p.cat&&!guessCat(p));aiCats(l,b.parentElement).then(n=>{toast(`✓ اتصنّف ${n} صنف`);render()})}
   else if(act==='gby'){LS.set('drc.grpby',b.dataset.k);render()}
+  else if(act==='sh-one'){const p=S.items.find(x=>x.id===b.dataset.id);if(p)shareShortSheet(p)}
+  else if(act==='sh-ids'){const ids=b.dataset.ids.split(',').filter(Boolean);if(ids.length===1){const p=S.items.find(x=>x.id===ids[0]);if(p)return shareShortSheet(p)}shSend(null,ids)}
   else if(act==='sh-sent'){const l=shortList().filter(p=>p.shortAt);markSent(l)}
   else if(act==='sh-gtog'){const l=shortList().filter(p=>shKey(p)===b.dataset.g),allOn=l.every(shSel);l.forEach(x=>shSet(x.id,{on:!allOn}));render()}
   else if(act==='sh-text'){const sel=shSelected();if(!sel.length)return toast('علّم على صنف واحد على الأقل');textSheet('نواقص',shText(sel))}
