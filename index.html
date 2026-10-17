@@ -566,6 +566,10 @@ body.hasinv .wrap{padding-bottom:230px}
 .shban.qok{border-color:var(--line);background:var(--bg)}.shban.qok>div:first-child{font-size:15px}
 .brow .bcol{flex:1.3;min-width:86px;font-size:14px;padding:6px 4px}.brow:has(.bcol) .ex{flex-basis:100%}.cnear{font-size:11.5px;color:var(--muted)}.cnear.soon,.cnear.now{color:var(--amber);font-weight:700}.cnear.dead{color:var(--red);font-weight:700}
 .kadv{margin-top:8px}.kadv summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}
+.mreqb{width:100%;margin:6px 0 10px;border:1px dashed var(--green);background:rgba(30,170,130,.08);font-size:15px}.mreqb b{color:var(--green)}
+.mqr{border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px}.mqh{font-weight:700;margin-bottom:6px}.mqh small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.mqc{display:flex;align-items:center;gap:8px;width:100%;text-align:start;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:5px 8px;margin-bottom:5px;cursor:pointer;opacity:.6}.mqc.on{opacity:1;border-color:var(--green);background:rgba(30,170,130,.1)}.mqc span{flex:1;font-size:14px}.mqc b{font-size:17px}.mqc i{font-style:normal;color:var(--green);font-weight:800}.mqc img{width:34px;height:34px;border-radius:6px;object-fit:cover}
+.mqs{display:flex;gap:6px}.mqs .mqq{flex:2}.mqs .mqn{flex:1;min-width:80px}.mqhits{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}#mqT{width:100%;font:inherit;font-size:15px}
 .colrows{display:flex;flex-direction:column;gap:8px}.colrow{display:grid;grid-template-columns:56px 1fr 84px;gap:8px;align-items:center}.colrow img,.colrow .vi{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#fff;display:flex;align-items:center;justify-content:center}.colrow .cq{text-align:center;font-weight:800;font-size:18px}.colw{margin:-4px 2px 8px;color:var(--amber)}
 .vhd .linkb{float:left}
 .vhd{font-size:13px;color:var(--muted);margin:2px 2px 6px}.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-bottom:10px}
@@ -839,7 +843,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ع أي مفتاح AI';
+const APP_V = '17-10ف كميات طلب المدير';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1095,6 +1099,7 @@ function vShort(){
   const cnt=t=>S.items.filter(p=>tOf(p)===t&&matchQ(hay(p))&&isShort(p)).length;
   const list=shortList(),all=S.items.filter(p=>tOf(p)===S.shortTab&&matchQ(hay(p))&&isShort(p)),out=all.filter(p=>!good(p)).length;
   let h=`<div class="seg shtabs">${['med','cos'].map(t=>`<button data-act="sh-tab" data-k="${t}" aria-pressed="${S.shortTab===t}">${TYPES[t].icon} ${TYPES[t].name} <b>${cnt(t)}</b></button>`).join('')}</div>`;
+  h+=`<button class="btn mreqb" data-act="mreq">📷 المدير بيسأل عن كميات؟ <b>صوّر الشات</b></button>`;
   h+=`<div class="chips">${[['all','الكل'],['out',`خلصان (${out})`],['low','قرب يخلص'],['todo','لسه متطلبش']].map(([k,l])=>`<button class="chip" data-act="smode" data-k="${k}" aria-pressed="${S.shortMode===k}">${l}</button>`).join('')}</div>`;
   if(list.length){
     const n=list.filter(shSel).length;
@@ -3104,6 +3109,33 @@ function shareShortSheet(p){
   r.querySelector('#ssT').addEventListener('change',e=>{target=Math.max(0,int(e.target.value))*spb(p);r.querySelector('#ssN').textContent=fmtQ(p,Math.max(0,target-good(p)));draw()});
   draw();
 }
+/* المدير بيسأل عن كميات (سكرين شات واتساب) → التطبيق يطلع الكميات ويجهّز الرد */
+const MQ_PROMPT=`These are screenshots of a WhatsApp chat in an Egyptian pharmacy/cosmetics shop. The manager lists products and asks how many we have.
+Extract EVERY product mentioned as a request (one entry per message/line). Ignore names, timestamps, "forwarded/معاد توجيهها", questions like "ايه كميات", and messages that cancel a request (e.g. "انسى"/"انساه" replying to a product — then drop that product).
+Return ONLY JSON: {"items":[{"ar":"the product text exactly as written","en":"best English product name guess including brand (e.g. \"Vatika Black Seed Shampoo\")","brand":"brand in English or null","sizes":["sizes/variants mentioned like كبير / صغير / نص / 250ml"]}]}`;
+function mqTok(s){return [...new Set(norm(s).replace(/[^\p{L}\p{N} ]/gu,' ').split(' ').map(w=>w.replace(/ء$/,'')).filter(w=>w.length>1&&!['ال','و','من','في','حبه','حبة','كبير','صغير','نص','and','the','of'].includes(w)))]}
+function mqMatch(it){const T=[...new Set([...mqTok(it.ar||''),...mqTok(it.en||'')])],B=it.brand?norm(it.brand):'';if(!T.length)return [];
+  return S.items.map(p=>{const h=norm([hay(p),p.brand||'',p.size||'',p.vr||''].join(' ')).replace(/ء/g,'');let s=T.filter(w=>h.includes(w)).length/Math.min(T.length,4);if(B&&h.includes(B))s+=.6;return {p,s}}).filter(x=>x.s>=.45).sort((a,b)=>b.s-a.s||a.p.name.localeCompare(b.p.name)).slice(0,6)}
+function mgrReq(){if(!getKey())return keySheet(mgrReq);
+  pickFiles({cam:false,multiple:true},async fl=>{const imgs=[];toast('جاري تجهيز الصور…');for(const f of fl){try{imgs.push(await toJpeg(f,1500,.8))}catch(_){}}if(!imgs.length)return toast('الصور مش مدعومة');
+    let R=[];const r=openSheet(`<h4>📋 كميات طلب المدير</h4><p class="hint" id="mqSt" style="margin-top:0"><span class="spin"></span>بقرا الأصناف من ${imgs.length>1?imgs.length+' صور':'الصورة'}…</p><div id="mqL"></div>
+      <div id="mqO" hidden><label for="mqT">الرد اللي هيتبعت <small>(تقدر تعدّل فيه)</small></label><textarea id="mqT" rows="8" dir="rtl"></textarea>
+      <div class="actions"><button class="btn" data-m="copy">📋 نسخ</button><button class="btn primary" data-m="wa">🟢 ابعته واتساب</button></div></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+    (m,root,b)=>{if(m==='copy')return copyText(root.querySelector('#mqT').value).then(ok=>toast(ok?'📋 اتنسخ — الزقه في الشات':'مقدرتش أنسخ'));if(m==='wa')return wa(root.querySelector('#mqT').value);
+      if(m.startsWith('add:')){const [,i,id]=m.split(':');const p=S.items.find(x=>x.id===id);if(p&&!R[i].c.some(c=>c.p.id===id))R[i].c.unshift({p,s:9,on:true});else if(p)R[i].c.find(c=>c.p.id===id).on=true;draw();return}
+      if(m.startsWith('tg:')){const [,i,id]=m.split(':');const c=R[i].c.find(x=>x.p.id===id);if(c)c.on=!c.on;draw()}});
+    const line=x=>{const on=x.c.filter(c=>c.on);if(!on.length)return `• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`;return on.map(c=>`• ${c.p.name}: ${good(c.p)?fmtQ(c.p,good(c.p)):'خلصان ❌'}`).join('\n')};
+    const txt=()=>'📦 الكميات اللي عندنا:\n'+R.map(line).join('\n');
+    const draw=()=>{const L=r.querySelector('#mqL');if(!L)return;L.innerHTML=R.map((x,i)=>`<div class="mqr"><div class="mqh">🗒️ ${esc(x.it.ar)}${x.it.en?` <small dir="ltr">${esc(x.it.en)}</small>`:''}</div>
+      ${x.c.length?x.c.map(c=>`<button class="mqc${c.on?' on':''}" data-m="tg:${i}:${c.p.id}">${ico(c.p).replace(/<button[^>]*>|<\/button>/g,'')}<span>${esc(c.p.name)}</span><b class="${good(c.p)?'':'rd'}">${good(c.p)?fmtQs(c.p,good(c.p)):'0'}</b><i>${c.on?'✓':'＋'}</i></button>`).join(''):`<p class="hint rd" style="margin:4px 0">❓ مش لاقيه في الأصناف — دوّر أو اكتب العدد</p>`}
+      <div class="mqs"><input data-i="${i}" class="mqq" placeholder="🔍 دوّر على صنف تاني"><input data-i="${i}" class="mqn" type="number" inputmode="numeric" placeholder="عدد يدوي" value="${x.man??''}" ${x.c.some(c=>c.on)?'hidden':''}></div><div class="mqhits" data-i="${i}"></div></div>`).join('');
+      const T=r.querySelector('#mqT');if(T&&!T.dataset.ed)T.value=txt()};
+    r.addEventListener('input',e=>{const t=e.target,i=+t.dataset.i;if(t.id==='mqT'){t.dataset.ed=1;return}if(t.classList.contains('mqn')){R[i].man=t.value;const T=r.querySelector('#mqT');if(!T.dataset.ed)T.value=txt();return}
+      if(t.classList.contains('mqq')){const q=norm(t.value),box=r.querySelector(`.mqhits[data-i="${i}"]`);box.innerHTML=q.length<2?'':S.items.filter(p=>norm(hay(p)+' '+(p.brand||'')).includes(q)).slice(0,6).map(p=>`<button class="chip" data-m="add:${i}:${p.id}">${esc(p.name)} · ${good(p)}</button>`).join('')}});
+    try{const j=await askVision(imgs,MQ_PROMPT,2000),its=(j.items||[]).filter(x=>x&&x.ar);if(!r.isConnected)return;
+      R=its.map(it=>{const c=mqMatch(it),top=c[0]?c[0].s:0;c.forEach(x=>x.on=x.s>=Math.max(.7,top*.85));return {it,c,man:''}});
+      r.querySelector('#mqSt').innerHTML=R.length?`لقيت <b>${R.length}</b> طلب — اتأكد من الأصناف المعلّم عليها ✓ (دوس عشان تشيل أو تضيف)`:'مالقيتش أصناف في الصورة — جرب سكرين أوضح';r.querySelector('#mqO').hidden=!R.length;draw()}
+    catch(e){const st=r.querySelector('#mqSt');if(st)st.innerHTML='مقدرتش أقرا الصور — '+(e==='key'?'المفتاح مرفوض':e==='quota'?'الحد المسموح خلص':e==='net'?'مفيش نت':'جرب صورة أوضح')+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')}})}
 async function shareAllShort(){
   const list=shortList();if(!list.length)return;
   const r=openSheet(`<h4>📤 ابعت كل النواقص صور</h4><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز ${list.length} صورة…</p><div class="actions" id="saBtns"></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
@@ -3694,6 +3726,7 @@ $app.addEventListener('click',e=>{
   else if(act==='ordered'&&p)toggleOrdered(p);
   else if(act==='share-short'&&p)shareShortSheet(p);
   else if(act==='share-all')shareAllShort();
+  else if(act==='mreq')mgrReq();
   else if(act==='sh-tab'){S.shortTab=k;LS.set('drc.shtab',k);render();scrollTo(0,0)}
   else if(act==='sh-tog'){const pp=S.items.find(x=>x.id===b.dataset.id);const on=!shSel(pp);shSet(pp.id,{on});const row=b.closest('.srow');row.classList.toggle('on',on);b.textContent=on?'✓':'';shRefreshBar()}
   else if(act==='sh-q'){const pp=S.items.find(x=>x.id===b.dataset.id);const v=Math.max(1,shQty(pp)+(+b.dataset.d));shSet(pp.id,{q:v,on:true});const row=b.closest('.srow');row.querySelector('[data-sq]').value=v;row.classList.add('on');row.querySelector('.sck').textContent='✓';shRefreshBar()}
