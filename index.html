@@ -786,6 +786,26 @@ button.alt.add{background:var(--bg);color:var(--green);border:1px dashed var(--g
   #print tfoot td{font-weight:800;background:#EAF2F0!important;border-top:1px solid #DCE6E4}
   #print .pf{margin-top:12px;padding-top:8px;border-top:1px solid #DCE6E4;font-size:10px;color:#8a9a9c;display:flex;justify-content:space-between}
 }
+/* ===== تهدئة الشكل ===== */
+.shsec.fresh{border:1px solid rgba(198,42,47,.4);background:transparent;padding:2px 4px}
+.shban{border-width:1px;font-size:13.5px;padding:6px 10px}
+.expban{border-width:1px;font-size:13.5px;padding:7px 10px;background:rgba(240,170,40,.07)}.expban.hot{animation:none;font-size:14px;background:rgba(198,42,47,.07);border-color:rgba(198,42,47,.6)}
+.eb{padding:2px 8px;font-size:13px}.ebl{gap:5px;margin-top:5px}
+.summary strong{font-size:22px}
+.dstat{gap:5px}.dstat>div{padding:4px 2px;border-radius:9px}.dstat small{font-size:11px}.dstat b{font-size:17px}.dstat b span{font-size:11px}.dstat .tt{border-color:var(--line)}.dstat .rd{border-color:rgba(198,42,47,.5)}
+.dneed{font-size:13px;font-weight:600;margin-top:5px}.drcard{padding:8px 10px}.drhd{margin-bottom:6px}.drhd b{font-size:14px}.drhd img,.drhd .pimg{width:38px;height:38px}.dact{margin-top:6px}
+.drpeter{padding:9px;font-size:14.5px}.drpeter small{display:inline;margin-inline-start:4px}
+.mreqb{border:1px solid var(--line);background:transparent;font-size:14px;padding:8px;margin:4px 0 8px}
+.vcard{padding:4px;border-width:1px}.vcard img,.vcard .vi{width:54px;height:54px;font-size:22px}.vcard b{font-size:12.5px}.vcard em{font-size:15px}.vars{grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px;margin-bottom:8px}.vcard.on{border-width:2px}
+.vhd{font-size:12.5px;margin-bottom:4px}.colw{font-size:12.5px}
+.sellh .snm{unicode-bidi:plaintext;text-align:start}.sellh{font-size:16px}
+.qline{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 4px 6px;font-size:14px;color:var(--muted)}.qline b{color:var(--ink);font-size:15px}.qline small{font-size:11.5px}
+.drmini{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;width:100%;text-align:start;font:inherit;font-size:13.5px;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin:0 0 8px;cursor:pointer}
+.drmini b{color:var(--ink);font-size:15px}.drmini b small{font-size:11px;color:var(--muted)}.drmini b.rd{color:var(--red)}.drmini i{font-style:normal;margin-inline-start:auto}.drmini em{flex-basis:100%;font-style:normal;font-size:12.5px;color:var(--red)}.drmini.low{border-color:rgba(198,42,47,.45)}.drmini.add{border-style:dashed;color:var(--green)}
+.drban.empty{border-width:1px}
+.sellacts .btn.big{padding:12px 8px;font-size:15.5px}
+.sellh .icon.edt{width:38px;height:38px;min-width:38px;font-size:16px;padding:0}.sellh .snm{-webkit-line-clamp:3}
+.shsec.fresh>header b{font-size:14px}.shsec>header{flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -846,7 +866,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10غ البيع من البوكس';
+const APP_V = '17-10أ شكل أهدى';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1136,15 +1156,17 @@ function storeCount(p,after){const K=spb(p),lastK=bats(p).filter(([k])=>k!=='x')
     if(q>0)u['b.'+k]=FV().increment(q);if(nd!==curDr){u.dr=nd;const diff=nd-curDr;if(diff)u['b.'+(bats(p)[0]||[k])[0]]=FV().increment(diff)}
     closeSheet();b.update(ref('items/'+p.id),u);evt(b,'fix',p.name,q,'عدّ المخزن');commit(b,`📦 اتسجل: ${fmtQ(p,q)} في المخزن — ${p.name}`);if(after)setTimeout(after,200)})}
 const ncBan=p=>p.needCount?`<button class="drban empty" data-m="stc">📦 <b>المخزن لسه متعدّش</b> — دوس واكتب العدد <i>✏️</i></button>`:'';
-const drRow=p=>ncBan(p)+(tOf(p)!=='med'?'':hasDr(p)?`<button class="drban ${drNeed(p)>0||!drQ(p)?'empty':drLow(p)?'low':''}" data-m="drset"><i>✏️</i>${dStat(p).replace('<div class="dneed amb">📦 المخزن لسه متعدّش</div>','')}</button>`:`<button class="drban add" data-m="drset">🗄️ كام علبة في البوكس؟ <b>＋ حدد</b> <small>(والباقي يتحسب في المخزن)</small></button>`);
+const drRow=p=>{if(tOf(p)!=='med')return ncBan(p);if(!hasDr(p))return ncBan(p)+`<button class="drmini add" data-m="drset">🗄️ كام علبة في البوكس؟ <b>＋ حدد</b></button>`;
+  const K=spb(p),bx=Math.floor(drQ(p)/K),n=drNeed(p),sb=Math.floor(drStore(p)/K),nc=p.needCount;
+  return `<button class="drmini${n>0?' low':''}" data-m="${nc?'stc':'drset'}"><span>🗄️ البوكس <b class="${n>0?'rd':''}">${bx}<small>/${p.drMin}</small></b></span><span>📦 المخزن <b>${nc?'؟':sb}</b></span><span>∑ <b>${nc?'؟':Math.floor(good(p)/K)}</b></span><i>✏️</i>${n>0?`<em>محتاج ${n} من المخزن</em>`:''}${nc?'<em>المخزن لسه متعدّش — دوس واكتبه</em>':''}</button>`};
 function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));const low=meds.filter(drLow).sort((a,b)=>drNeed(b)-drNeed(a)||(b.drAt?1:0)-(a.drAt?1:0)||drQ(a)-drQ(b)),tracked=meds.filter(p=>hasDr(p)&&!drLow(p)&&!p.needCount).sort(byName),untr=meds.filter(p=>!hasDr(p)&&good(p)>0).sort(byName);
   const row=(p,act)=>`<div class="drcard"><div class="drhd">${ico(p)}<b>${esc(p.name)}</b></div>${dStat(p).replace(p.needCount?'<div class="dneed amb">📦 المخزن لسه متعدّش</div>':'@@','')}<div class="dact">${act}</div></div>`;
   const nc=S.items.filter(p=>p.needCount&&matchQ(hay(p))).sort((a,b)=>(a.needCount.t||0)-(b.needCount.t||0));
   const inDr=meds.filter(p=>hasDr(p)),tot=inDr.reduce((a,p)=>a+Math.floor(drQ(p)/spb(p)),0);
   let h=`<div class="summary"><strong style="color:${low.length||nc.length?'var(--red)':'var(--green)'}">${low.length+nc.length?`${low.length} هات · ${nc.length} عدّ`:'👌'}</strong><span>🗄️ البوكس: ${inDr.length} دوا — ${tot} علبة جوه${low.length?` · محتاج ${low.reduce((a,p)=>a+drNeed(p),0)} علبة`:''}</span></div>
-  <div class="hint" style="margin:4px 2px 8px">🗄️ <b>البوكس</b> = الأدوية اللي جوه الصيدلية. لما دوا يوصل لحد البوكس، ${drTo().length?'المسؤول':'الكل'} بيوصله تنبيه يجيبه من المخزن. <button class="linkb" data-act="dr-to">👤 مين يتنبّه؟ (${drTo().length?esc(drTo().join('، ')):'الكل'})</button></div>`;
+  <div class="hint" style="margin:2px 2px 8px"><button class="linkb" data-act="dr-to">👤 بيتنبّه: ${drTo().length?esc(drTo().join('، ')):'الكل'}</button> · 🔳 السكان هنا بيضيف للبوكس</div>`;
   if(nc.length)h+=`<section class="shsec fresh nc"><header><b>📦 لسه متعدّش في المخزن (${nc.length})</b></header><div class="rows">${nc.map(p=>row(p,`<div class="ncq"><input type="number" inputmode="numeric" data-ncq="${p.id}" placeholder="${spb(p)>1?'علب':'العدد'}"><button class="btn sm primary" data-act="nc-save" data-id="${p.id}">💾 حفظ</button><button class="icon" data-act="nc-edit" data-id="${p.id}" aria-label="تعديل الصنف">✏️</button></div>`)).join('')}</div></section>`;
-  h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><button class="btn primary drpeter" data-act="dr-peter">📤 ابعتهم لبيتر واتساب <small>(صورة فيها كل الأصناف والكمية)</small></button><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل${drNeed(p)?' '+Math.min(drNeed(p),Math.floor(drStore(p)/spb(p))||drNeed(p)):''}</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
+  h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><button class="btn primary drpeter" data-act="dr-peter">📤 ابعتهم لبيتر واتساب</button><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل${drNeed(p)?' '+Math.min(drNeed(p),Math.floor(drStore(p)/spb(p))||drNeed(p)):''}</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
   if(tracked.length)h+=`<section class="group"><h3>🗄️ متابَع في البوكس (${tracked.length})</h3><div class="rows">${tracked.map(p=>row(p,`<button class="icon" data-act="dr-set" data-id="${p.id}" aria-label="تعديل">✏️</button>`)).join('')}</div></section>`;
   return h}
 function vShort(){
@@ -1395,7 +1417,7 @@ function minGate(p,cont){let v=null;
     closeSheet();p.min=n;run(ref('items/'+p.id).update({min:n}),`📉 الحد الأدنى لـ ${p.name} = ${n}`);setTimeout(()=>cont(p),150)},false);
   r.querySelector('#mgV').addEventListener('input',e=>{const ok=e.target.value.trim()!=='';if(ok)r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed','false'));r.querySelector('[data-m=ok]').disabled=!ok&&v==null})}
 /* حالة الصنف في النواقص — بتظهر أول ما تمسحه */
-function shortBanner(p){if(!p)return '';if(!isShort(p))return `<div class="shban qok" data-sbid="${p.id}"><div>📦 عندك <b>${fmtQ(p,good(p))}</b>${p.shortSent?` <small>· آخر مرة اتبعت ${fmtDay(dayKey(new Date(p.shortSent.t)))}</small>`:''}</div><div class="sbb"><button class="btn sm primary" data-sb="mgr">📤 ابعت الكمية للمدير</button></div></div>`;const q=good(p),d=t=>fmtDay(dayKey(new Date(t)));
+function shortBanner(p){if(!p)return '';if(!isShort(p))return `<div class="qline" data-sbid="${p.id}"><span>📦 عندك <b>${fmtQ(p,good(p))}</b>${p.shortSent?` <small>· اتبعت ${fmtDay(dayKey(new Date(p.shortSent.t)))}</small>`:''}</span><button class="linkb" data-sb="mgr">📤 ابعت للمدير</button></div>`;const q=good(p),d=t=>fmtDay(dayKey(new Date(t)));
   const st=p.ordered?`<span class="ok">✓ اتطلب من الشركة${p.ordered.t?' '+d(p.ordered.t):''}</span>`:p.shortSent&&!p.shortAt?`<span class="ok">📤 اتبعت للمدير ${d(p.shortSent.t)}${p.shortSent.by?' — '+esc(p.shortSent.by):''}</span>`:`<b class="rd">لسه ما اتبعتش للمدير</b>`;
   return `<div class="shban ${p.ordered||(p.shortSent&&!p.shortAt)?'done':''}" data-sbid="${p.id}"><div>⚠️ <b>من النواقص</b> — ${q?'فاضل '+fmtQ(p,q):'خلصان'} (الحد الأدنى ${minOf(p)})<br>${st}</div>${p.ordered||(p.shortSent&&!p.shortAt)?'<div class="sbb"><button class="btn sm" data-sb="mgr">📤 ابعت تاني</button></div>':`<div class="sbb"><button class="btn sm primary" data-sb="mgr">📤 ابعته للمدير</button><button class="btn sm" data-sb="sent">✓ اتبعت</button></div>`}</div>`}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-sb]');if(!b)return;const box=b.closest('[data-sbid]');if(!box)return;e.stopPropagation();const p=S.items.find(x=>x.id===box.dataset.sbid);if(!p)return;
