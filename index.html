@@ -843,7 +843,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ص واتساب العادي';
+const APP_V = '17-10ق كميات بالصور';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1151,11 +1151,11 @@ async function makeShortList(sel,pi,pn,aud){aud=aud||'co';
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9));
 }
 const shPend=p=>p&&isShort(p)&&!p.ordered&&!(p.shortSent&&!p.shortAt);
-async function shSend(grp,ids){
+async function shSend(grp,ids,opt={}){
   let sel=ids?ids.map(id=>S.items.find(x=>x.id===id)).filter(Boolean).map(p=>({p,boxes:shQty(p),need:shQty(p)*spb(p)})):shSelected();if(grp)sel=sel.filter(x=>shKey(x.p)===grp);
   if(!sel.length){if(grp){const l=shortList().filter(p=>shKey(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>shKey(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
   sel.sort((a,b)=>itemCmp(a.p,b.p));
-  let aud=LS.get('drc.aud')||'co',mode='each';const PER=12;
+  let aud=opt.aud||LS.get('drc.aud')||'co',mode='each';const PER=12;
   const r=openSheet(`<h4>📤 ابعت ${grp?`${secLabel(grp,sel[0]&&sel[0].p)} — `:''}${sel.length} صنف</h4>
     <div class="seg audsel"><button data-m="a:mgr" aria-pressed="${aud==='mgr'}">👔 للمدير<small>الكمية مكتوبة تحت الصورة</small></button><button data-m="a:co" aria-pressed="${aud==='co'}">🏭 للشركة<small>عايزين بس</small></button></div>
     <div class="pvrow" id="saPrev"></div><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصور…</p>
@@ -1167,7 +1167,7 @@ async function shSend(grp,ids){
     if(m==='one'){mode=mode==='one'?'each':'one';r.querySelector('[data-m=one]').textContent=mode==='one'?'🖼️ بدلها: صورة لكل صنف':'🧾 بدلها: صورة واحدة فيها الكل';build();return}
     if(m.startsWith('b:')){const i=+m.slice(2),fl=cache[aud+mode];await shareFiles(fl.slice(i,i+10),'');r.querySelector(`[data-m="${m}"]`).classList.add('sent');if(aud==='mgr'){if(mode==='each')markSent(sel.slice(i,i+10).map(x=>x.p));else if(i+10>=fl.length)markSent(sel.map(x=>x.p))}if(i+10>=fl.length)mark()}
     if(m.startsWith('all:')){const i=+m.slice(4),fl=cache[aud+mode],part=sel.slice(i,i+30);
-      const t=`📋 نواقص ${fmtDay(today())}${fl.length>30?` (${i+1}–${Math.min(i+30,fl.length)})`:''}\n\n`+part.map((x,j)=>`${i+j+1}. ${x.p.name} — عندنا ${fmtQ(x.p,good(x.p))}`).join('\n');
+      const t=`📋 ${opt.title||'نواقص'} ${fmtDay(today())}${fl.length>30?` (${i+1}–${Math.min(i+30,fl.length)})`:''}\n\n`+part.map((x,j)=>`${i+j+1}. ${x.p.name} — عندنا ${good(x.p)?fmtQ(x.p,good(x.p)):'خلصان ❌'}`).join('\n')+(opt.extra&&i+30>=fl.length?'\n\n'+opt.extra:'');
       await shareFiles(fl.slice(i,i+30),t,true);markSent(part.map(x=>x.p));const bb=r.querySelector(`[data-m="${m}"]`);if(bb)bb.classList.add('sent');return}
     if(m==='nx'){const fl=cache[aud+mode];if(!fl||nxi>=fl.length)return;const x=sel[nxi];await shareFiles([fl[nxi]],mgrCap(x.p),true);markSent([x.p]);nxi++;drawNx()}
     if(m==='qtxt'){const t=sel.map((x,i)=>`${i+1}. ${x.p.name} — عندنا ${fmtQ(x.p,good(x.p))}`).join('\n');if(await copyText(t))toast('الكميات اتنسخت ✓ — الصقها في الشات');else textSheet('الكميات',t)}});
@@ -3123,8 +3123,9 @@ function mgrReq(){if(!getKey())return keySheet(mgrReq);
   pickFiles({cam:false,multiple:true},async fl=>{const imgs=[];toast('جاري تجهيز الصور…');for(const f of fl){try{imgs.push(await toJpeg(f,1500,.8))}catch(_){}}if(!imgs.length)return toast('الصور مش مدعومة');
     let R=[];const r=openSheet(`<h4>📋 كميات طلب المدير</h4><p class="hint" id="mqSt" style="margin-top:0"><span class="spin"></span>بقرا الأصناف من ${imgs.length>1?imgs.length+' صور':'الصورة'}…</p><div id="mqL"></div>
       <div id="mqO" hidden><label for="mqT">الرد اللي هيتبعت <small>(تقدر تعدّل فيه)</small></label><textarea id="mqT" rows="8" dir="rtl"></textarea>
-      <div class="actions"><button class="btn" data-m="copy">📋 نسخ</button><button class="btn" data-m="sh">📤 مشاركة</button><button class="btn primary" data-m="wa">🟢 واتساب</button></div></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
-    (m,root,b)=>{if(m==='copy')return copyText(root.querySelector('#mqT').value).then(ok=>toast(ok?'📋 اتنسخ — الزقه في الشات':'مقدرتش أنسخ'));if(m==='wa')return wa(root.querySelector('#mqT').value);if(m==='sh'){const t=root.querySelector('#mqT').value;return navigator.share?navigator.share({text:t}).catch(()=>{}):copyText(t).then(()=>toast('📋 اتنسخ'))}
+      <div class="actions"><button class="btn" data-m="copy">📋 نسخ</button><button class="btn" data-m="sh">📤 مشاركة</button><button class="btn" data-m="wa">🟢 نص بس</button></div><button class="btn primary big" data-m="imgs" style="width:100%;margin-top:6px">🖼️ ابعت صور + الكميات تحتها (زي النواقص)</button></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+    (m,root,b)=>{if(m==='copy')return copyText(root.querySelector('#mqT').value).then(ok=>toast(ok?'📋 اتنسخ — الزقه في الشات':'مقدرتش أنسخ'));if(m==='wa')return wa(root.querySelector('#mqT').value);
+      if(m==='imgs'){const ids=[...new Set(R.flatMap(x=>x.c.filter(c=>c.on).map(c=>c.p.id)))];const miss=R.filter(x=>!x.c.some(c=>c.on)).map(x=>`• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`);if(!ids.length){toast('مفيش أصناف متعلّم عليها');return}closeSheet();return shSend(null,ids,{aud:'mgr',title:'كميات',extra:miss.length?'❓ مش متسجلين:\n'+miss.join('\n'):''})}if(m==='sh'){const t=root.querySelector('#mqT').value;return navigator.share?navigator.share({text:t}).catch(()=>{}):copyText(t).then(()=>toast('📋 اتنسخ'))}
       if(m.startsWith('add:')){const [,i,id]=m.split(':');const p=S.items.find(x=>x.id===id);if(p&&!R[i].c.some(c=>c.p.id===id))R[i].c.unshift({p,s:9,on:true});else if(p)R[i].c.find(c=>c.p.id===id).on=true;draw();return}
       if(m.startsWith('tg:')){const [,i,id]=m.split(':');const c=R[i].c.find(x=>x.p.id===id);if(c)c.on=!c.on;draw()}});
     const line=x=>{const on=x.c.filter(c=>c.on);if(!on.length)return `• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`;return on.map(c=>`• ${c.p.name}: ${good(c.p)?fmtQ(c.p,good(c.p)):'خلصان ❌'}`).join('\n')};
