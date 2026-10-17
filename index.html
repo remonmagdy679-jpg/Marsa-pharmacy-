@@ -567,6 +567,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .brow .bcol{flex:1.3;min-width:86px;font-size:14px;padding:6px 4px}.brow:has(.bcol) .ex{flex-basis:100%}.cnear{font-size:11.5px;color:var(--muted)}.cnear.soon,.cnear.now{color:var(--amber);font-weight:700}.cnear.dead{color:var(--red);font-weight:700}
 .kadv{margin-top:8px}.kadv summary{cursor:pointer;color:var(--muted);font-size:14px;padding:4px 0}
 .pvb{position:relative;flex:none;padding:0;border:2px solid transparent;border-radius:12px;background:none;cursor:pointer}.pvb img{display:block}.pvb i{position:absolute;bottom:6px;left:6px;font-style:normal;background:#0E7C66;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px}.pvb.sent{border-color:var(--green);opacity:.55}.pvb.sent i::before{content:'✓'}.pvb.sent i{font-size:0}.pvb.sent i::before{font-size:16px}
+.drpeter{display:block;width:calc(100% - 16px);margin:8px;padding:12px;font-size:16px}.drpeter small{display:block;font-weight:400;opacity:.85;font-size:12.5px}
 .mreqb{width:100%;margin:6px 0 10px;border:1px dashed var(--green);background:rgba(30,170,130,.08);font-size:15px}.mreqb b{color:var(--green)}
 .mqr{border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:8px}.mqh{font-weight:700;margin-bottom:6px}.mqh small{display:block;color:var(--muted);font-weight:400;font-size:12px}
 .mqc{display:flex;align-items:center;gap:8px;width:100%;text-align:start;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:5px 8px;margin-bottom:5px;cursor:pointer;opacity:.6}.mqc.on{opacity:1;border-color:var(--green);background:rgba(30,170,130,.1)}.mqc span{flex:1;font-size:14px}.mqc b{font-size:17px}.mqc i{font-style:normal;color:var(--green);font-weight:800}.mqc img{width:34px;height:34px;border-radius:6px;object-fit:cover}
@@ -844,7 +845,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ث أزرار البيع فوق';
+const APP_V = '17-10خ صورة لبيتر';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1060,6 +1061,36 @@ function drMove(p){const K=spb(p),inDr=drQ(p),store=Math.max(0,good(p)-inDr),sug
   (m,r)=>{const i=r.querySelector('#dmQ');if(m==='inc'){i.value=int(i.value)+1;return}if(m==='dec'){i.value=Math.max(0,int(i.value)-1);return}if(m!=='ok')return;
     const q=int(i.value)*K;if(q<=0){toast('اكتب العدد');return}if(q>store){toast(`المخزن فيه ${fmtQ(p,store)} بس`);return}
     closeSheet();const b=fs.batch();b.update(ref('items/'+p.id),{dr:inDr+q,drAt:FV().delete()});evt(b,'in',p.name,q,'نقل من المخزن للبوكس');commit(b,`🗄️ اتنقل ${fmtQ(p,q)} للبوكس — ${p.name}`)})}
+/* صورة «هات من المخزن» لبيتر */
+async function makeDrList(L){try{await document.fonts.ready}catch(e){}
+  const F='Alexandria, Tahoma, Arial, sans-serif',W=1080,M=40,RH=190,HH=170,H=HH+L.length*RH+90;
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.fillStyle='#F2F7F6';x.fillRect(0,0,W,H);x.textBaseline='middle';
+  x.fillStyle='#0E7C66';x.fillRect(0,0,W,HH-30);x.direction='rtl';x.textAlign='right';x.fillStyle='#fff';x.font=`800 50px ${F}`;x.fillText('🗄️ هات من المخزن',W-M,58);
+  const tot=L.reduce((a,p)=>a+Math.max(1,Math.min(drNeed(p)||1,Math.floor(drStore(p)/spb(p))||drNeed(p)||1)),0);
+  x.font=`500 28px ${F}`;x.fillStyle='#CDEFE5';x.fillText(`${fmtDay(today())} — ${L.length} صنف · ${tot} علبة`,W-M,108);
+  x.direction='ltr';x.textAlign='left';x.fillStyle='#fff';x.font=`800 34px ${F}`;x.fillText('Dr. Corner',M,80);
+  const ims=await Promise.all(L.map(p=>p.img?new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=p.img}):null));
+  L.forEach((p,k)=>{const y=HH+k*RH,K=spb(p),n=drNeed(p),sb=Math.floor(drStore(p)/K),bring=Math.max(1,Math.min(n||1,sb||n||1)),bx=Math.floor(drQ(p)/K);
+    x.fillStyle='#fff';rrPath(x,M,y,W-2*M,RH-18,24);x.fill();
+    // رقم
+    x.fillStyle='#0E7C66';x.beginPath();x.arc(W-M-30,y+30,20,0,Math.PI*2);x.fill();x.fillStyle='#fff';x.font=`800 22px ${F}`;x.textAlign='center';x.direction='ltr';x.fillText(String(k+1),W-M-30,y+31);
+    // صورة
+    const tx=W-M-60-140,ty=y+(RH-18-140)/2;x.save();rrPath(x,tx,ty,140,140,16);x.clip();x.fillStyle='#EEF3F2';x.fillRect(tx,ty,140,140);const im=ims[k];
+    if(im){const sc=Math.max(140/im.width,140/im.height),w=im.width*sc,h=im.height*sc;x.drawImage(im,tx+(140-w)/2,ty+(140-h)/2,w,h)}else{x.font='76px sans-serif';x.fillText('💊',tx+70,ty+74)}x.restore();
+    // هات (شمال)
+    const bw=200,bh=RH-50,by=y+16;x.fillStyle='#0E7C66';rrPath(x,M+16,by,bw,bh,20);x.fill();x.textAlign='center';x.direction='rtl';x.fillStyle='#CDEFE5';x.font=`600 26px ${F}`;x.fillText('هات',M+16+bw/2,by+32);
+    x.fillStyle='#fff';x.font=`800 64px ${F}`;x.direction='ltr';x.fillText(String(bring),M+16+bw/2,by+bh/2+16);x.direction='rtl';x.font=`500 20px ${F}`;x.fillStyle='#CDEFE5';x.fillText(tOf(p)==='med'?'علبة':'قطعة',M+16+bw/2,by+bh-16);
+    // الاسم
+    const nx=tx-24,nw=nx-(M+16+bw+24);x.direction='ltr';x.textAlign='right';x.fillStyle='#102A2E';x.font=`700 34px ${F}`;
+    const words=String(p.name).split(' '),ls=[];let ln='';for(const w of words){const t=ln?ln+' '+w:w;if(x.measureText(t).width>nw&&ln){ls.push(ln);ln=w}else ln=t}ls.push(ln);
+    const LL=ls.slice(0,2);if(ls.length>2)LL[1]+='…';const cy=y+52;LL.forEach((l,i)=>x.fillText(l,nx,cy+i*42));
+    x.direction='rtl';x.font=`500 24px ${F}`;x.fillStyle='#6b7f82';x.fillText(`في البوكس ${bx} من ${p.drMin} · المخزن ${p.needCount?'؟':sb}`,nx,y+RH-48)});
+  x.direction='rtl';x.textAlign='center';x.fillStyle='#8a9a9c';x.font=`500 24px ${F}`;x.fillText('لما تجيبهم دوس «✓ اتنقل» في التطبيق',W/2,H-45);
+  return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9))}
+async function drSendPeter(){const L=S.items.filter(p=>tOf(p)==='med'&&drLow(p)).sort((a,b)=>drNeed(b)-drNeed(a)||itemCmp(a,b));if(!L.length)return toast('البوكس كامل 👌');
+  toast('جاري تجهيز الصورة…');const bl=await makeDrList(L);const f=new File([bl],`هات من المخزن ${today()}.jpg`,{type:'image/jpeg'});
+  const t=`🗄️ هات من المخزن — ${fmtDay(today())}\n`+L.map((p,i)=>{const K=spb(p),n=drNeed(p),sb=Math.floor(drStore(p)/K);return `${i+1}. ${p.name} — هات ${Math.max(1,Math.min(n||1,sb||n||1))}`}).join('\n');
+  await shareFiles([f],t,true)}
 function drSetSheet(p,after){const K=spb(p),lastK=bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0]||'';
   const r=openSheet(`<h4>🗄️ البوكس — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">إجمالي المتسجل: <b>${fmtQ(p,good(p))}</b>. اكتب اللي جوه البوكس دلوقتي، والحد اللي لما يوصله ينبّه يجيبوا من المخزن.</p>
     <div class="two"><div><label for="dsQ">في البوكس دلوقتي${K>1?' (علب)':''}</label><input id="dsQ" type="number" inputmode="numeric" value="${hasDr(p)?Math.floor(drQ(p)/K):''}"></div><div><label for="dsM">حد البوكس${K>1?' (علب)':''}</label><input id="dsM" type="number" inputmode="numeric" value="${hasDr(p)?p.drMin:2}" placeholder="مثلاً 2"></div></div>
@@ -1091,7 +1122,7 @@ function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));
   let h=`<div class="summary"><strong style="color:${low.length||nc.length?'var(--red)':'var(--green)'}">${low.length+nc.length?`${low.length} هات · ${nc.length} عدّ`:'👌'}</strong><span>🗄️ البوكس: ${inDr.length} دوا — ${tot} علبة جوه${low.length?` · محتاج ${low.reduce((a,p)=>a+drNeed(p),0)} علبة`:''}</span></div>
   <div class="hint" style="margin:4px 2px 8px">🗄️ <b>البوكس</b> = الأدوية اللي جوه الصيدلية. لما دوا يوصل لحد البوكس، ${drTo().length?'المسؤول':'الكل'} بيوصله تنبيه يجيبه من المخزن. <button class="linkb" data-act="dr-to">👤 مين يتنبّه؟ (${drTo().length?esc(drTo().join('، ')):'الكل'})</button></div>`;
   if(nc.length)h+=`<section class="shsec fresh nc"><header><b>📦 لسه متعدّش في المخزن (${nc.length})</b></header><div class="rows">${nc.map(p=>row(p,`<div class="ncq"><input type="number" inputmode="numeric" data-ncq="${p.id}" placeholder="${spb(p)>1?'علب':'العدد'}"><button class="btn sm primary" data-act="nc-save" data-id="${p.id}">💾 حفظ</button><button class="icon" data-act="nc-edit" data-id="${p.id}" aria-label="تعديل الصنف">✏️</button></div>`)).join('')}</div></section>`;
-  h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل${drNeed(p)?' '+Math.min(drNeed(p),Math.floor(drStore(p)/spb(p))||drNeed(p)):''}</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
+  h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><button class="btn primary drpeter" data-act="dr-peter">📤 ابعتهم لبيتر واتساب <small>(صورة فيها كل الأصناف والكمية)</small></button><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل${drNeed(p)?' '+Math.min(drNeed(p),Math.floor(drStore(p)/spb(p))||drNeed(p)):''}</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
   if(tracked.length)h+=`<section class="group"><h3>🗄️ متابَع في البوكس (${tracked.length})</h3><div class="rows">${tracked.map(p=>row(p,`<button class="icon" data-act="dr-set" data-id="${p.id}" aria-label="تعديل">✏️</button>`)).join('')}</div></section>`;
   return h}
 function vShort(){
@@ -3737,6 +3768,7 @@ $app.addEventListener('click',e=>{
   else if(act==='share-short'&&p)shareShortSheet(p);
   else if(act==='share-all')shareAllShort();
   else if(act==='mreq')mgrReq();
+  else if(act==='dr-peter')drSendPeter();
   else if(act==='sh-tab'){S.shortTab=k;LS.set('drc.shtab',k);render();scrollTo(0,0)}
   else if(act==='sh-tog'){const pp=S.items.find(x=>x.id===b.dataset.id);const on=!shSel(pp);shSet(pp.id,{on});const row=b.closest('.srow');row.classList.toggle('on',on);b.textContent=on?'✓':'';shRefreshBar()}
   else if(act==='sh-q'){const pp=S.items.find(x=>x.id===b.dataset.id);const v=Math.max(1,shQty(pp)+(+b.dataset.d));shSet(pp.id,{q:v,on:true});const row=b.closest('.srow');row.querySelector('[data-sq]').value=v;row.classList.add('on');row.querySelector('.sck').textContent='✓';shRefreshBar()}
