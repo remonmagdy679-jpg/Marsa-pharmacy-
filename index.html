@@ -564,9 +564,10 @@ body.hasinv .wrap{padding-bottom:230px}
 .drban.add{border-style:dashed;border-color:var(--green)}.drban.add b{color:var(--green)}.drban small{color:var(--muted)}.drban i{font-style:normal;float:left}
 .drnew{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
 .shban.qok{border-color:var(--line);background:var(--bg)}.shban.qok>div:first-child{font-size:15px}
+.brow .bcol{flex:1.3;min-width:86px;font-size:14px;padding:6px 4px}.brow:has(.bcol) .ex{flex-basis:100%}.cnear{font-size:11.5px;color:var(--muted)}.cnear.soon,.cnear.now{color:var(--amber);font-weight:700}.cnear.dead{color:var(--red);font-weight:700}
 .colrows{display:flex;flex-direction:column;gap:8px}.colrow{display:grid;grid-template-columns:56px 1fr 84px;gap:8px;align-items:center}.colrow img,.colrow .vi{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#fff;display:flex;align-items:center;justify-content:center}.colrow .cq{text-align:center;font-weight:800;font-size:18px}.colw{margin:-4px 2px 8px;color:var(--amber)}
 .vhd .linkb{float:left}
-.vhd{font-size:13px;color:var(--muted);margin:2px 2px 6px}.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:10px}
+.vhd{font-size:13px;color:var(--muted);margin:2px 2px 6px}.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-bottom:10px}
 .vcard{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:2px solid var(--line);border-radius:14px;background:var(--bg);color:inherit;font:inherit;cursor:pointer}.vcard img,.vcard .vi{width:72px;height:72px;border-radius:10px;object-fit:cover;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px}
 .vcard b{font-size:13.5px;line-height:1.25;text-align:center}.vcard em{font-style:normal;font-weight:800;font-size:17px;color:var(--green)}.vcard.z em{color:var(--red)}.vcard.on{border-color:var(--green);background:rgba(30,170,130,.12)}.vcard.add{border-style:dashed;border-color:var(--green)}.vcard.add .vi{background:transparent}.vcard.add em{font-size:11px;color:var(--muted);font-weight:400}
 .alts{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;align-items:center;scrollbar-width:none}.alts::-webkit-scrollbar{display:none}.alt{position:relative;flex:none;display:block}.alt>button,button.alt{width:64px;height:64px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0;overflow:hidden;cursor:pointer}.alt img{width:100%;height:100%;object-fit:cover;display:block}
@@ -837,7 +838,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ن عدد كل لون';
+const APP_V = '17-10س تاريخ لكل لون';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1335,7 +1336,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-sb]');if(!
   p.shortSent={t:Date.now(),by:me()};delete p.shortAt;run(ref('items/'+p.id).update({shortAt:FV().delete(),shortSent:p.shortSent}),'✓ اتعلّم «اتبعت للمدير»');box.outerHTML=shortBanner(p)},true);
 /* تنبيه كبير لو الصنف ليه أكتر من تاريخ صلاحية — عشان تبيع الأقرب الأول */
 function expBanner(p){const bl=bats(p).filter(([k,v])=>v>0&&k!=='x');if(bl.length<2)return '';const n=nowIdx(),near=bl.filter(([k])=>bkIdx(k)<=n+6);
-  const row=([k,v])=>{const c=expCls(k);return `<span class="eb ${c||(bkIdx(k)<=n+6?'soon':'')}">${bkLabel(k)} <i>×${v}</i>${c==='dead'?' منتهي':c==='now'?' الشهر ده':''}</span>`};
+  const C=hasBc(p)?colsOf(p):[],cn=k=>C.length&&p.bc[k]?' · '+Object.entries(p.bc[k]).filter(([,q])=>q>0).map(([c,q])=>{const i=C.findIndex(x=>x.k===c);return i<0?'':esc(colNm(C[i],i))+(Object.keys(p.bc[k]).length>1?' '+q:'')}).filter(Boolean).join('، '):'';
+  const row=([k,v])=>{const c=expCls(k);return `<span class="eb ${c||(bkIdx(k)<=n+6?'soon':'')}">${bkLabel(k)} <i>×${v}</i>${cn(k)}${c==='dead'?' منتهي':c==='now'?' الشهر ده':''}</span>`};
   return `<div class="expban ${near.length?'hot':''}">⏳ <b>${near.length?`خلي بالك! عندك ${near.reduce((a,[,v])=>a+v,0)} قطعة تاريخها قريب`:`الصنف ده ليه ${bl.length} تواريخ`}</b> — بيع الأقرب الأول<div class="ebl">${bl.map(row).join('')}</div></div>`}
 function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(np,o));
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
@@ -1354,7 +1356,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
     <div class="actions minor"><button class="btn" data-cancel>إلغاء</button>${can('coach')?'<button class="btn" data-m="nobuy">😕 ماشتراش</button>':''}<button class="btn" data-m="ok">🔍 ضيف وكمّل بالاسم</button></div>
     ${can('info')?`<details class="pidet"><summary>📋 ${p.info?'الفوايد والجرعة':'فوايد وجرعة'} · 🌍 سعره في أوروبا</summary>${infoHtml(p)}</details>`:''}`,
   (m,root,b)=>{if(m.startsWith('az:'))return altHandle(m,p,root);if(m==='vnew')return variantSheet(p);if(m.startsWith('vr:')){const x=S.items.find(i=>'vr:'+i.id===m);if(x&&x.id!==p.id)sellSheet(x,{...o,start:null});return}
-    if(m==='coled')return colorSheet(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,o));if(m.startsWith('col:')){const k=m.slice(4);o.col=o.col===k?'':k;root.querySelector('#colBox').innerHTML=colPick(p,o.col,'out');return}const n=root.querySelector('#fN');
+    if(m==='coled')return colorSheet(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,o));if(m.startsWith('col:')){const k=m.slice(4);o.col=o.col===k?'':k;root.querySelector('#colBox').innerHTML=colPick(p,o.col,'out');const nr=o.col&&bcNear(p,o.col);if(nr){start=nr;root.querySelector('#dw').hidden=expCls(start)!=='dead';updLeft();toast('⏳ '+colNm(colsOf(p).find(c=>c.k===o.col)||{},0)+' — أقرب تاريخ '+bkLabel(nr))}return}const n=root.querySelector('#fN');
     if(m==='edit')return itemForm(p,{after:np=>sellSheet(np,o)});
     if(m==='drset')return drSetSheet(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,{...o,scan:false}));
     if(m==='stc')return storeCount(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,{...o,scan:false}));
@@ -1421,14 +1423,15 @@ function restockSheet(p,pre={}){if(p&&pre.scan&&!hasMin(p))return minGate(p,np=>
     const qs=r.querySelector('#fQs')?int(r.querySelector('#fQs').value):0,q=int(qi.value)*spb(it)+qs;if(q<1){toast('اكتب العدد اللي وصل');return}
     const k=readExp(r.querySelector('#fE'));if(k==='x'&&tOf(it)==='med'){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
     if(p&&colsOf(p).length&&!pre.col){toast('🎨 اختار اللون اللي وصل');return}
-    closeSheet();restock(it,q,k,0,readLife(r.querySelector('#fE')));if(p&&pre.col)colAdj(p.id,pre.col,q);if(m==='okn'){LS.set('drc.scmode','in');setTimeout(scanSell,300)}});
+    closeSheet();restock(it,q,k,0,readLife(r.querySelector('#fE')));if(p&&pre.col)colAdj(p.id,pre.col,q,k);if(m==='okn'){LS.set('drc.scmode','in');setTimeout(scanSell,300)}});
   const q0=$modal.querySelector('#fQ'),updA=()=>{const a=$modal.querySelector('#fAfter'),qs=$modal.querySelector('#fQs');if(a&&p)a.textContent=fmtQs(p,good(p)+Math.max(0,int(q0.value))*spb(p)+(qs?int(qs.value):0))};if(q0){q0.addEventListener('input',updA);const qs=$modal.querySelector('#fQs');if(qs)qs.addEventListener('input',updA)}
 }
 function itemForm(p,preset){
   const grps=[...new Set(S.items.map(x=>x.grp).filter(Boolean))].sort();
   const t=p?tOf(p):(preset&&preset.type)||(S.type==='all'?'med':S.type);
   const K0=p?spb(p):1;
-  const brow=(k,v)=>{const has=v!=null&&v!=='',b=has?Math.floor(+v/K0):'',st=has?(+v%K0):'';return `<div class="brow">${expSel(k,null,p&&p.life)}<input class="bq" type="number" inputmode="numeric" value="${b}" placeholder="${K0>1?'علب':'العدد'}"><input class="bs" type="number" inputmode="numeric" value="${st||''}" placeholder="شريط" ${K0>1?'':'hidden'}><button class="icon" data-m="rm" aria-label="شيل السطر">✕</button></div>`};
+  const CF=p?colsOf(p):[],csel=c=>CF.length?`<select class="bcol" aria-label="اللون"><option value="">🎨 لون؟</option>${CF.map((x,i)=>`<option value="${x.k}" ${x.k===c?'selected':''}>${esc(colNm(x,i))}</option>`).join('')}</select>`:'';
+  const brow=(k,v,c)=>{const has=v!=null&&v!=='',b=has?Math.floor(+v/K0):'',st=has?(+v%K0):'';return `<div class="brow">${expSel(k,null,p&&p.life)}${csel(c||'')}<input class="bq" type="number" inputmode="numeric" value="${b}" placeholder="${K0>1?'علب':'العدد'}"><input class="bs" type="number" inputmode="numeric" value="${st||''}" placeholder="شريط" ${K0>1?'':'hidden'}><button class="icon" data-m="rm" aria-label="شيل السطر">✕</button></div>`};
   const bl=p?bats(p):[];let pimg=null,aiBrand='';
   const fr=openSheet(`<h4>${p?'تعديل صنف':'صنف جديد'}</h4>${preset&&preset.heard?`<p class="heard">🎙️ «${esc(preset.heard)}»</p>`:''}
     <label for="fName">اسم الصنف</label><input id="fName" value="${esc(p?.name||preset?.name||'')}" placeholder="مثلاً: Panadol Extra 24 tab">
@@ -1444,7 +1447,7 @@ function itemForm(p,preset){
     <div><label for="fMin">الحد الأدنى (ينزل نواقص)</label><input id="fMin" type="number" inputmode="numeric" value="${p?minOf(p):(+(preset&&preset.min)||2)}"></div></div>
     <label>📷 صورة المنتج (بتسهّل التعرف عليه)</label><div class="photo"><img id="fImg" ${p&&p.img?`src="${p.img}"`:'hidden'} alt="صورة المنتج"><div class="pbtns"><button class="btn sm" data-m="pcam">📷 صوّر</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button><button class="btn sm" data-m="pdel" ${p&&p.img?'':'hidden'}>🗑 شيل</button><button class="btn sm aibtn" data-m="ai" ${p&&p.img?'':'hidden'}>🤖 اقرا البيانات من الصورة</button></div></div>${p?`<label style="margin-top:6px">🎨 ألوان المنتج <small>(صورة لكل لون — العدد من «✏️ عدّل الأعداد»)</small></label>${altStrip(p,true)}`:''}<p class="hint aist" id="aiSt">${p?'':'📷 صوّر العلبة من قدام والتطبيق هيكتب الاسم والتفاصيل لوحده'}</p>
     <label class="check"><input type="checkbox" id="fCr" ${p?.critical?'checked':''}> صنف مهم — نبّه الكل أول ما يوصل للحد الأدنى</label>
-    <label>الكمية حسب تاريخ الإكسباير ${p?'(تعديل الجرد)':''}</label><div id="fB">${bl.length?bl.map(([k,v])=>brow(k,v)).join(''):brow(preset&&preset.k||'',preset&&preset.q||'')}</div>
+    <label>الكمية حسب تاريخ الإكسباير ${p?'(تعديل الجرد)':''}</label><div id="fB">${bl.length?bl.map(([k,v])=>{if(!CF.length||!p.bc||!p.bc[k])return brow(k,v);let rem=v,h='';for(const [c,q] of Object.entries(p.bc[k])){const t=Math.min(rem,+q||0);if(t>0){h+=brow(k,t,c);rem-=t}}return h+(rem>0?brow(k,rem):'')}).join(''):brow(preset&&preset.k||'',preset&&preset.q||'')}</div>
     <div class="actions" style="margin-top:8px"><button class="btn sm" data-m="addrow">+ تاريخ تاني</button><button class="btn sm primary" data-m="mdates">📸 صوّر كذا تاريخ</button><button class="btn sm" data-m="dphoto">📅 صوّر التاريخ والباركود</button><button class="btn sm" data-m="cnt">📸 عدّ بالصورة</button></div><p class="hint" id="dSt" style="margin:4px 2px 0"></p><div id="cntSt" class="cntst"></div>
     <div class="actions">${preset&&preset.after?'<button class="btn" data-m="back">↩ رجوع</button>':'<button class="btn" data-cancel>إلغاء</button>'}<button class="btn primary" data-m="save">${p?(preset&&preset.after?'💾 حفظ ورجوع':'حفظ التعديل'):'إضافة'}</button></div>`,
   (m,r,b)=>{if(p&&altHandle(m,p,r))return;
@@ -1483,9 +1486,9 @@ function itemForm(p,preset){
     const dup=findByName(name);if(dup&&(!p||dup.id!==p.id)){toast('في صنف بنفس الاسم ده');return}
     const type=r.querySelector('#fType').value,bm={};let noDate=false;
     const KK=type==='med'&&int(r.querySelector('#fSpb').value)>1?int(r.querySelector('#fSpb').value):1;
-    r.querySelectorAll('.brow').forEach(row=>{const q=int(row.querySelector('.bq').value)*KK+(KK>1?int(row.querySelector('.bs').value):0);if(q<=0)return;const k=readExp(row);if(k==='x'&&type==='med')noDate=true;bm[k]=(bm[k]||0)+q});
+    const bcm={};let anyC=false;r.querySelectorAll('.brow').forEach(row=>{const q=int(row.querySelector('.bq').value)*KK+(KK>1?int(row.querySelector('.bs').value):0);if(q<=0)return;const k=readExp(row);if(k==='x'&&type==='med')noDate=true;bm[k]=(bm[k]||0)+q;const cs=row.querySelector('.bcol');if(cs&&cs.value){anyC=true;bcm[k]=bcm[k]||{};bcm[k][cs.value]=(bcm[k][cs.value]||0)+q}});
     if(noDate){toast('الأدوية لازم يتكتب لها تاريخ إكسباير');return}
-    const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked,size:r.querySelector('#fSize').value.trim()};if(aiBrand)data.brand=aiBrand;{const cv=r.querySelector('#fCat').value;if(cv)data.cat=cv;else if(p&&p.cat)data.cat=FV().delete()}if(type==='med'){data.ing=r.querySelector('#fIng').value.trim();data.str=r.querySelector('#fStr').value.trim();data.tabs=int(r.querySelector('#fTabs').value)||0;data.spb=KK}const lf=readLife(r.querySelector('#fB'));if(lf)data.life=lf;data.codes=[...new Set(r.querySelector('#fCode').value.split(/[,،\s]+/).map(normCode).filter(Boolean))];
+    const data={name,type,grp:r.querySelector('#fGrp').value.trim(),alias:r.querySelector('#fAl').value.trim(),price:flt(r.querySelector('#fPr').value),min:Math.max(0,int(r.querySelector('#fMin').value)),critical:r.querySelector('#fCr').checked,size:r.querySelector('#fSize').value.trim()};if(aiBrand)data.brand=aiBrand;if(anyC)data.bc=bcm;else if(p&&p.bc)data.bc=FV().delete();{const cv=r.querySelector('#fCat').value;if(cv)data.cat=cv;else if(p&&p.cat)data.cat=FV().delete()}if(type==='med'){data.ing=r.querySelector('#fIng').value.trim();data.str=r.querySelector('#fStr').value.trim();data.tabs=int(r.querySelector('#fTabs').value)||0;data.spb=KK}const lf=readLife(r.querySelector('#fB'));if(lf)data.life=lf;data.codes=[...new Set(r.querySelector('#fCode').value.split(/[,،\s]+/).map(normCode).filter(Boolean))];
     let ncNew=false;const dqI=r.querySelector('#fDrQ');if(!p&&type==='med'&&dqI&&dqI.value.trim()!==''){const D=int(dqI.value)*KK,sv=r.querySelector('#fStQ').value.trim(),St=sv===''?null:int(sv)*KK,T=Object.values(bm).reduce((a,v)=>a+v,0),want=D+(St||0);
       if(want>T){const k0=Object.keys(bm)[0]||readExp(r.querySelector('.brow'));if(k0==='x'){toast('اكتب تاريخ الصلاحية في سطر الإكسباير');return}bm[k0]=(bm[k0]||0)+(want-T)}
       data.dr=D;data.drMin=Math.max(0,int(r.querySelector('#fDrM').value));if(St==null){data.needCount={t:Date.now(),by:me()};ncNew=true}}
@@ -2518,19 +2521,25 @@ function altHandle(m,p,root){if(!p||!p.id)return false;const box=()=>root.queryS
   return false}
 async function fullImg(id){if(imgCache[id])return imgCache[id];try{const d=await ref('imgs/'+id).get();const v=d.exists?(d.data()||{}).d:'';if(v)imgCache[id]=v;return v}catch(e){return ''}}
 /* ألوان جوه نفس الصنف: كل صورة = لون وليه عدده */
-const colsOf=p=>{const L=altL(p);if(!L.length)return [];return [{k:'0',th:p.img||'',l:(p.c0||{}).l||'',q:(p.c0||{}).q},...L.map(a=>({k:a.k,th:a.th,l:a.l||'',q:a.q}))]};
+const hasBc=p=>!!(p&&p.bc&&Object.keys(p.bc).length);
+const bcQ=(p,c)=>Object.entries(p.bc||{}).reduce((a,[k,o])=>a+(+(p.b||{})[k]>0?Math.min(+o[c]||0,+(p.b||{})[k]):0),0);
+const bcNear=(p,c)=>Object.keys(p.bc||{}).filter(k=>+(p.bc[k][c])>0&&+(p.b||{})[k]>0).sort((a,b)=>bkIdx(a)-bkIdx(b))[0]||'';
+const colsOf=p=>{const L=altL(p);if(!L.length)return [];const bc=hasBc(p);const C=[{k:'0',th:p.img||'',l:(p.c0||{}).l||'',q:(p.c0||{}).q},...L.map(a=>({k:a.k,th:a.th,l:a.l||'',q:a.q}))];if(bc)C.forEach(c=>{c.q=bcQ(p,c.k);c.near=bcNear(p,c.k)});return C};
 const colNm=(c,i)=>c.l||('لون '+(i+1));
 function colPick(p,sel,mode){const C=colsOf(p);if(!C.length)return '';const sum=C.reduce((a,c)=>a+(+c.q||0),0),un=C.some(c=>c.q==null||c.q==='');
-  return `<div class="vhd">🎨 الألوان — ${mode==='in'?'دوس على اللون اللي وصل':'دوس على اللون اللي هيتباع'} <button class="linkb" data-m="coled">✏️ عدّل الأعداد</button></div><div class="vars cols">${C.map((c,i)=>`<button class="vcard${sel===c.k?' on':''}${c.q!=null&&c.q!==''&&!+c.q?' z':''}" data-m="col:${c.k}">${c.th?`<img src="${c.th}" alt="">`:'<span class="vi">🎨</span>'}<b>${esc(colNm(c,i))}</b><em>${c.q==null||c.q===''?'؟':+c.q}</em></button>`).join('')}</div>${un||sum!==good(p)?`<p class="hint colw">${un?'⚠️ في ألوان لسه عددها مش متسجل — ':''}مجموع الألوان ${sum} من ${good(p)} <button class="linkb" data-m="coled">ظبّطها</button></p>`:''}`}
+  return `<div class="vhd">🎨 الألوان — ${mode==='in'?'دوس على اللون اللي وصل':'دوس على اللون اللي هيتباع'} <button class="linkb" data-m="coled">✏️ عدّل الأعداد</button></div><div class="vars cols">${C.map((c,i)=>`<button class="vcard${sel===c.k?' on':''}${c.q!=null&&c.q!==''&&!+c.q?' z':''}" data-m="col:${c.k}">${c.th?`<img src="${c.th}" alt="">`:'<span class="vi">🎨</span>'}<b>${esc(colNm(c,i))}</b><em>${c.q==null||c.q===''?'؟':+c.q}</em>${c.near?`<small class="cnear ${expCls(c.near)||(bkIdx(c.near)<=nowIdx()+6?'soon':'')}">⏳ ${bkLabel(c.near)}</small>`:''}</button>`).join('')}</div>${un||sum!==good(p)?`<p class="hint colw">${un?'⚠️ في ألوان لسه عددها مش متسجل — ':''}مجموع الألوان ${sum} من ${good(p)} ${hasBc(p)?'— الباقي تواريخه مش مربوطة بلون (من ✏️ تعديل الصنف)':'<button class="linkb" data-m="coled">ظبّطها</button>'}</p>`:''}`}
 function colorSheet(p,after){const C=colsOf(p);
   const r=openSheet(`<h4>🎨 ألوان — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">اكتب اسم كل لون وعدده. الإجمالي المتسجل: <b>${good(p)}</b></p>
-    <div class="colrows">${C.map((c,i)=>`<div class="colrow" data-k="${c.k}">${c.th?`<img src="${c.th}" alt="">`:'<span class="vi">🎨</span>'}<input class="cl" placeholder="لون ${i+1} (مثلاً أزرق)" value="${esc(c.l)}"><input class="cq" type="number" inputmode="numeric" placeholder="العدد" value="${c.q==null?'':c.q}"></div>`).join('')}</div>
+    <div class="colrows">${C.map((c,i)=>`<div class="colrow" data-k="${c.k}">${c.th?`<img src="${c.th}" alt="">`:'<span class="vi">🎨</span>'}<input class="cl" placeholder="لون ${i+1} (مثلاً أزرق)" value="${esc(c.l)}"><input class="cq" type="number" inputmode="numeric" placeholder="العدد" value="${c.q==null?'':c.q}" ${hasBc(p)?'readonly':''}></div>`).join('')}</div>${hasBc(p)?'<p class="hint">🔗 الأعداد محسوبة من التواريخ المربوطة بالألوان — عدّلها من ✏️ تعديل الصنف</p>':''}
     <p class="hint" id="colSum"></p><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">💾 حفظ</button></div>`,
   (m,r)=>{if(m!=='ok')return;const v={};r.querySelectorAll('.colrow').forEach(x=>{const q=x.querySelector('.cq').value.trim();v[x.dataset.k]={l:x.querySelector('.cl').value.trim(),q:q===''?null:Math.max(0,int(q))}});
     const fresh=S.items.find(x=>x.id===p.id)||p,L=altL(fresh).map(a=>{const o={...a,l:(v[a.k]||{}).l||''};const q=(v[a.k]||{}).q;if(q==null)delete o.q;else o.q=q;return o});
     const c0=v['0']||{};closeSheet();run(ref('items/'+p.id).update({alt:L,c0:{l:c0.l||'',...(c0.q!=null?{q:c0.q}:{})}}),'🎨 الألوان اتحفظت');if(after)setTimeout(after,250)});
   const sum=()=>{const s_=[...r.querySelectorAll('.cq')].reduce((a,i)=>a+int(i.value||0),0),g=good(p);r.querySelector('#colSum').innerHTML=`مجموع الألوان <b>${s_}</b> من <b>${g}</b> ${s_===g?'✓':'<span class="rd">— مش متساويين</span>'}`};r.querySelectorAll('.cq').forEach(i=>i.addEventListener('input',sum));sum()}
-function colAdj(id,k,d){const p=S.items.find(x=>x.id===id);if(!p||!k||!d)return;if(k==='0'){const c=p.c0||{};return run(ref('items/'+id).update({c0:{...c,q:Math.max(0,(+c.q||0)+d)}}))}
+function colAdj(id,k,d,bkK){const p=S.items.find(x=>x.id===id);if(!p||!k||!d)return;
+  if(hasBc(p)){const bc=JSON.parse(JSON.stringify(p.bc||{}));if(d>0){const kk=bkK||'x';bc[kk]=bc[kk]||{};bc[kk][k]=(bc[kk][k]||0)+d}
+    else{let rem=-d;for(const x of Object.keys(bc).filter(x=>bc[x][k]>0).sort((a,b)=>bkIdx(a)-bkIdx(b))){const t=Math.min(rem,bc[x][k]);bc[x][k]-=t;rem-=t;if(!bc[x][k])delete bc[x][k];if(!Object.keys(bc[x]).length)delete bc[x];if(!rem)break}}
+    return run(ref('items/'+id).update({bc}))}if(k==='0'){const c=p.c0||{};return run(ref('items/'+id).update({c0:{...c,q:Math.max(0,(+c.q||0)+d)}}))}
   const L=altL(p).map(a=>a.k===k?{...a,q:Math.max(0,(+a.q||0)+d)}:a);run(ref('items/'+id).update({alt:L}))}
 const $zoom=$('zoom'),$zimg=$('zimg');let zs=1,zx=0,zy=0,zst=null,lastTap=0;const zpts=new Map();
 const zApply=()=>{$zimg.style.transform=`translate(${zx}px,${zy}px) scale(${zs})`};
