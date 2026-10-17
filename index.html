@@ -560,7 +560,8 @@ body.hasinv .wrap{padding-bottom:230px}
 .shq{display:block;margin:4px 0 2px;border:1px solid var(--red);background:rgba(198,42,47,.1);color:var(--red);border-radius:8px;padding:4px 8px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;text-align:start}
 .shqall{display:block;width:calc(100% - 16px);margin:6px 8px;border:2px solid var(--red);background:rgba(198,42,47,.1);color:var(--red);border-radius:10px;padding:8px;font:inherit;font-weight:700;cursor:pointer}
 .setbn.shsb{border-color:var(--red)}
-.drban{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;margin:0 0 8px;font-size:14px}.drban.low{border-color:var(--amber);background:rgba(240,170,40,.12)}.drban.empty{border-color:var(--red);background:rgba(198,42,47,.1)}
+.drban{display:block;width:100%;text-align:start;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;margin:0 0 8px;font-size:14px}.drban.low{border-color:var(--amber);background:rgba(240,170,40,.12)}.drban.empty{border-color:var(--red);background:rgba(198,42,47,.1)}
+.drban.add{border-style:dashed;border-color:var(--green)}.drban.add b{color:var(--green)}.drban small{color:var(--muted)}.drban i{font-style:normal;float:left}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
 .actions.minor{margin-top:8px}
 .actions.minor .btn{padding:7px 10px;font-size:13px;background:transparent}
@@ -822,7 +823,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ب الدرج والمخزن';
+const APP_V = '17-10ج الدرج عند المسح';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1035,11 +1036,12 @@ function drMove(p){const K=spb(p),inDr=drQ(p),store=Math.max(0,good(p)-inDr),sug
     closeSheet();const b=fs.batch();b.update(ref('items/'+p.id),{dr:inDr+q,drAt:FV().delete()});evt(b,'in',p.name,q,'نقل من المخزن للدرج');commit(b,`🗄️ اتنقل ${fmtQ(p,q)} للدرج — ${p.name}`)})}
 function drSetSheet(p,after){const K=spb(p);
   openSheet(`<h4>🗄️ الدرج — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">إجمالي اللي عندك ${fmtQ(p,good(p))}. اكتب اللي جوه الدرج دلوقتي، والحد اللي لما يوصله ينبّه يجيبوا من المخزن.</p>
-    <div class="two"><div><label for="dsQ">في الدرج دلوقتي${K>1?' (علب)':''}</label><input id="dsQ" type="number" inputmode="numeric" value="${hasDr(p)?Math.floor(drQ(p)/K):''}"></div><div><label for="dsM">حد الدرج${K>1?' (علب)':''}</label><input id="dsM" type="number" inputmode="numeric" value="${hasDr(p)?p.drMin:''}" placeholder="مثلاً 2"></div></div>
+    <div class="two"><div><label for="dsQ">في الدرج دلوقتي${K>1?' (علب)':''}</label><input id="dsQ" type="number" inputmode="numeric" value="${hasDr(p)?Math.floor(drQ(p)/K):''}"></div><div><label for="dsM">حد الدرج${K>1?' (علب)':''}</label><input id="dsM" type="number" inputmode="numeric" value="${hasDr(p)?p.drMin:2}" placeholder="مثلاً 2"></div></div>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button>${hasDr(p)?'<button class="btn danger" data-m="off">بطّل متابعة الدرج</button>':''}<button class="btn primary" data-m="ok">💾 حفظ</button></div>`,
   (m,r)=>{if(m==='off'){closeSheet();run(ref('items/'+p.id).update({dr:FV().delete(),drMin:FV().delete(),drAt:FV().delete()}),'اتشال من متابعة الدرج');return after&&after()}
     if(m!=='ok')return;const q=r.querySelector('#dsQ').value.trim(),mn=r.querySelector('#dsM').value.trim();if(q===''||mn===''){toast('اكتب العددين');return}
     const dq=Math.min(good(p),int(q)*K);closeSheet();run(ref('items/'+p.id).update({dr:dq,drMin:int(mn),drAt:FV().delete()}),'🗄️ اتحفظ');if(after)setTimeout(after,200)})}
+const drRow=p=>tOf(p)!=='med'?'':hasDr(p)?`<button class="drban ${drQ(p)?(drLow(p)?'low':''):'empty'}" data-m="drset">🗄️ في الدرج <b>${fmtQ(p,drQ(p))}</b> · 📦 في المخزن ${fmtQ(p,Math.max(0,good(p)-drQ(p)))} · الحد ${p.drMin}${!drQ(p)&&good(p)?' — <b>هاتها من المخزن</b>':''} <i>✏️</i></button>`:`<button class="drban add" data-m="drset">🗄️ كام علبة في الدرج؟ <b>＋ حدد</b> <small>(والباقي يتحسب في المخزن)</small></button>`;
 function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));const low=meds.filter(drLow).sort((a,b)=>(b.drAt?1:0)-(a.drAt?1:0)||drQ(a)-drQ(b)),tracked=meds.filter(p=>hasDr(p)&&!drLow(p)).sort(byName),untr=meds.filter(p=>!hasDr(p)&&good(p)>0).sort(byName);
   const row=(p,act)=>`<div class="row slim">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta"><span class="${drLow(p)?'rd':''}">🗄️ في الدرج ${fmtQ(p,drQ(p))}</span>${hasDr(p)?`<span>الحد ${p.drMin}</span>`:''}<span>📦 المخزن ${fmtQ(p,Math.max(0,good(p)-drQ(p)))}</span></div></div>${act}</div>`;
   let h=`<div class="hint" style="margin:4px 2px 8px">🗄️ <b>الدرج</b> = الأدوية اللي جوه الصيدلية. لما دوا يوصل لحد الدرج، ${drTo().length?'المسؤول':'الكل'} بيوصله تنبيه يجيبه من المخزن. <button class="linkb" data-act="dr-to">👤 مين يتنبّه؟ (${drTo().length?esc(drTo().join('، ')):'الكل'})</button></div>`;
@@ -1300,7 +1302,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const K=spb(p),tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty*(l.unit==='strip'?1:K),0);let unit='box';const mul=()=>unit==='strip'?1:K;
   const r=openSheet(`<h4 class="withimg sellh">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1"><em class="snm">${esc(p.name)}</em>${medInfo(p)?`<small class="szc">${esc(medInfo(p))}</small>`:''}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
-    ${expBanner(p)}${shortBanner(p)}${hasDr(p)?`<div class="drban ${drQ(p)?(drLow(p)?'low':''):'empty'}">🗄️ في الدرج <b>${fmtQ(p,drQ(p))}</b> · 📦 في المخزن ${fmtQ(p,Math.max(0,good(p)-drQ(p)))}${!drQ(p)&&good(p)?' — <b>هاتها من المخزن</b>':''}</div>`:''}
+    ${expBanner(p)}${shortBanner(p)}${drRow(p)}
     <div class="sellacts"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
     ${CART.lines.length||inCart?`<p class="hint" style="margin:6px 2px 0;text-align:center">🧾 في الفاتورة دلوقتي ${CART.lines.length} صنف${inCart?` — منه ${inCart} من الصنف ده`:''}</p>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
@@ -1314,6 +1316,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
     ${can('info')?`<details class="pidet"><summary>📋 ${p.info?'الفوايد والجرعة':'فوايد وجرعة'} · 🌍 سعره في أوروبا</summary>${infoHtml(p)}</details>`:''}`,
   (m,root,b)=>{const n=root.querySelector('#fN');
     if(m==='edit')return itemForm(p,{after:np=>sellSheet(np,o)});
+    if(m==='drset')return drSetSheet(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,{...o,scan:false}));
     if(m==='pitch')return pitchSheet(p);
     if(m==='nobuy')return noBuySheet(p,()=>sellSheet(p,o));
     if(m.startsWith('u:')){unit=m.slice(2);root.querySelectorAll('#fUnit button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m));root.querySelector('#fPxL').innerHTML=(unit==='strip'?'سعر الشريط':'سعر العلبة')+' <small>(اختياري)</small>';fillPx(true);updLeft();return}
@@ -1341,7 +1344,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
 function restockSheet(p,pre={}){if(p&&pre.scan&&!hasMin(p))return minGate(p,np=>restockSheet(np,pre));
   const pick=!p,isMed=p?tOf(p)==='med':!!(pre.name&&findByName(pre.name)&&tOf(findByName(pre.name))==='med');
   const lastK=p?(pre.k||p.lastK||(bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0])||''):(pre.k||'');
-  openSheet(`<h4 class="withimg">${p&&p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">📦 استلام${p?' — '+esc(p.name):''}</span>${p?'<button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button>':''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}${pre.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}${p?shortBanner(p):''}
+  openSheet(`<h4 class="withimg">${p&&p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">📦 استلام${p?' — '+esc(p.name):''}</span>${p?'<button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button>':''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}${pre.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}${p?shortBanner(p)+drRow(p):''}
     ${pick?`<label for="fItem">الصنف</label><div class="vrow"><input id="fItem" list="ilist" value="${esc(pre.name||'')}" placeholder="اكتب اسم الصنف أو امسحه"><button class="icon" data-m="scan" aria-label="امسح الباركود">🔳</button></div><datalist id="ilist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`:`<div class="stock"><div><small>عندك دلوقتي</small><b>${good(p)}</b></div><div><small>بعد الاستلام</small><b id="fAfter">${fmtQs(p,good(p)+(+pre.q||1)*spb(p))}</b></div></div>`}
     <label for="fQ">العدد اللي وصل${p&&spb(p)>1?' (علب)':''}</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fQ" type="number" inputmode="numeric" value="${pre.q||1}"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
     <button class="btn sm cntbtn" data-m="cnt">📸 عدّ بالصورة</button><div id="cntSt" class="cntst"></div>
@@ -1354,6 +1357,7 @@ function restockSheet(p,pre={}){if(p&&pre.scan&&!hasMin(p))return minGate(p,np=>
   (m,r)=>{
     const qi=r.querySelector('#fQ'),upd=()=>{const a=r.querySelector('#fAfter');if(a&&p)a.textContent=fmtQs(p,good(p)+Math.max(0,int(qi.value))*spb(p)+(r.querySelector('#fQs')?int(r.querySelector('#fQs').value):0))};
     if(m==='zoom')return openZoom(p);
+    if(m==='drset'&&p)return drSetSheet(p,()=>restockSheet(S.items.find(x=>x.id===p.id)||p,{...pre,scan:false}));
     if(m==='edit'&&p){const keep={q:int(qi.value)||1,k:readExp(r.querySelector('#fE'))};return itemForm(p,{after:np=>restockSheet(np,{...pre,q:keep.q,k:keep.k&&keep.k!=='x'?keep.k:pre.k})})}
     if(m==='mdates'){const it=p||findByName((r.querySelector('#fItem')||{}).value||'');if(!it){toast('اختار الصنف الأول');return}
       if(!getKey()){r.querySelector('#rdSt').textContent='🔑 محتاج مفتاح الذكاء الاصطناعي';return}
