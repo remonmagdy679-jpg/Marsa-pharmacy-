@@ -806,6 +806,25 @@ button.alt.add{background:var(--bg);color:var(--green);border:1px dashed var(--g
 .sellacts .btn.big{padding:12px 8px;font-size:15.5px}
 .sellh .icon.edt{width:38px;height:38px;min-width:38px;font-size:16px;padding:0}.sellh .snm{-webkit-line-clamp:3}
 .shsec.fresh>header b{font-size:14px}.shsec>header{flex-wrap:wrap}
+/* ===== تهدئة 2 ===== */
+.notesbtn{background:var(--card)!important;color:var(--ink)!important;border:1px solid var(--line)!important;box-shadow:none!important;transform:none!important;font-weight:700}
+.notesbtn .pill{background:var(--red);color:#fff}
+.alertbar{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;padding:6px 14px;font-weight:600}
+.micfab{width:44px!important;height:44px!important;font-size:19px!important;background:var(--card)!important;color:var(--ink)!important;border:1px solid var(--line)!important;box-shadow:0 2px 8px rgba(0,0,0,.25)!important;opacity:.9}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:600}
+.toolbar{gap:6px;margin:10px 0 6px;align-items:center}.toolbar .addbtn{padding:9px 16px}
+.chips.gby{margin:4px 0 6px}.chips.gby .chip{padding:4px 10px;font-size:12.5px}
+.hmore{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 8px}
+.dline{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:13px;color:var(--muted);margin-top:4px}.dline b{color:var(--ink);font-size:14.5px}.dline b small{font-size:11px;color:var(--muted)}.dline b.rd{color:var(--red)}
+.drcard .drhd{align-items:flex-start;margin-bottom:2px}.drm{flex:1;min-width:0}.drm>b{display:block;font-size:14px;line-height:1.35}.drcard .dneed{margin:2px 0 0;font-size:12.5px}.drcard .dact{margin-top:4px}
+.dline b,.drmini b{direction:ltr;unicode-bidi:isolate}
+.actions.minor .btn{background:transparent!important;border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:13.5px;padding:9px 6px}
+.stock.sm b{font-size:19px}.stock.sm div{padding:6px 10px}
+.pidet summary{font-size:13.5px;color:var(--muted)}
+h4{font-size:17px}
+.mreqb{width:auto;display:inline-block;margin:2px 0 8px;font-size:13px}
+.summary{margin:10px 2px 4px}
+.shsec>header b{font-size:14px}
 </style>
 </head>
 <body>
@@ -866,7 +885,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10أ شكل أهدى';
+const APP_V = '17-10ب أهدى للعين';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -971,7 +990,7 @@ function grouped(list,keyFn,rowFn){
 }
 function vItems(){
   const list=S.items.filter(mItem).sort(byName);
-  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${S.type!=='cos'&&can('ing')?'<button class="btn" data-act="ing">💊 بحث بالمادة الفعالة</button>':''}${can('coach')?'<button class="btn" data-act="coach">🚀 مساعد البيع</button>':''}</div>`;
+  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${S.type!=='cos'&&can('ing')?'<button class="btn ghost sm" data-act="ing">💊 المادة الفعالة</button>':''}${can('coach')?'<button class="btn ghost sm" data-act="coach">🚀 مساعد البيع</button>':''}</div>`;
   if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>دوس «＋ إضافة» وابدأ.</div>`;
   else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
   else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
@@ -1070,6 +1089,8 @@ const drQ=p=>Math.max(0,Math.min(+p.dr||0,good(p)));
 const drLow=p=>hasDr(p)&&drQ(p)<=+p.drMin*spb(p)&&good(p)>drQ(p);
 const drStore=p=>Math.max(0,good(p)-drQ(p));
 const drNeed=p=>{if(!hasDr(p))return 0;const K=spb(p);return Math.max(0,+p.drMin-Math.floor(drQ(p)/K))};
+const dLine=p=>{const K=spb(p),nc=p.needCount,n=drNeed(p),sb=Math.floor(drStore(p)/K),bx=Math.floor(drQ(p)/K);
+  return `<div class="dline"><span>🗄️ البوكس <b class="${n>0?'rd':''}">${bx}<small>/${hasDr(p)?p.drMin:'—'}</small></b></span><span>📦 المخزن <b>${nc?'؟':sb}</b></span><span>∑ <b>${nc?'؟':Math.floor(good(p)/K)}</b></span></div>${n>0?`<div class="dneed">محتاج ${n} كمان${!nc&&sb<n?` <small>(المخزن فيه ${sb} بس)</small>`:''}</div>`:''}`};
 const dStat=p=>{const K=spb(p),u=K>1?'علبة':'',nc=p.needCount,n=drNeed(p),sb=Math.floor(drStore(p)/K),bx=Math.floor(drQ(p)/K),tt=Math.floor(good(p)/K);
   const need=!hasDr(p)?'':n>0?`<div class="dneed">⚠️ موجود <b>${bx}</b> — محتاج <b>${n}</b> ${u} كمان عشان يوصل ${p.drMin}${!nc&&sb<n?` <small>(المخزن فيه ${sb} بس)</small>`:''}</div>`:bx<=+p.drMin&&good(p)>drQ(p)?`<div class="dneed amb">⚠️ وصل للحد (${p.drMin}) — هات علبة أو اتنين</div>`:'';
   return `<div class="dstat"><div class="${n>0?'rd':''}"><small>🗄️ البوكس</small><b>${bx}${hasDr(p)?`<span>/${p.drMin}</span>`:''}</b></div><div><small>📦 المخزن</small><b>${nc?'؟':sb}</b></div><div class="tt"><small>∑ الإجمالي</small><b>${nc?'؟':tt}</b></div></div>${need}${nc?'<div class="dneed amb">📦 المخزن لسه متعدّش</div>':''}`};
@@ -1160,7 +1181,7 @@ const drRow=p=>{if(tOf(p)!=='med')return ncBan(p);if(!hasDr(p))return ncBan(p)+`
   const K=spb(p),bx=Math.floor(drQ(p)/K),n=drNeed(p),sb=Math.floor(drStore(p)/K),nc=p.needCount;
   return `<button class="drmini${n>0?' low':''}" data-m="${nc?'stc':'drset'}"><span>🗄️ البوكس <b class="${n>0?'rd':''}">${bx}<small>/${p.drMin}</small></b></span><span>📦 المخزن <b>${nc?'؟':sb}</b></span><span>∑ <b>${nc?'؟':Math.floor(good(p)/K)}</b></span><i>✏️</i>${n>0?`<em>محتاج ${n} من المخزن</em>`:''}${nc?'<em>المخزن لسه متعدّش — دوس واكتبه</em>':''}</button>`};
 function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));const low=meds.filter(drLow).sort((a,b)=>drNeed(b)-drNeed(a)||(b.drAt?1:0)-(a.drAt?1:0)||drQ(a)-drQ(b)),tracked=meds.filter(p=>hasDr(p)&&!drLow(p)&&!p.needCount).sort(byName),untr=meds.filter(p=>!hasDr(p)&&good(p)>0).sort(byName);
-  const row=(p,act)=>`<div class="drcard"><div class="drhd">${ico(p)}<b>${esc(p.name)}</b></div>${dStat(p).replace(p.needCount?'<div class="dneed amb">📦 المخزن لسه متعدّش</div>':'@@','')}<div class="dact">${act}</div></div>`;
+  const row=(p,act)=>`<div class="drcard"><div class="drhd">${ico(p)}<div class="drm"><b>${esc(p.name)}</b>${dLine(p)}</div></div><div class="dact">${act}</div></div>`;
   const nc=S.items.filter(p=>p.needCount&&matchQ(hay(p))).sort((a,b)=>(a.needCount.t||0)-(b.needCount.t||0));
   const inDr=meds.filter(p=>hasDr(p)),tot=inDr.reduce((a,p)=>a+Math.floor(drQ(p)/spb(p)),0);
   let h=`<div class="summary"><strong style="color:${low.length||nc.length?'var(--red)':'var(--green)'}">${low.length+nc.length?`${low.length} هات · ${nc.length} عدّ`:'👌'}</strong><span>🗄️ البوكس: ${inDr.length} دوا — ${tot} علبة جوه${low.length?` · محتاج ${low.reduce((a,p)=>a+drNeed(p),0)} علبة`:''}</span></div>
@@ -1175,7 +1196,7 @@ function vShort(){
   const cnt=t=>S.items.filter(p=>tOf(p)===t&&matchQ(hay(p))&&isShort(p)).length;
   const list=shortList(),all=S.items.filter(p=>tOf(p)===S.shortTab&&matchQ(hay(p))&&isShort(p)),out=all.filter(p=>!good(p)).length;
   let h=`<div class="seg shtabs">${['med','cos'].map(t=>`<button data-act="sh-tab" data-k="${t}" aria-pressed="${S.shortTab===t}">${TYPES[t].icon} ${TYPES[t].name} <b>${cnt(t)}</b></button>`).join('')}</div>`;
-  h+=`<button class="btn mreqb" data-act="mreq">📷 المدير بيسأل عن كميات؟ <b>صوّر الشات</b></button>`;
+  h+=`<button class="btn ghost sm mreqb" data-act="mreq">📷 المدير بيسأل عن كميات؟ صوّر الشات</button>`;
   h+=`<div class="chips">${[['all','الكل'],['out',`خلصان (${out})`],['low','قرب يخلص'],['todo','لسه متطلبش']].map(([k,l])=>`<button class="chip" data-act="smode" data-k="${k}" aria-pressed="${S.shortMode===k}">${l}</button>`).join('')}</div>`;
   if(list.length){
     const n=list.filter(shSel).length;
@@ -1431,7 +1452,8 @@ function expBanner(p){const bl=bats(p).filter(([k,v])=>v>0&&k!=='x');if(bl.lengt
 function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(np,o));
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const K=spb(p),tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty*(l.unit==='strip'?1:K),0);let unit='box';const mul=()=>unit==='strip'?1:K;
-  const r=openSheet(`<h4 class="withimg sellh">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1"><em class="snm">${esc(p.name)}</em>${medInfo(p)?`<small class="szc">${esc(medInfo(p))}</small>`:''}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
+  const r=openSheet(`<h4 class="withimg sellh">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1"><em class="snm">${esc(p.name)}</em>${medInfo(p)?`<small class="szc">${esc(medInfo(p))}</small>`:''}</span><button class="icon edt" data-m="hm" aria-label="خيارات تانية" title="خيارات تانية">⋯</button></h4>
+    <div class="hmore" id="hmore" hidden><button class="btn sm" data-m="edit">✏️ تعديل الصنف</button><button class="btn sm" data-m="restock">📦 استلام</button>${can('coach')?'<button class="btn sm" data-m="pitch">🎯 إزاي أبيعه</button>':''}</div>
     <div class="sellacts stk"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
     ${vStrip(p)}<div id="colBox">${colPick(p,o.col||'','out')}</div>${expBanner(p)}${shortBanner(p)}${drRow(p)}
     ${CART.lines.length||inCart?`<p class="hint" style="margin:6px 2px 0;text-align:center">🧾 في الفاتورة دلوقتي ${CART.lines.length} صنف${inCart?` — منه ${inCart} من الصنف ده`:''}</p>`:''}
@@ -1444,7 +1466,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
     <div class="bxl" id="bxl" hidden><p>📅 كل التواريخ اللي عندك — دوس على تاريخ تبيع منه</p>${bl.map(([k,v])=>{const c=expCls(k);return `<button class="bxr" data-m="pk:${k}"><span class="d ${c}">${k==='x'?'بدون تاريخ':bkLabel(k)}</span><span class="n">${v} قطعة</span><span class="st ${c}">${EXPW[c]||''}</span><span class="ck">✓</span></button>`}).join('')}${dq?`<p class="rd" style="margin-top:6px">فيهم ${dq} منتهي — مش بيتحسبوا في الإجمالي</p>`:''}</div>
     <div class="actions minor"><button class="btn" data-cancel>إلغاء</button>${can('coach')?'<button class="btn" data-m="nobuy">😕 ماشتراش</button>':''}<button class="btn" data-m="ok">🔍 ضيف وكمّل بالاسم</button></div>
     ${can('info')?`<details class="pidet"><summary>📋 ${p.info?'الفوايد والجرعة':'فوايد وجرعة'} · 🌍 سعره في أوروبا</summary>${infoHtml(p)}</details>`:''}`,
-  (m,root,b)=>{if(m.startsWith('az:'))return altHandle(m,p,root);if(m==='vnew')return variantSheet(p);if(m.startsWith('vr:')){const x=S.items.find(i=>'vr:'+i.id===m);if(x&&x.id!==p.id)sellSheet(x,{...o,start:null});return}
+  (m,root,b)=>{if(m==='hm'){const h=root.querySelector('#hmore');h.hidden=!h.hidden;return}if(m.startsWith('az:'))return altHandle(m,p,root);if(m==='vnew')return variantSheet(p);if(m.startsWith('vr:')){const x=S.items.find(i=>'vr:'+i.id===m);if(x&&x.id!==p.id)sellSheet(x,{...o,start:null});return}
     if(m==='coled')return colorSheet(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,o));if(m.startsWith('col:')){const k=m.slice(4);o.col=o.col===k?'':k;root.querySelector('#colBox').innerHTML=colPick(p,o.col,'out');const nr=o.col&&bcNear(p,o.col);if(nr){start=nr;root.querySelector('#dw').hidden=expCls(start)!=='dead';updLeft();toast('⏳ '+colNm(colsOf(p).find(c=>c.k===o.col)||{},0)+' — أقرب تاريخ '+bkLabel(nr))}return}const n=root.querySelector('#fN');
     if(m==='edit')return itemForm(p,{after:np=>sellSheet(np,o)});
     if(m==='drset')return drSetSheet(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,{...o,scan:false}));
