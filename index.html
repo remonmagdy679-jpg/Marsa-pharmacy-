@@ -843,7 +843,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ر الكمية على الصورة';
+const APP_V = '17-10ش صور نضيفة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1155,11 +1155,11 @@ async function shSend(grp,ids,opt={}){
   let sel=ids?ids.map(id=>S.items.find(x=>x.id===id)).filter(Boolean).map(p=>({p,boxes:shQty(p),need:shQty(p)*spb(p)})):shSelected();if(grp)sel=sel.filter(x=>shKey(x.p)===grp);
   if(!sel.length){if(grp){const l=shortList().filter(p=>shKey(p)===grp);l.forEach(x=>shSet(x.id,{on:true}));sel=shSelected().filter(x=>shKey(x.p)===grp)}if(!sel.length){toast('علّم على صنف واحد على الأقل');return}}
   sel.sort((a,b)=>itemCmp(a.p,b.p));
-  let aud=opt.aud||LS.get('drc.aud')||'co',mode='each',qOn=opt.qOn!=null?opt.qOn:LS.get('drc.qon')==='1';const PER=12;
+  let aud=opt.aud||LS.get('drc.aud')||'co',mode='each',qOn=false;const PER=12;
   const r=openSheet(`<h4>📤 ابعت ${grp?`${secLabel(grp,sel[0]&&sel[0].p)} — `:''}${sel.length} صنف</h4>
     <div class="seg audsel"><button data-m="a:mgr" aria-pressed="${aud==='mgr'}">👔 للمدير<small>الكمية مكتوبة تحت الصورة</small></button><button data-m="a:co" aria-pressed="${aud==='co'}">🏭 للشركة<small>عايزين بس</small></button></div>
     <div class="pvrow" id="saPrev"></div><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز الصور…</p>
-    <label class="check" id="saQL"><input type="checkbox" id="saQ" ${qOn?'checked':''}> ✍️ اكتب الاسم والكمية على الصورة نفسها <small>(تبعتهم كلهم مرة واحدة من غير ما تكتب حاجة)</small></label>
+    <label class="check" id="saQL" hidden><input type="checkbox" id="saQ"></label>
     <label class="check" id="saOrdL"><input type="checkbox" id="saOrd" checked> علّمهم «اتطلب» بعد الإرسال للشركة</label>
     <div class="actions" id="saBtns"></div>
     <div class="actions"><button class="btn" data-m="one">🧾 بدلها: صورة واحدة فيها الكل</button><button class="btn" data-cancel>قفل</button></div>`,
@@ -1177,7 +1177,7 @@ async function shSend(grp,ids,opt={}){
     bt.innerHTML=all+`<p class="hint" style="flex:1 1 100%;margin:4px 2px">أو واحدة واحدة (الكمية تحت كل صورة):</p>`+(nxi<fl.length?`<button class="btn big" data-m="nx" style="flex:1 1 100%;padding:14px">📤 ابعت ${nxi+1} من ${fl.length}: ${esc(sel[nxi].p.name)}<br><small>الصورة + «عندنا ${esc(fmtQ(sel[nxi].p,good(sel[nxi].p)))}» تحتها</small></button>`:`<p class="ok" style="flex:1 1 100%;text-align:center">✓ اتبعتوا كلهم</p>`);
     bt.insertAdjacentHTML('beforeend',`<button class="btn" data-m="qtxt">📋 انسخ الكميات كنص</button>`)};
   const cache={};let tok=0;
-  async function build(){const my=++tok,key=ck();r.querySelector('#saOrdL').hidden=aud!=='co';r.querySelector('#saQL').hidden=aud!=='mgr'||mode!=='each';
+  async function build(){const my=++tok,key=ck();r.querySelector('#saOrdL').hidden=aud!=='co';
     const st=r.querySelector('#saSt'),bt=r.querySelector('#saBtns'),pv=r.querySelector('#saPrev');bt.innerHTML='';pv.innerHTML='';
     if(!cache[key]){const fl=[];
       if(mode==='each'){for(const x of sel){if(!r.isConnected||my!==tok)return;st.innerHTML=`<span class="spin"></span>جاري تجهيز ${fl.length+1} من ${sel.length}…`;const b=await makeShortCard(x.p,good(x.p)+x.need,aud,aud==='mgr'?fl.length+1:0,qOn&&aud==='mgr');fl.push(new File([b],`${String(fl.length+1).padStart(2,'0')} ${fileName(x.p.name)}.jpg`,{type:'image/jpeg'}))}}
@@ -3128,7 +3128,7 @@ function mgrReq(){if(!getKey())return keySheet(mgrReq);
       <div id="mqO" hidden><label for="mqT">الرد اللي هيتبعت <small>(تقدر تعدّل فيه)</small></label><textarea id="mqT" rows="8" dir="rtl"></textarea>
       <div class="actions"><button class="btn" data-m="copy">📋 نسخ</button><button class="btn" data-m="sh">📤 مشاركة</button><button class="btn" data-m="wa">🟢 نص بس</button></div><button class="btn primary big" data-m="imgs" style="width:100%;margin-top:6px">🖼️ ابعت صور + الكميات تحتها (زي النواقص)</button></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
     (m,root,b)=>{if(m==='copy')return copyText(root.querySelector('#mqT').value).then(ok=>toast(ok?'📋 اتنسخ — الزقه في الشات':'مقدرتش أنسخ'));if(m==='wa')return wa(root.querySelector('#mqT').value);
-      if(m==='imgs'){const ids=[...new Set(R.flatMap(x=>x.c.filter(c=>c.on).map(c=>c.p.id)))];const miss=R.filter(x=>!x.c.some(c=>c.on)).map(x=>`• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`);if(!ids.length){toast('مفيش أصناف متعلّم عليها');return}closeSheet();return shSend(null,ids,{aud:'mgr',qOn:true,title:'كميات',extra:miss.length?'❓ مش متسجلين:\n'+miss.join('\n'):''})}if(m==='sh'){const t=root.querySelector('#mqT').value;return navigator.share?navigator.share({text:t}).catch(()=>{}):copyText(t).then(()=>toast('📋 اتنسخ'))}
+      if(m==='imgs'){const ids=[...new Set(R.flatMap(x=>x.c.filter(c=>c.on).map(c=>c.p.id)))];const miss=R.filter(x=>!x.c.some(c=>c.on)).map(x=>`• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`);if(!ids.length){toast('مفيش أصناف متعلّم عليها');return}closeSheet();return shSend(null,ids,{aud:'mgr',title:'كميات',extra:miss.length?'❓ مش متسجلين:\n'+miss.join('\n'):''})}if(m==='sh'){const t=root.querySelector('#mqT').value;return navigator.share?navigator.share({text:t}).catch(()=>{}):copyText(t).then(()=>toast('📋 اتنسخ'))}
       if(m.startsWith('add:')){const [,i,id]=m.split(':');const p=S.items.find(x=>x.id===id);if(p&&!R[i].c.some(c=>c.p.id===id))R[i].c.unshift({p,s:9,on:true});else if(p)R[i].c.find(c=>c.p.id===id).on=true;draw();return}
       if(m.startsWith('tg:')){const [,i,id]=m.split(':');const c=R[i].c.find(x=>x.p.id===id);if(c)c.on=!c.on;draw()}});
     const line=x=>{const on=x.c.filter(c=>c.on);if(!on.length)return `• ${x.it.ar}: ${x.man!==''&&x.man!=null?x.man:'مش متسجل عندي'}`;return on.map(c=>`• ${c.p.name}: ${good(c.p)?fmtQ(c.p,good(c.p)):'خلصان ❌'}`).join('\n')};
