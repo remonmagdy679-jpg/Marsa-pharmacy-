@@ -563,6 +563,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .drban{display:block;width:100%;text-align:start;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;margin:0 0 8px;font-size:14px}.drban.low{border-color:var(--amber);background:rgba(240,170,40,.12)}.drban.empty{border-color:var(--red);background:rgba(198,42,47,.1)}
 .drban.add{border-style:dashed;border-color:var(--green)}.drban.add b{color:var(--green)}.drban small{color:var(--muted)}.drban i{font-style:normal;float:left}
 .drnew{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.shban.qok{border-color:var(--line);background:var(--bg)}.shban.qok>div:first-child{font-size:15px}
 .vhd{font-size:13px;color:var(--muted);margin:2px 2px 6px}.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:10px}
 .vcard{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:2px solid var(--line);border-radius:14px;background:var(--bg);color:inherit;font:inherit;cursor:pointer}.vcard img,.vcard .vi{width:72px;height:72px;border-radius:10px;object-fit:cover;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px}
 .vcard b{font-size:13.5px;line-height:1.25;text-align:center}.vcard em{font-style:normal;font-weight:800;font-size:17px;color:var(--green)}.vcard.z em{color:var(--red)}.vcard.on{border-color:var(--green);background:rgba(30,170,130,.12)}.vcard.add{border-style:dashed;border-color:var(--green)}.vcard.add .vi{background:transparent}.vcard.add em{font-size:11px;color:var(--muted);font-weight:400}
@@ -834,7 +835,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ل ألوان بنفس الكود';
+const APP_V = '17-10م ابعت الكمية';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1324,9 +1325,9 @@ function minGate(p,cont){let v=null;
     closeSheet();p.min=n;run(ref('items/'+p.id).update({min:n}),`📉 الحد الأدنى لـ ${p.name} = ${n}`);setTimeout(()=>cont(p),150)},false);
   r.querySelector('#mgV').addEventListener('input',e=>{const ok=e.target.value.trim()!=='';if(ok)r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed','false'));r.querySelector('[data-m=ok]').disabled=!ok&&v==null})}
 /* حالة الصنف في النواقص — بتظهر أول ما تمسحه */
-function shortBanner(p){if(!isShort(p))return '';const q=good(p),d=t=>fmtDay(dayKey(new Date(t)));
+function shortBanner(p){if(!p)return '';if(!isShort(p))return `<div class="shban qok" data-sbid="${p.id}"><div>📦 عندك <b>${fmtQ(p,good(p))}</b>${p.shortSent?` <small>· آخر مرة اتبعت ${fmtDay(dayKey(new Date(p.shortSent.t)))}</small>`:''}</div><div class="sbb"><button class="btn sm primary" data-sb="mgr">📤 ابعت الكمية للمدير</button></div></div>`;const q=good(p),d=t=>fmtDay(dayKey(new Date(t)));
   const st=p.ordered?`<span class="ok">✓ اتطلب من الشركة${p.ordered.t?' '+d(p.ordered.t):''}</span>`:p.shortSent&&!p.shortAt?`<span class="ok">📤 اتبعت للمدير ${d(p.shortSent.t)}${p.shortSent.by?' — '+esc(p.shortSent.by):''}</span>`:`<b class="rd">لسه ما اتبعتش للمدير</b>`;
-  return `<div class="shban ${p.ordered||(p.shortSent&&!p.shortAt)?'done':''}" data-sbid="${p.id}"><div>⚠️ <b>من النواقص</b> — ${q?'فاضل '+fmtQ(p,q):'خلصان'} (الحد الأدنى ${minOf(p)})<br>${st}</div>${p.ordered||(p.shortSent&&!p.shortAt)?'':`<div class="sbb"><button class="btn sm primary" data-sb="mgr">📤 ابعته للمدير</button><button class="btn sm" data-sb="sent">✓ اتبعت</button></div>`}</div>`}
+  return `<div class="shban ${p.ordered||(p.shortSent&&!p.shortAt)?'done':''}" data-sbid="${p.id}"><div>⚠️ <b>من النواقص</b> — ${q?'فاضل '+fmtQ(p,q):'خلصان'} (الحد الأدنى ${minOf(p)})<br>${st}</div>${p.ordered||(p.shortSent&&!p.shortAt)?'<div class="sbb"><button class="btn sm" data-sb="mgr">📤 ابعت تاني</button></div>':`<div class="sbb"><button class="btn sm primary" data-sb="mgr">📤 ابعته للمدير</button><button class="btn sm" data-sb="sent">✓ اتبعت</button></div>`}</div>`}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-sb]');if(!b)return;const box=b.closest('[data-sbid]');if(!box)return;e.stopPropagation();const p=S.items.find(x=>x.id===box.dataset.sbid);if(!p)return;
   if(b.dataset.sb==='mgr')return shareShortSheet(p);
   p.shortSent={t:Date.now(),by:me()};delete p.shortAt;run(ref('items/'+p.id).update({shortAt:FV().delete(),shortSent:p.shortSent}),'✓ اتعلّم «اتبعت للمدير»');box.outerHTML=shortBanner(p)},true);
@@ -3032,7 +3033,7 @@ async function shareFiles(files,text,cap){
 const mgrCap=p=>`${p.name}\nعندنا: ${fmtQ(p,good(p))}`;
 function shareShortSheet(p){
   let target=suggestTarget(p),blob=null,url='';
-  const r=openSheet(`<h4>📤 ابعت الناقص — ${esc(p.name)}</h4><img id="ssImg" class="scanimg" alt="صورة الناقص"><p class="hint" id="ssSt" style="text-align:center"><span class="spin"></span>جاري تجهيز الصورة…</p>
+  const r=openSheet(`<h4>📤 ${isShort(p)?'ابعت الناقص':'ابعت الكمية'} — ${esc(p.name)}</h4><img id="ssImg" class="scanimg" alt="صورة الناقص"><p class="hint" id="ssSt" style="text-align:center"><span class="spin"></span>جاري تجهيز الصورة…</p>
     <div class="two"><div><label>عندنا دلوقتي</label><div class="facts"><span><b>${fmtQ(p,good(p))}</b></span></div></div><div><label for="ssT">المفروض يكون موجود${spb(p)>1?' (علب)':''}</label><input id="ssT" type="number" inputmode="numeric" value="${Math.ceil(target/spb(p))}"></div></div>
     <p class="hint">${sold30(p)?`اتباع منه ${fmtQ(p,sold30(p))} في آخر 30 يوم — `:''}المطلوب: <b id="ssN">${fmtQ(p,Math.max(0,target-good(p)))}</b></p>
     <label class="check"><input type="checkbox" id="ssSave" ${p.target?'checked':''}> احفظ الرقم ده للصنف ده</label>
