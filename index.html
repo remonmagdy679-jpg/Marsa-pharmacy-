@@ -845,7 +845,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10خ صورة لبيتر';
+const APP_V = '17-10ذ صورة بيتر بس';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1089,8 +1089,7 @@ async function makeDrList(L){try{await document.fonts.ready}catch(e){}
   return await new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.9))}
 async function drSendPeter(){const L=S.items.filter(p=>tOf(p)==='med'&&drLow(p)).sort((a,b)=>drNeed(b)-drNeed(a)||itemCmp(a,b));if(!L.length)return toast('البوكس كامل 👌');
   toast('جاري تجهيز الصورة…');const bl=await makeDrList(L);const f=new File([bl],`هات من المخزن ${today()}.jpg`,{type:'image/jpeg'});
-  const t=`🗄️ هات من المخزن — ${fmtDay(today())}\n`+L.map((p,i)=>{const K=spb(p),n=drNeed(p),sb=Math.floor(drStore(p)/K);return `${i+1}. ${p.name} — هات ${Math.max(1,Math.min(n||1,sb||n||1))}`}).join('\n');
-  await shareFiles([f],t,true)}
+  await shareFiles([f],'',false)}
 function drSetSheet(p,after){const K=spb(p),lastK=bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0]||'';
   const r=openSheet(`<h4>🗄️ البوكس — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">إجمالي المتسجل: <b>${fmtQ(p,good(p))}</b>. اكتب اللي جوه البوكس دلوقتي، والحد اللي لما يوصله ينبّه يجيبوا من المخزن.</p>
     <div class="two"><div><label for="dsQ">في البوكس دلوقتي${K>1?' (علب)':''}</label><input id="dsQ" type="number" inputmode="numeric" value="${hasDr(p)?Math.floor(drQ(p)/K):''}"></div><div><label for="dsM">حد البوكس${K>1?' (علب)':''}</label><input id="dsM" type="number" inputmode="numeric" value="${hasDr(p)?p.drMin:2}" placeholder="مثلاً 2"></div></div>
