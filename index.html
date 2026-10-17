@@ -516,7 +516,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .sellacts:first-of-type{margin-top:4px}
 .stock.line{margin:10px 0 6px}.stock.line div{padding:5px 9px;border-radius:10px}.stock.line small{font-size:11px}.stock.line b{font-size:17px}.stock.line .sx b{font-size:15px}.stock.line .sx em,.stock.line .sx .more{font-size:11px}
 .stock.sm{margin:0 0 8px}.stock.sm div{padding:6px 10px}.stock.sm b{font-size:20px}.stock.sm .sx b{font-size:16px}
-.sellacts{display:flex;gap:8px;margin-top:12px}.sellacts .btn.big{flex:1;padding:14px 8px;font-size:16px;font-weight:800;border-radius:14px}.sellacts.top{margin:0 0 10px}
+.sellacts{display:flex;gap:8px;margin-top:12px}.sellacts .btn.big{flex:1;padding:14px 8px;font-size:16px;font-weight:800;border-radius:14px}.sellacts.top{margin:0 0 10px}.sellacts.stk{position:sticky;top:-18px;z-index:5;margin:2px -16px 10px;padding:8px 16px;background:var(--card);box-shadow:0 6px 10px -8px rgba(0,0,0,.5)}
 .gtot{margin-top:12px;background:var(--bg);border:2px solid var(--green);border-radius:16px;padding:10px 12px}.gtot>label{font-size:15px;font-weight:800;color:var(--ink,inherit);margin:0 0 6px}
 .gtot .cursel{margin:0 0 8px}.pxin.big input{font-size:26px;font-weight:800;padding:10px}
 .lgal{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}.lgal img{width:96px;height:96px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:zoom-in}.lgal .lg{position:relative}.lgal .lg .icon{position:absolute;top:-6px;inset-inline-end:-6px;width:26px;height:26px;min-width:0;padding:0;font-size:12px;border-radius:50%}
@@ -844,7 +844,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ت دوس على الصورة';
+const APP_V = '17-10ث أزرار البيع فوق';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1357,8 +1357,8 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const K=spb(p),tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty*(l.unit==='strip'?1:K),0);let unit='box';const mul=()=>unit==='strip'?1:K;
   const r=openSheet(`<h4 class="withimg sellh">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1"><em class="snm">${esc(p.name)}</em>${medInfo(p)?`<small class="szc">${esc(medInfo(p))}</small>`:''}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
+    <div class="sellacts stk"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
     ${vStrip(p)}<div id="colBox">${colPick(p,o.col||'','out')}</div>${expBanner(p)}${shortBanner(p)}${drRow(p)}
-    <div class="sellacts"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
     ${CART.lines.length||inCart?`<p class="hint" style="margin:6px 2px 0;text-align:center">🧾 في الفاتورة دلوقتي ${CART.lines.length} صنف${inCart?` — منه ${inCart} من الصنف ده`:''}</p>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
     ${K>1?`<div class="seg unitsel" id="fUnit"><button data-m="u:box" aria-pressed="true">📦 علبة (${K} شريط)</button><button data-m="u:strip" aria-pressed="false">💊 شريط</button></div>`:''}
