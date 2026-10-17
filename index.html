@@ -563,6 +563,9 @@ body.hasinv .wrap{padding-bottom:230px}
 .drban{display:block;width:100%;text-align:start;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;margin:0 0 8px;font-size:14px}.drban.low{border-color:var(--amber);background:rgba(240,170,40,.12)}.drban.empty{border-color:var(--red);background:rgba(198,42,47,.1)}
 .drban.add{border-style:dashed;border-color:var(--green)}.drban.add b{color:var(--green)}.drban small{color:var(--muted)}.drban i{font-style:normal;float:left}
 .drnew{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.drcard{padding:10px 12px;border-bottom:1px solid var(--line)}.drcard:last-child{border-bottom:0}.drhd{display:flex;gap:10px;align-items:center;margin-bottom:8px}.drhd b{font-size:15px;line-height:1.35}.drhd img,.drhd .pimg{width:46px;height:46px;flex:none}
+.dstat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.dstat>div{background:var(--card,rgba(255,255,255,.04));border:1px solid var(--line);border-radius:10px;padding:6px 4px;text-align:center}.dstat small{display:block;font-size:12px;color:var(--muted)}.dstat b{font-size:20px}.dstat b span{font-size:13px;color:var(--muted);font-weight:600}.dstat .rd{border-color:var(--red)}.dstat .rd b{color:var(--red)}.dstat .tt{border-color:var(--green)}.dstat .tt b{color:var(--green)}
+.dneed{margin:6px 0 0;font-size:14px;color:var(--red);font-weight:600}.dneed.amb{color:var(--amber)}.dneed small{color:var(--muted);font-weight:400}.dact{display:flex;justify-content:flex-end;margin-top:8px}.dact .ncq{max-width:100%}.drban .dstat{margin-top:2px}.drban i{margin-bottom:4px}
 .ncq{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:52%}.ncq input{width:84px;font-size:17px;font-weight:700;padding:8px;text-align:center}
 .accsw{margin-bottom:10px}
 .sellbig{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:800;border-radius:14px}
@@ -826,7 +829,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ط إصلاح حفظ البوكس';
+const APP_V = '17-10ي البوكس محتاج كام';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1028,10 +1031,15 @@ function rowShort(p){
 const hasDr=p=>p.drMin!=null&&p.drMin!=='';
 const drQ=p=>Math.max(0,Math.min(+p.dr||0,good(p)));
 const drLow=p=>hasDr(p)&&drQ(p)<=+p.drMin*spb(p)&&good(p)>drQ(p);
+const drStore=p=>Math.max(0,good(p)-drQ(p));
+const drNeed=p=>{if(!hasDr(p))return 0;const K=spb(p);return Math.max(0,+p.drMin-Math.floor(drQ(p)/K))};
+const dStat=p=>{const K=spb(p),u=K>1?'علبة':'',nc=p.needCount,n=drNeed(p),sb=Math.floor(drStore(p)/K),bx=Math.floor(drQ(p)/K),tt=Math.floor(good(p)/K);
+  const need=!hasDr(p)?'':n>0?`<div class="dneed">⚠️ موجود <b>${bx}</b> — محتاج <b>${n}</b> ${u} كمان عشان يوصل ${p.drMin}${!nc&&sb<n?` <small>(المخزن فيه ${sb} بس)</small>`:''}</div>`:bx<=+p.drMin&&good(p)>drQ(p)?`<div class="dneed amb">⚠️ وصل للحد (${p.drMin}) — هات علبة أو اتنين</div>`:'';
+  return `<div class="dstat"><div class="${n>0?'rd':''}"><small>🗄️ البوكس</small><b>${bx}${hasDr(p)?`<span>/${p.drMin}</span>`:''}</b></div><div><small>📦 المخزن</small><b>${nc?'؟':sb}</b></div><div class="tt"><small>∑ الإجمالي</small><b>${nc?'؟':tt}</b></div></div>${need}${nc?'<div class="dneed amb">📦 المخزن لسه متعدّش</div>':''}`};
 const drTo=()=>((S.cfg||{}).drawerTo||[]);
 function drNotify(p,left){push('🗄️ هات من المخزن — '+SHOP_NAME,`${p.name}\nفي البوكس ${fmtQ(p,left)} بس (الحد ${p.drMin}) — في المخزن ${fmtQ(p,Math.max(0,good(p)-left))}`,{prio:4,tags:['file_cabinet'],...(drTo().length?{only:drTo()}:{all:true})})}
-function drMove(p){const K=spb(p),inDr=drQ(p),store=Math.max(0,good(p)-inDr),sug=Math.max(1,Math.min(Math.ceil(store/K),Math.max(1,(+p.drMin||1)*2-Math.floor(inDr/K))));
-  openSheet(`<h4>🗄️ نقل للبوكس — ${esc(p.name)}</h4><div class="stock sm"><div><small>في البوكس</small><b>${fmtQs(p,inDr)}</b></div><div><small>في المخزن</small><b>${fmtQs(p,store)}</b></div><div><small>حد البوكس</small><b>${p.drMin}</b></div></div>
+function drMove(p){const K=spb(p),inDr=drQ(p),store=Math.max(0,good(p)-inDr),sug=Math.max(1,Math.min(Math.ceil(store/K)||1,drNeed(p)||1));
+  openSheet(`<h4>🗄️ نقل للبوكس — ${esc(p.name)}</h4><div class="stock sm"><div><small>في البوكس</small><b>${fmtQs(p,inDr)}</b></div><div><small>في المخزن</small><b>${fmtQs(p,store)}</b></div><div><small>حد البوكس</small><b>${p.drMin}</b></div></div>${drNeed(p)?`<p class="dneed">محتاج <b>${drNeed(p)}</b> علبة كمان عشان البوكس يوصل ${p.drMin}</p>`:''}
     <label for="dmQ">نقلت كام${K>1?' علبة':''} من المخزن للبوكس؟</label><div class="stepper big"><button class="icon" data-m="dec">−</button><input id="dmQ" type="number" inputmode="numeric" value="${sug}"><button class="icon" data-m="inc">+</button></div>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">✓ اتنقل</button></div>`,
   (m,r)=>{const i=r.querySelector('#dmQ');if(m==='inc'){i.value=int(i.value)+1;return}if(m==='dec'){i.value=Math.max(0,int(i.value)-1);return}if(m!=='ok')return;
@@ -1060,15 +1068,15 @@ function storeCount(p,after){const K=spb(p),lastK=bats(p).filter(([k])=>k!=='x')
     if(q>0)u['b.'+k]=FV().increment(q);if(nd!==curDr){u.dr=nd;const diff=nd-curDr;if(diff)u['b.'+(bats(p)[0]||[k])[0]]=FV().increment(diff)}
     closeSheet();b.update(ref('items/'+p.id),u);evt(b,'fix',p.name,q,'عدّ المخزن');commit(b,`📦 اتسجل: ${fmtQ(p,q)} في المخزن — ${p.name}`);if(after)setTimeout(after,200)})}
 const ncBan=p=>p.needCount?`<button class="drban empty" data-m="stc">📦 <b>المخزن لسه متعدّش</b> — دوس واكتب العدد <i>✏️</i></button>`:'';
-const drRow=p=>ncBan(p)+(tOf(p)!=='med'?'':hasDr(p)?`<button class="drban ${drQ(p)?(drLow(p)?'low':''):'empty'}" data-m="drset">🗄️ في البوكس <b>${fmtQ(p,drQ(p))}</b> · 📦 في المخزن ${p.needCount?'؟':fmtQ(p,Math.max(0,good(p)-drQ(p)))} · الإجمالي ${p.needCount?'؟':fmtQ(p,good(p))} · الحد ${p.drMin}${!drQ(p)&&good(p)?' — <b>هاتها من المخزن</b>':''} <i>✏️</i></button>`:`<button class="drban add" data-m="drset">🗄️ كام علبة في البوكس؟ <b>＋ حدد</b> <small>(والباقي يتحسب في المخزن)</small></button>`);
-function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));const low=meds.filter(drLow).sort((a,b)=>(b.drAt?1:0)-(a.drAt?1:0)||drQ(a)-drQ(b)),tracked=meds.filter(p=>hasDr(p)&&!drLow(p)&&!p.needCount).sort(byName),untr=meds.filter(p=>!hasDr(p)&&good(p)>0).sort(byName);
-  const row=(p,act)=>`<div class="row slim">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta"><span class="${drLow(p)?'rd':''}">🗄️ في البوكس ${fmtQ(p,drQ(p))}</span>${hasDr(p)?`<span>الحد ${p.drMin}</span>`:''}<span>📦 المخزن ${p.needCount?'؟ لسه متعدّش':fmtQ(p,Math.max(0,good(p)-drQ(p)))}</span></div></div>${act}</div>`;
+const drRow=p=>ncBan(p)+(tOf(p)!=='med'?'':hasDr(p)?`<button class="drban ${drNeed(p)>0||!drQ(p)?'empty':drLow(p)?'low':''}" data-m="drset"><i>✏️</i>${dStat(p).replace('<div class="dneed amb">📦 المخزن لسه متعدّش</div>','')}</button>`:`<button class="drban add" data-m="drset">🗄️ كام علبة في البوكس؟ <b>＋ حدد</b> <small>(والباقي يتحسب في المخزن)</small></button>`);
+function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));const low=meds.filter(drLow).sort((a,b)=>drNeed(b)-drNeed(a)||(b.drAt?1:0)-(a.drAt?1:0)||drQ(a)-drQ(b)),tracked=meds.filter(p=>hasDr(p)&&!drLow(p)&&!p.needCount).sort(byName),untr=meds.filter(p=>!hasDr(p)&&good(p)>0).sort(byName);
+  const row=(p,act)=>`<div class="drcard"><div class="drhd">${ico(p)}<b>${esc(p.name)}</b></div>${dStat(p).replace(p.needCount?'<div class="dneed amb">📦 المخزن لسه متعدّش</div>':'@@','')}<div class="dact">${act}</div></div>`;
   const nc=S.items.filter(p=>p.needCount&&matchQ(hay(p))).sort((a,b)=>(a.needCount.t||0)-(b.needCount.t||0));
   const inDr=meds.filter(p=>hasDr(p)),tot=inDr.reduce((a,p)=>a+Math.floor(drQ(p)/spb(p)),0);
-  let h=`<div class="summary"><strong style="color:${low.length||nc.length?'var(--red)':'var(--green)'}">${low.length+nc.length?`${low.length} هات · ${nc.length} عدّ`:'👌'}</strong><span>🗄️ البوكس: ${inDr.length} دوا متابَع — ${tot} علبة جوه</span></div>
+  let h=`<div class="summary"><strong style="color:${low.length||nc.length?'var(--red)':'var(--green)'}">${low.length+nc.length?`${low.length} هات · ${nc.length} عدّ`:'👌'}</strong><span>🗄️ البوكس: ${inDr.length} دوا — ${tot} علبة جوه${low.length?` · محتاج ${low.reduce((a,p)=>a+drNeed(p),0)} علبة`:''}</span></div>
   <div class="hint" style="margin:4px 2px 8px">🗄️ <b>البوكس</b> = الأدوية اللي جوه الصيدلية. لما دوا يوصل لحد البوكس، ${drTo().length?'المسؤول':'الكل'} بيوصله تنبيه يجيبه من المخزن. <button class="linkb" data-act="dr-to">👤 مين يتنبّه؟ (${drTo().length?esc(drTo().join('، ')):'الكل'})</button></div>`;
   if(nc.length)h+=`<section class="shsec fresh nc"><header><b>📦 لسه متعدّش في المخزن (${nc.length})</b></header><div class="rows">${nc.map(p=>row(p,`<div class="ncq"><input type="number" inputmode="numeric" data-ncq="${p.id}" placeholder="${spb(p)>1?'علب':'العدد'}"><button class="btn sm primary" data-act="nc-save" data-id="${p.id}">💾 حفظ</button><button class="icon" data-act="nc-edit" data-id="${p.id}" aria-label="تعديل الصنف">✏️</button></div>`)).join('')}</div></section>`;
-  h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
+  h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل${drNeed(p)?' '+Math.min(drNeed(p),Math.floor(drStore(p)/spb(p))||drNeed(p)):''}</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
   if(tracked.length)h+=`<section class="group"><h3>🗄️ متابَع في البوكس (${tracked.length})</h3><div class="rows">${tracked.map(p=>row(p,`<button class="icon" data-act="dr-set" data-id="${p.id}" aria-label="تعديل">✏️</button>`)).join('')}</div></section>`;
   return h}
 function vShort(){
