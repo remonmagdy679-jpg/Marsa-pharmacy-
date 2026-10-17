@@ -846,7 +846,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ض سكان البوكس';
+const APP_V = '17-10غ البيع من البوكس';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1655,7 +1655,8 @@ function doSell(p,n,start,quiet,extra){
   const b=fs.batch();
   if(Object.keys(upd).length)b.set(ref('items/'+p.id),{b:upd},{merge:true});
   const _pu=PU[p.id]&&Date.now()-PU[p.id].t<20*6e4?PU[p.id]:null;if(_pu){extra={...(extra||{}),hook:_pu.h,lang:_pu.lang};delete PU[p.id]}
-  b.set(col('sales').doc(),{t:Date.now(),day:today(),by:me(),id:p.id,name:p.name,type:tOf(p),qty:n,units:n,alloc,short:rem,...(extra||{})});
+  const drT=hasDr(p)?drQ(p)-Math.max(0,drQ(p)-n):0;
+  b.set(col('sales').doc(),{t:Date.now(),day:today(),by:me(),id:p.id,name:p.name,type:tOf(p),qty:n,units:n,alloc,short:rem,...(drT>0?{drT}:{}),...(extra||{})});
   if(extra&&extra.cur&&extra.price>0&&!extra.pxa)b.set(ref('items/'+p.id),{px:{[extra.cur+(extra.unit==='strip'?'_s':'')]:extra.price}},{merge:true});
   evt(b,'sale',p.name,n,Object.keys(alloc).filter(k=>k!=='x').map(bkLabel).join('، '));
   let al=false;
@@ -1674,10 +1675,10 @@ function undoInv(inv){
     evt(b,'undo','فاتورة #'+(l[0].invNo||''),l.length,'',0);delete S.dayCache[S.day];delete S.dayCache['_'+S.day];commit(b,'الفاتورة اتلغت والكميات رجعت')});
 }
 function undoSale(s){
-  openSheet(`<h4>إلغاء آخر تسجيل؟</h4><p class="hint" style="margin-top:0">${esc(s.name)} × ${s.qty}${dText(s.alloc||{})?` (${dText(s.alloc)})`:''} — الكمية هترجع للمخزن على نفس التاريخ.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">أيوه ألغيها</button></div>`,
+  openSheet(`<h4>إلغاء آخر تسجيل؟</h4><p class="hint" style="margin-top:0">${esc(s.name)} × ${s.qty}${dText(s.alloc||{})?` (${dText(s.alloc)})`:''} — الكمية هترجع ${s.drT>0?'للبوكس':'للمخزن'} على نفس التاريخ.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">أيوه ألغيها</button></div>`,
   ()=>{closeSheet();const b=fs.batch();const it=S.items.find(x=>x.id===s.id);const inc={};
     for(const k in (s.alloc||{}))inc[k]=FV().increment(s.alloc[k]);
-    if(it&&Object.keys(inc).length)b.set(ref('items/'+it.id),{b:inc},{merge:true});
+    if(it&&Object.keys(inc).length)b.set(ref('items/'+it.id),{b:inc,...(s.drT>0&&hasDr(it)?{dr:FV().increment(s.drT)}:{})},{merge:true});
     b.update(ref('sales/'+s.sid),SOFT());evt(b,'undo',s.name,s.qty,'',1);
     delete S.dayCache[s.day];delete S.dayCache['_'+s.day];commit(b,'اتلغى والكمية رجعت');});
 }
