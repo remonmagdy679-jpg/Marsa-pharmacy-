@@ -563,6 +563,9 @@ body.hasinv .wrap{padding-bottom:230px}
 .drban{display:block;width:100%;text-align:start;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;margin:0 0 8px;font-size:14px}.drban.low{border-color:var(--amber);background:rgba(240,170,40,.12)}.drban.empty{border-color:var(--red);background:rgba(198,42,47,.1)}
 .drban.add{border-style:dashed;border-color:var(--green)}.drban.add b{color:var(--green)}.drban small{color:var(--muted)}.drban i{font-style:normal;float:left}
 .drnew{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.vhd{font-size:13px;color:var(--muted);margin:2px 2px 6px}.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:10px}
+.vcard{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:2px solid var(--line);border-radius:14px;background:var(--bg);color:inherit;font:inherit;cursor:pointer}.vcard img,.vcard .vi{width:72px;height:72px;border-radius:10px;object-fit:cover;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px}
+.vcard b{font-size:13.5px;line-height:1.25;text-align:center}.vcard em{font-style:normal;font-weight:800;font-size:17px;color:var(--green)}.vcard.z em{color:var(--red)}.vcard.on{border-color:var(--green);background:rgba(30,170,130,.12)}.vcard.add{border-style:dashed;border-color:var(--green)}.vcard.add .vi{background:transparent}.vcard.add em{font-size:11px;color:var(--muted);font-weight:400}
 .alts{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;align-items:center;scrollbar-width:none}.alts::-webkit-scrollbar{display:none}.alt{position:relative;flex:none;display:block}.alt>button,button.alt{width:64px;height:64px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0;overflow:hidden;cursor:pointer}.alt img{width:100%;height:100%;object-fit:cover;display:block}
 button.alt.add{background:var(--bg);color:var(--green);border:1px dashed var(--green);font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:74px}button.alt.add small{font-size:10.5px;line-height:1.1}.alt .ax{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--red);color:#fff;border:0;font-size:12px;padding:0;cursor:pointer}.altn{flex:none;color:var(--muted);font-size:12px}
 .drcard{padding:10px 12px;border-bottom:1px solid var(--line)}.drcard:last-child{border-bottom:0}.drhd{display:flex;gap:10px;align-items:center;margin-bottom:8px}.drhd b{font-size:15px;line-height:1.35}.drhd img,.drhd .pimg{width:46px;height:46px;flex:none}
@@ -831,7 +834,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ك صور ألوان';
+const APP_V = '17-10ل ألوان بنفس الكود';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1297,12 +1300,12 @@ function askName(force,then){
 }
 function itemSheet(p){
   const bl=bats(p);
-  const sh=openSheet(`${p.img?`<button class="hero" data-m="zoom" aria-label="كبّر الصورة"><img src="${p.img}" alt="${esc(p.name)}"><span>🔍 دوس للتكبير</span></button>`:''}${altStrip(p,true)}<h4>${TYPES[tOf(p)].icon} ${esc(p.name)}</h4><div class="facts"><span>صالح للبيع <b>${fmtQ(p,good(p))}</b></span>${deadQ(p)?`<span>منتهي <b>${fmtQ(p,deadQ(p))}</b></span>`:''}${medInfo(p)?`<span>💊 ${esc(medInfo(p))}</span>`:''}${p.ing&&p.str?`<span class="ltr">🧪 ${esc(p.ing)}</span>`:''}<span>الحد الأدنى <b>${minOf(p)}</b></span>${Object.entries(p.px||{}).filter(([,v])=>v>0).map(([c,v])=>`<span>${fmtPx(v,c.replace('_s',''))}${c.endsWith('_s')?'/شريط':''}</span>`).join('')}${p.price?`<span>${money(p.price)}</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.alias?`<span>${esc(p.alias)}</span>`:''}${p.critical?'<span>⭐ صنف مهم</span>':''}</div>
+  const sh=openSheet(`${p.img?`<button class="hero" data-m="zoom" aria-label="كبّر الصورة"><img src="${p.img}" alt="${esc(p.name)}"><span>🔍 دوس للتكبير</span></button>`:''}${altStrip(p,true)}<h4>${TYPES[tOf(p)].icon} ${esc(p.name)}</h4>${vStrip(p)}<div class="facts"><span>صالح للبيع <b>${fmtQ(p,good(p))}</b></span>${deadQ(p)?`<span>منتهي <b>${fmtQ(p,deadQ(p))}</b></span>`:''}${medInfo(p)?`<span>💊 ${esc(medInfo(p))}</span>`:''}${p.ing&&p.str?`<span class="ltr">🧪 ${esc(p.ing)}</span>`:''}<span>الحد الأدنى <b>${minOf(p)}</b></span>${Object.entries(p.px||{}).filter(([,v])=>v>0).map(([c,v])=>`<span>${fmtPx(v,c.replace('_s',''))}${c.endsWith('_s')?'/شريط':''}</span>`).join('')}${p.price?`<span>${money(p.price)}</span>`:''}${p.grp?`<span>${esc(p.grp)}</span>`:''}${p.alias?`<span>${esc(p.alias)}</span>`:''}${p.critical?'<span>⭐ صنف مهم</span>':''}</div>
   <label>التواريخ اللي في المخزن</label><div class="rows">${bl.length?bl.map(([k,v])=>`<div class="row slim"><span class="bt ${expCls(k)}" data-n="${fmtQs(p,v)}"><i>${bkLabel(k)}</i></span><span class="grow">${EXPW[expCls(k)]}</span><button class="btn sm" data-m="out:${k}">شيل</button></div>`).join(''):'<div class="empty">مفيش حاجة في المخزن</div>'}</div>
   <div class="actions"><button class="btn primary" data-m="sell">بيع</button><button class="btn" data-m="in">استلام</button><button class="btn" data-m="edit">تعديل</button></div>
   <div class="actions"><button class="btn" data-m="urgent">🔔 عاجل للكل</button><button class="btn" data-m="ord">${p.ordered?'شيل «اتطلب»':'✓ اتطلب'}</button><button class="btn danger" data-m="del">حذف</button></div>
-  <div class="actions"><button class="btn" data-m="photo">📷 ${p.img?'غيّر صورة المنتج':'ضيف صورة للمنتج'}</button>${can('coach')?'<button class="btn" data-m="pitch">🎯 إزاي أبيعه</button>':''}</div>`,
-  (m,root)=>{if(m==='pitch')return pitchSheet(p);const x=S.items.find(i=>i.id===p.id);if(!x){closeSheet();return}if(altHandle(m,x,root))return;
+  <div class="actions"><button class="btn" data-m="vnew">🎨 لون تاني بنفس الكود</button><button class="btn" data-m="photo">📷 ${p.img?'غيّر صورة المنتج':'ضيف صورة للمنتج'}</button>${can('coach')?'<button class="btn" data-m="pitch">🎯 إزاي أبيعه</button>':''}</div>`,
+  (m,root)=>{if(m==='pitch')return pitchSheet(p);const x=S.items.find(i=>i.id===p.id);if(!x){closeSheet();return}if(altHandle(m,x,root))return;if(m==='vnew')return variantSheet(x);if(m.startsWith('vr:')){const v=S.items.find(i=>'vr:'+i.id===m);if(v&&v.id!==x.id)itemSheet(v);return}
     if(m==='zoom')return openZoom(x);if(m==='photo')return pickPhoto(false,async d=>{closeSheet();await setItemImage(x.id,d);toast('الصورة اتحفظت عند الكل')});
     if(m==='sell')sellSheet(x);else if(m==='in')restockSheet(x);else if(m==='edit')itemForm(x);else if(m==='urgent'){closeSheet();urgent(x)}
     else if(m==='ord'){closeSheet();toggleOrdered(x)}else if(m==='del')delSheet(x);else if(m.startsWith('out:'))outSheet(x,m.slice(4))});
@@ -1335,7 +1338,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
   const bl=bats(p),n0=nowIdx();let def=(bl.find(([k])=>bkIdx(k)>=n0)||bl[0]||[])[0];if(o.start&&bl.some(([k])=>k===o.start))def=o.start;let start=def;
   const K=spb(p),tot=good(p),dq=deadQ(p),inCart=CART.lines.filter(l=>l.id===p.id).reduce((a,l)=>a+l.qty*(l.unit==='strip'?1:K),0);let unit='box';const mul=()=>unit==='strip'?1:K;
   const r=openSheet(`<h4 class="withimg sellh">${p.img?`<button class="zimgbtn" data-m="zoom" aria-label="كبّر صورة المنتج"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1"><em class="snm">${esc(p.name)}</em>${medInfo(p)?`<small class="szc">${esc(medInfo(p))}</small>`:''}</span>${can('coach')?'<button class="icon edt" data-m="pitch" aria-label="إزاي أبيعه" title="إزاي أبيعه">🎯</button>':''}<button class="icon edt" data-m="restock" aria-label="استلام بضاعة" title="استلام بضاعة">📦</button><button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button></h4>
-    ${altStrip(p,false)}${expBanner(p)}${shortBanner(p)}${drRow(p)}
+    ${vStrip(p)}${altStrip(p,false)}${expBanner(p)}${shortBanner(p)}${drRow(p)}
     <div class="sellacts"><button class="btn big" data-m="okn">🔳 ضيف وامسح التالي</button><button class="btn primary big" data-m="now">✓ خلّص الفاتورة</button></div>
     ${CART.lines.length||inCart?`<p class="hint" style="margin:6px 2px 0;text-align:center">🧾 في الفاتورة دلوقتي ${CART.lines.length} صنف${inCart?` — منه ${inCart} من الصنف ده`:''}</p>`:''}
     ${!bl.length?'<p class="warn">المخزن مكتوب فيه صفر — البيعة هتتسجل بس مفيش حاجة هتتخصم.</p>':''}<p class="warn" id="dw" ${def&&expCls(def)==='dead'?'':'hidden'}>التاريخ ده منتهي!</p>
@@ -1347,7 +1350,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
     <div class="bxl" id="bxl" hidden><p>📅 كل التواريخ اللي عندك — دوس على تاريخ تبيع منه</p>${bl.map(([k,v])=>{const c=expCls(k);return `<button class="bxr" data-m="pk:${k}"><span class="d ${c}">${k==='x'?'بدون تاريخ':bkLabel(k)}</span><span class="n">${v} قطعة</span><span class="st ${c}">${EXPW[c]||''}</span><span class="ck">✓</span></button>`}).join('')}${dq?`<p class="rd" style="margin-top:6px">فيهم ${dq} منتهي — مش بيتحسبوا في الإجمالي</p>`:''}</div>
     <div class="actions minor"><button class="btn" data-cancel>إلغاء</button>${can('coach')?'<button class="btn" data-m="nobuy">😕 ماشتراش</button>':''}<button class="btn" data-m="ok">🔍 ضيف وكمّل بالاسم</button></div>
     ${can('info')?`<details class="pidet"><summary>📋 ${p.info?'الفوايد والجرعة':'فوايد وجرعة'} · 🌍 سعره في أوروبا</summary>${infoHtml(p)}</details>`:''}`,
-  (m,root,b)=>{if(m.startsWith('az:'))return altHandle(m,p,root);const n=root.querySelector('#fN');
+  (m,root,b)=>{if(m.startsWith('az:'))return altHandle(m,p,root);if(m==='vnew')return variantSheet(p);if(m.startsWith('vr:')){const x=S.items.find(i=>'vr:'+i.id===m);if(x&&x.id!==p.id)sellSheet(x,{...o,start:null});return}const n=root.querySelector('#fN');
     if(m==='edit')return itemForm(p,{after:np=>sellSheet(np,o)});
     if(m==='drset')return drSetSheet(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,{...o,scan:false}));
     if(m==='stc')return storeCount(p,()=>sellSheet(S.items.find(x=>x.id===p.id)||p,{...o,scan:false}));
@@ -1378,7 +1381,7 @@ function sellSheet(p,o={}){if(o.scan&&!hasMin(p))return minGate(p,np=>sellSheet(
 function restockSheet(p,pre={}){if(p&&pre.scan&&!hasMin(p))return minGate(p,np=>restockSheet(np,pre));
   const pick=!p,isMed=p?tOf(p)==='med':!!(pre.name&&findByName(pre.name)&&tOf(findByName(pre.name))==='med');
   const lastK=p?(pre.k||p.lastK||(bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0])||''):(pre.k||'');
-  openSheet(`<h4 class="withimg">${p&&p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">📦 استلام${p?' — '+esc(p.name):''}</span>${p?'<button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button>':''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}${pre.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}${p?shortBanner(p)+drRow(p):''}
+  openSheet(`<h4 class="withimg">${p&&p.img?`<button class="zimgbtn" data-m="zoom"><img src="${p.img}" alt=""><i>🔍</i></button>`:''}<span style="flex:1">📦 استلام${p?' — '+esc(p.name):''}</span>${p?'<button class="icon edt" data-m="edit" aria-label="تعديل الصنف" title="تعديل الصنف">✏️</button>':''}</h4>${pre.heard?`<p class="heard">🎙️ «${esc(pre.heard)}»</p>`:''}${pre.scan?'<p class="heard">🔳 اتعرف من الباركود</p>':''}${p?vStrip(p)+shortBanner(p)+drRow(p):''}
     ${pick?`<label for="fItem">الصنف</label><div class="vrow"><input id="fItem" list="ilist" value="${esc(pre.name||'')}" placeholder="اكتب اسم الصنف أو امسحه"><button class="icon" data-m="scan" aria-label="امسح الباركود">🔳</button></div><datalist id="ilist">${S.items.slice().sort(byName).map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist>`:`<div class="stock"><div><small>عندك دلوقتي</small><b>${good(p)}</b></div><div><small>بعد الاستلام</small><b id="fAfter">${fmtQs(p,good(p)+(+pre.q||1)*spb(p))}</b></div></div>`}
     <label for="fQ">العدد اللي وصل${p&&spb(p)>1?' (علب)':''}</label><div class="stepper big"><button class="icon" data-m="dec" aria-label="أقل">−</button><input id="fQ" type="number" inputmode="numeric" value="${pre.q||1}"><button class="icon" data-m="inc" aria-label="أكتر">+</button></div>
     <button class="btn sm cntbtn" data-m="cnt">📸 عدّ بالصورة</button><div id="cntSt" class="cntst"></div>
@@ -1388,7 +1391,7 @@ function restockSheet(p,pre={}){if(p&&pre.scan&&!hasMin(p))return minGate(p,np=>
     <p class="hint" id="rdSt" style="margin:6px 2px 0"></p>
     <div class="sellacts"><button class="btn big" data-m="okn">🔳 أضف وامسح التالي</button><button class="btn primary big" data-m="ok">✓ أضف للمخزن</button></div>
     <div class="actions minor"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="dph">📅 صوّر التاريخ</button><button class="btn" data-m="mdates">📸 كذا تاريخ</button></div>`,
-  (m,r)=>{
+  (m,r)=>{if(p&&m==='vnew')return variantSheet(p);if(p&&m.startsWith('vr:')){const x=S.items.find(i=>'vr:'+i.id===m);if(x&&x.id!==p.id)restockSheet(x,{...pre,k:pre.k});return}
     const qi=r.querySelector('#fQ'),upd=()=>{const a=r.querySelector('#fAfter');if(a&&p)a.textContent=fmtQs(p,good(p)+Math.max(0,int(qi.value))*spb(p)+(r.querySelector('#fQs')?int(r.querySelector('#fQs').value):0))};
     if(m==='zoom')return openZoom(p);
     if(m==='drset'&&p)return drSetSheet(p,()=>restockSheet(S.items.find(x=>x.id===p.id)||p,{...pre,scan:false}));
@@ -1433,7 +1436,7 @@ function itemForm(p,preset){
     <label for="fAl">اسم تاني للبحث (إنجليزي / عربي)</label><input id="fAl" value="${esc(p?.alias||'')}" placeholder="مثلاً: بنادول اكسترا">
     <div class="two"><div><label for="fPr">سعر البيع</label><input id="fPr" type="number" inputmode="decimal" value="${p?.price??''}" placeholder="0"></div>
     <div><label for="fMin">الحد الأدنى (ينزل نواقص)</label><input id="fMin" type="number" inputmode="numeric" value="${p?minOf(p):(+(preset&&preset.min)||2)}"></div></div>
-    <label>📷 صورة المنتج (بتسهّل التعرف عليه)</label><div class="photo"><img id="fImg" ${p&&p.img?`src="${p.img}"`:'hidden'} alt="صورة المنتج"><div class="pbtns"><button class="btn sm" data-m="pcam">📷 صوّر</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button><button class="btn sm" data-m="pdel" ${p&&p.img?'':'hidden'}>🗑 شيل</button><button class="btn sm aibtn" data-m="ai" ${p&&p.img?'':'hidden'}>🤖 اقرا البيانات من الصورة</button></div></div>${p?`<label style="margin-top:6px">🎨 صور تانية (لون أو شكل مختلف)</label>${altStrip(p,true)}`:''}<p class="hint aist" id="aiSt">${p?'':'📷 صوّر العلبة من قدام والتطبيق هيكتب الاسم والتفاصيل لوحده'}</p>
+    <label>📷 صورة المنتج (بتسهّل التعرف عليه)</label><div class="photo"><img id="fImg" ${p&&p.img?`src="${p.img}"`:'hidden'} alt="صورة المنتج"><div class="pbtns"><button class="btn sm" data-m="pcam">📷 صوّر</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button><button class="btn sm" data-m="pdel" ${p&&p.img?'':'hidden'}>🗑 شيل</button><button class="btn sm aibtn" data-m="ai" ${p&&p.img?'':'hidden'}>🤖 اقرا البيانات من الصورة</button></div></div>${p?`<label style="margin-top:6px">🖼️ صور تانية لنفس المنتج <small>(للون بعدد لوحده: «🎨 لون تاني» من صفحة الصنف)</small></label>${altStrip(p,true)}`:''}<p class="hint aist" id="aiSt">${p?'':'📷 صوّر العلبة من قدام والتطبيق هيكتب الاسم والتفاصيل لوحده'}</p>
     <label class="check"><input type="checkbox" id="fCr" ${p?.critical?'checked':''}> صنف مهم — نبّه الكل أول ما يوصل للحد الأدنى</label>
     <label>الكمية حسب تاريخ الإكسباير ${p?'(تعديل الجرد)':''}</label><div id="fB">${bl.length?bl.map(([k,v])=>brow(k,v)).join(''):brow(preset&&preset.k||'',preset&&preset.q||'')}</div>
     <div class="actions" style="margin-top:8px"><button class="btn sm" data-m="addrow">+ تاريخ تاني</button><button class="btn sm primary" data-m="mdates">📸 صوّر كذا تاريخ</button><button class="btn sm" data-m="dphoto">📅 صوّر التاريخ والباركود</button><button class="btn sm" data-m="cnt">📸 عدّ بالصورة</button></div><p class="hint" id="dSt" style="margin:4px 2px 0"></p><div id="cntSt" class="cntst"></div>
@@ -1444,7 +1447,7 @@ function itemForm(p,preset){
     if(m.startsWith('mq:')){r.querySelector('#fMin').value=m.slice(3);r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
     if(m==='scode')return scanTwice('امسح باركود الصنف',(c,g)=>{const i=r.querySelector('#fCode'),l=i.value.split(/[,،\s]+/).filter(Boolean);if(!l.includes(c))l.push(c);i.value=l.join(', ');
       if(g&&g.y){const row=r.querySelector('.brow');if(row&&!row.querySelector('[data-x=m]').value){row.querySelector('[data-x=m]').value=String(g.m);const ys=row.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(g.y)))ys.insertAdjacentHTML('beforeend',`<option>${g.y}</option>`);ys.value=String(g.y);toast('الإكسباير اتقرا من الكود: '+pad(g.m)+'/'+g.y)}}
-      const ex=S.items.find(x=>(x.codes||[]).includes(c)&&(!p||x.id!==p.id));if(ex)toast('⚠️ الكود ده متسجل على: '+ex.name)});
+      const ex=S.items.find(x=>(x.codes||[]).includes(c)&&(!p||x.id!==p.id));if(ex)toast('ℹ️ الكود ده متسجل كمان على: '+ex.name+' — هيتعامل كلون تاني')});
     if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',d=>{pimg=d;const im=r.querySelector('#fImg');im.src=d;im.hidden=false;r.querySelector('[data-m=pdel]').hidden=false;r.querySelector('[data-m=ai]').hidden=false;if(!r.querySelector('#fName').value.trim())aiFill()});
     if(m==='ai')return aiFill();
     if(m==='cnt'||m==='cnt+'){const rows=[...r.querySelectorAll('.brow')],row=(m==='cnt+'&&r.querySelector('#cntSt').dataset.row!=null?rows[+r.querySelector('#cntSt').dataset.row]:null)||rows.find(x=>!int(x.querySelector('.bq').value))||rows[rows.length-1];r.querySelector('#cntSt').dataset.row=rows.indexOf(row);
@@ -2499,7 +2502,7 @@ const imgCache={};
 /* صور تانية للمنتج (ألوان / أشكال) */
 const altL=p=>Array.isArray(p&&p.alt)?p.alt:[];const altId=(id,k)=>id+'_a'+k;
 function altStrip(p,edit){const L=altL(p);if(!p||(!L.length&&!edit))return '';
-  return `<div class="alts">${L.length&&p.img?`<button class="alt" data-m="zoom"><img src="${p.img}" alt=""></button>`:''}${L.map(a=>`<span class="alt"><button data-m="az:${a.k}"><img src="${a.th}" alt="${esc(a.l||'')}"></button>${edit?`<button class="ax" data-m="adel:${a.k}" aria-label="شيل الصورة">✕</button>`:''}</span>`).join('')}${edit?`<button class="alt add" data-m="acam">📷<small>＋ لون/شكل</small></button><button class="alt add" data-m="agal">🖼️<small>＋ من الجاليري</small></button>`:''}${L.length?`<small class="altn">${L.length+(p.img?1:0)} صور</small>`:''}</div>`}
+  return `<div class="alts">${L.length&&p.img?`<button class="alt" data-m="zoom"><img src="${p.img}" alt=""></button>`:''}${L.map(a=>`<span class="alt"><button data-m="az:${a.k}"><img src="${a.th}" alt="${esc(a.l||'')}"></button>${edit?`<button class="ax" data-m="adel:${a.k}" aria-label="شيل الصورة">✕</button>`:''}</span>`).join('')}${edit?`<button class="alt add" data-m="acam">📷<small>＋ صورة</small></button><button class="alt add" data-m="agal">🖼️<small>＋ من الجاليري</small></button>`:''}${L.length?`<small class="altn">${L.length+(p.img?1:0)} صور</small>`:''}</div>`}
 function altHandle(m,p,root){if(!p||!p.id)return false;const box=()=>root.querySelector('.alts'),redraw=np=>{const e=box();if(e)e.outerHTML=altStrip(np,true)};
   if(m.startsWith('az:')){const a=altL(p).find(x=>x.k===m.slice(3));if(a)openZoomSrc(a.th,p.name,altId(p.id,a.k));return true}
   if(m==='acam'||m==='agal'){pickFiles({cam:m==='acam',multiple:m==='agal'},async fl=>{toast('جاري حفظ الصور…');const L=[...altL(S.items.find(x=>x.id===p.id)||p)];let n=0;
@@ -2693,6 +2696,28 @@ function parseGS1(raw){let s=String(raw||'').replace(/^\]([A-Za-z]\d)/,'');const
   if(out['10'])g.batch=out['10'];return g}
 function codeOf(raw){const g=parseGS1(raw);return {code:normCode(g?g.gtin:raw),g}}
 const itemsByCode=c=>S.items.filter(x=>(x.codes||[]).includes(c));
+/* ألوان / أشكال: أصناف منفصلة بنفس الباركود — كل واحد عدده لوحده */
+const vSibs=p=>p?S.items.filter(x=>x.id!==p.id&&((p.vg&&x.vg===p.vg)||(x.codes||[]).some(c=>(p.codes||[]).includes(c)))):[];
+const vLbl=p=>p.vr||p.name;
+function vCards(l,cur,addBtn){return `<div class="vars">${l.map(x=>`<button class="vcard${cur&&x.id===cur.id?' on':''}${good(x)?'':' z'}" data-m="vr:${x.id}">${x.img?`<img src="${x.img}" alt="">`:`<span class="vi">${TYPES[tOf(x)].icon}</span>`}<b>${esc(vLbl(x))}</b><em>${fmtQs(x,good(x))}</em></button>`).join('')}${addBtn?'<button class="vcard add" data-m="vnew"><span class="vi">🎨</span><b>＋ لون تاني</b><em>بنفس الكود</em></button>':''}</div>`}
+const vStrip=p=>{const s=vSibs(p);return s.length?`<div class="vhd">🎨 الألوان (${s.length+1}) — دوس على اللي هتبيعه</div>`+vCards([p,...s].sort((a,b)=>vLbl(a).localeCompare(vLbl(b))),p,true):''};
+function varPick(l,title,go){const base=l[0];openSheet(`<h4>🎨 ${esc(title)}</h4><p class="hint" style="margin-top:0">الكود ده على ${l.length} ألوان — اختار اللي في إيدك</p>${vCards(l.sort((a,b)=>vLbl(a).localeCompare(vLbl(b))),null,true)}<div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,
+  m=>{if(m==='vnew')return variantSheet(base);const p=S.items.find(x=>'vr:'+x.id===m);if(p)go(p)})}
+function variantSheet(p){let pimg='';const same=vSibs(p).length===0&&!p.vr;
+  openSheet(`<h4>🎨 لون تاني — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">هيتعمل صنف بنفس الكود والسعر والبراند، بس عدده لوحده. لما تمسح الكود هيطلعلك كل الألوان تختار.</p>
+    <div class="photo"><img id="vImg" hidden alt=""><div class="pbtns"><button class="btn sm primary" data-m="pcam">📷 صوّر اللون ده</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button></div></div>
+    <label for="vNm">اسم اللون / الشكل</label><input id="vNm" placeholder="مثلاً: أزرق">
+    ${same?`<label for="vOld">ولون الصنف الأصلي إيه؟ <small>(اختياري)</small></label><input id="vOld" placeholder="مثلاً: أخضر">`:''}
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">✓ ضيف واستلم</button></div>`,
+  async(m,r)=>{if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',d=>{pimg=d;const i=r.querySelector('#vImg');i.src=d;i.hidden=false});
+    if(m!=='ok')return;const vr=r.querySelector('#vNm').value.trim();if(!vr){toast('اكتب اسم اللون');return}if(!pimg){toast('صوّر اللون عشان تفرق بينهم');return}
+    const old=same?(r.querySelector('#vOld').value.trim()):'',vg=p.vg||p.id,base=(p.vr&&p.name.endsWith(' — '+p.vr))?p.name.slice(0,-(' — '+p.vr).length):p.name;
+    const skip=new Set(['id','b','img','alt','dr','drMin','drAt','shortAt','shortSent','ordered','needCount','counted','created','by','vr','vg','info']);
+    const data={};for(const [k,v] of Object.entries(p))if(!skip.has(k))data[k]=v;Object.assign(data,{name:base+' — '+vr,vr,vg,codes:[...(p.codes||[])],b:{},created:Date.now(),by:me()});
+    closeSheet();toast('جاري الحفظ…');const nr=col('items').doc(),th=await thumbOf(pimg);data.img=th;const b=fs.batch();b.set(nr,data);b.set(ref('imgs/'+nr.id),{d:pimg,t:Date.now()});
+    const up={vg};if(old){up.vr=old;if(!p.name.endsWith(' — '+old))up.name=base+' — '+old}b.update(ref('items/'+p.id),up);evt(b,'add',data.name,0,'لون جديد');
+    await b.commit().then(()=>toast('🎨 «'+vr+'» اتضاف — اكتب العدد')).catch(()=>toast('ما اتحفظش — جرب تاني'));
+    setTimeout(()=>restockSheet(S.items.find(x=>x.id===nr.id)||{id:nr.id,...data}),300)})}
 const $sc=$('scanner'),$scv=$('scVid');let scItem=null,scStream=null,scTimer=null,scReader=null,scCb=null,scBusy=false,scH5=null,scModes=false;
 function scBeep(){try{if(!actx)return;const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;o.frequency.value=1650;g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+.13)}catch(e){}}
 function stopScanner(){clearInterval(scTimer);clearTimeout(scTimer);scTimer=null;try{scReader&&scReader.reset()}catch(e){}scReader=null;if(scH5){const h=scH5;scH5=null;h.stop().catch(()=>{}).then(()=>{try{h.clear()}catch(e){}})}if(scStream){scStream.getTracks().forEach(t=>t.stop());scStream=null}$scv.srcObject=null;$sc.hidden=true;scBusy=false}
@@ -2759,11 +2784,11 @@ $('scPhoto').addEventListener('click',()=>{const cb=scCb;pickFiles({cam:true},as
     try{const raw=await decodeImageFile(f);if(!raw)throw 0;scCb=cb;scGot(raw)}catch(e){$('scHint').textContent='مقدرتش أقرا الكود — قرّب الكاميرا وخلي الباركود واضح، أو اكتبه بإيدك'}})});
 
 function scanSell(){openScanner({modes:true,title:scMode()==='in'?'امسح الصنف اللي وصل':'امسح الصنف عشان تبيعه',onCode:(c,g)=>scMode()==='in'?handleInCode(c,g):handleSellCode(c,g),onItem:p=>scMode()==='in'?restockSheet(p):sellSheet(p)})}
-function handleInCode(code,g){const l=itemsByCode(code),k=g&&g.y?bk(g.y,g.m):'';if(l.length===1)return restockSheet(l[0],{k,scan:true});if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<div class="row linkbtn prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></div>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)restockSheet(p,{k,scan:true})});unknownCode(code,g,'in')}
+function handleInCode(code,g){const l=itemsByCode(code),k=g&&g.y?bk(g.y,g.m):'';if(l.length===1)return restockSheet(l[0],{k,scan:true});if(l.length>1)return varPick(l,'استلام — اختار اللون',p=>restockSheet(p,{k,scan:true}));unknownCode(code,g,'in')}
 function handleSellCode(code,g){
   const l=itemsByCode(code),start=g&&g.y?bk(g.y,g.m):null;
   if(l.length===1)return sellSheet(l[0],{scan:true,start});
-  if(l.length>1)return openSheet(`<h4>🔳 الكود ده على أكتر من صنف</h4><div class="rows">${l.map(p=>`<div class="row linkbtn prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b></div><span class="qty">${good(p)}</span></div>`).join('')}</div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{const p=S.items.find(x=>'p:'+x.id===m);if(p)sellSheet(p,{scan:true,start})});
+  if(l.length>1)return varPick(l,'بيع — اختار اللون',p=>sellSheet(p,{scan:true,start}));
   unknownCode(code,g);
 }
 /* تأكيد الكود: لازم يتقرا نفس الرقم مرتين قبل ما يتسجل على صنف */
