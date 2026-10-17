@@ -826,7 +826,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '17-10ح البوكس';
+const APP_V = '17-10ط إصلاح حفظ البوكس';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1037,13 +1037,17 @@ function drMove(p){const K=spb(p),inDr=drQ(p),store=Math.max(0,good(p)-inDr),sug
   (m,r)=>{const i=r.querySelector('#dmQ');if(m==='inc'){i.value=int(i.value)+1;return}if(m==='dec'){i.value=Math.max(0,int(i.value)-1);return}if(m!=='ok')return;
     const q=int(i.value)*K;if(q<=0){toast('اكتب العدد');return}if(q>store){toast(`المخزن فيه ${fmtQ(p,store)} بس`);return}
     closeSheet();const b=fs.batch();b.update(ref('items/'+p.id),{dr:inDr+q,drAt:FV().delete()});evt(b,'in',p.name,q,'نقل من المخزن للبوكس');commit(b,`🗄️ اتنقل ${fmtQ(p,q)} للبوكس — ${p.name}`)})}
-function drSetSheet(p,after){const K=spb(p);
-  openSheet(`<h4>🗄️ البوكس — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">إجمالي اللي عندك ${fmtQ(p,good(p))}. اكتب اللي جوه البوكس دلوقتي، والحد اللي لما يوصله ينبّه يجيبوا من المخزن.</p>
+function drSetSheet(p,after){const K=spb(p),lastK=bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0]||'';
+  const r=openSheet(`<h4>🗄️ البوكس — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">إجمالي المتسجل: <b>${fmtQ(p,good(p))}</b>. اكتب اللي جوه البوكس دلوقتي، والحد اللي لما يوصله ينبّه يجيبوا من المخزن.</p>
     <div class="two"><div><label for="dsQ">في البوكس دلوقتي${K>1?' (علب)':''}</label><input id="dsQ" type="number" inputmode="numeric" value="${hasDr(p)?Math.floor(drQ(p)/K):''}"></div><div><label for="dsM">حد البوكس${K>1?' (علب)':''}</label><input id="dsM" type="number" inputmode="numeric" value="${hasDr(p)?p.drMin:2}" placeholder="مثلاً 2"></div></div>
+    <div id="dsX" hidden><p class="hint" style="margin:8px 0 2px">⚠️ المتسجل أقل من اللي في البوكس — هيتزوّد الفرق على المخزون${lastK?` بتاريخ ${bkLabel(lastK)}`:'. اختار تاريخ صلاحيته:'}</p>${lastK?'':`<div id="dsE">${expSel('',tOf(p)==='med'?'الشهر':null,p.life)}</div>`}</div>
     <div class="actions"><button class="btn" data-cancel>إلغاء</button>${hasDr(p)?'<button class="btn danger" data-m="off">بطّل متابعة البوكس</button>':''}<button class="btn primary" data-m="ok">💾 حفظ</button></div>`,
   (m,r)=>{if(m==='off'){closeSheet();run(ref('items/'+p.id).update({dr:FV().delete(),drMin:FV().delete(),drAt:FV().delete()}),'اتشال من متابعة البوكس');return after&&after()}
     if(m!=='ok')return;const q=r.querySelector('#dsQ').value.trim(),mn=r.querySelector('#dsM').value.trim();if(q===''||mn===''){toast('اكتب العددين');return}
-    const dq=Math.min(good(p),int(q)*K);closeSheet();run(ref('items/'+p.id).update({dr:dq,drMin:int(mn),drAt:FV().delete()}),'🗄️ اتحفظ');if(after)setTimeout(after,200)})}
+    const dq=int(q)*K,g=good(p),u={dr:dq,drMin:int(mn),drAt:FV().delete()};
+    if(dq>g){let k=lastK;if(!k){k=readExp(r.querySelector('#dsE'));if(k==='x'&&tOf(p)==='med'){r.querySelector('#dsX').hidden=false;toast('اختار تاريخ صلاحية اللي في البوكس');return}}u['b.'+k]=FV().increment(dq-g)}
+    closeSheet();const bb=fs.batch();bb.update(ref('items/'+p.id),u);if(dq>g)evt(bb,'fix',p.name,dq-g,'تسجيل البوكس');commit(bb,`🗄️ اتحفظ — في البوكس ${fmtQ(p,dq)}`);if(after)setTimeout(after,250)});
+  const chk=()=>{const v=int(r.querySelector('#dsQ').value)*K;r.querySelector('#dsX').hidden=!(v>good(p))};r.querySelector('#dsQ').addEventListener('input',chk);chk()}
 function storeCount(p,after){const K=spb(p),lastK=bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0]||'';
   openSheet(`<h4>📦 عدّ المخزن — ${esc(p.name)}</h4><p class="hint" style="margin-top:0">في البوكس متسجل <b>${fmtQ(p,drQ(p))}</b>. اكتب اللي عندك في المخزن.</p>
     <label for="scQ">في المخزن كام${K>1?' علبة':''}؟</label><div class="stepper big"><button class="icon" data-m="dec">−</button><input id="scQ" type="number" inputmode="numeric" value="" placeholder="0"><button class="icon" data-m="inc">+</button></div>
