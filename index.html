@@ -826,7 +826,8 @@ h4{font-size:17px}
 .summary{margin:10px 2px 4px}
 .shsec>header b{font-size:14px}
 /* تشخيص */
-.toolbar:has(.dxbtn){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.toolbar:has(.dxbtn)>*{flex:none}.dxbtn{padding:9px 12px;border-color:var(--green);color:var(--green);font-weight:700}
+.toolbar:has(.dxbtn){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.toolbar:has(.dxbtn)>*{flex:none}.rxb{font-size:11px;font-weight:700;color:#fff;background:var(--amber);border-radius:6px;padding:1px 6px;margin-inline-start:4px}
+.dxbtn{padding:9px 12px;border-color:var(--green);color:var(--green);font-weight:700}
 .dxc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0 8px}.dxt{display:flex;justify-content:space-between;align-items:center;gap:8px}.dxt b{font-size:18px}.dxt span{background:var(--green-soft);color:var(--green);border-radius:20px;padding:2px 10px;font-weight:800;font-size:14px}.dxc small{color:var(--muted)}.dxc p{margin:6px 0 0;font-size:14px}
 .dxw{border:1px solid rgba(240,170,40,.6);border-radius:10px;padding:8px 10px;font-size:13.5px;margin-bottom:8px}.dxw.hot{border-color:var(--red);color:var(--red)}
 .dxh{margin:10px 2px 6px;font-size:15px}.dxp{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:8px 2px}.dxp .kit{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.dxp .kit b{font-size:14px}.dxp small{color:var(--muted);font-size:12px}.dxp em{font-style:normal;font-size:13.5px;color:var(--green);font-weight:600}.dxp i{font-style:normal;font-size:12px;color:var(--muted)}.dxp i.rd{color:var(--red)}
@@ -891,7 +892,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10ب تشخيص بالصورة';
+const APP_V = '18-10ج تشخيص كامل';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -3278,18 +3279,18 @@ function mgrReq(){if(!getKey())return keySheet(mgrReq);
 /* 🩺 تشخيص بالصورة → علاج من الموجود في الصيدلية */
 function dxPrompt(note,cat){return `You assist the licensed pharmacy team of a pharmacy in a tourist beach resort in Egypt (guests are mostly European tourists).
 Look at the photo (a skin area, wound, bite, rash, eye, nail, etc.). Identify the most likely condition(s) from what is visible${note?` and these notes from the pharmacist: "${note}"`:''}.
-Then build a short OTC treatment set using ONLY products from this in-stock catalog (format: index|name|active ingredient|type|qty):
+Then build the best treatment set using ONLY products from this in-stock catalog (format: index|name|active ingredient|type|qty):
 ${cat}
-Prefer 1–4 products that work together (e.g. antifungal cream + antihistamine tablet + soothing). Never suggest prescription-only systemic drugs (oral antibiotics, oral steroids) — list them in "missing" with a note to see a doctor instead.
+Prefer 1–5 products that work together (e.g. topical + oral + soothing). You MAY include prescription medicines (oral antibiotics, steroids, antifungals, etc.) when clinically appropriate — a doctor on site reviews every suggestion; mark them "rx":true. Give the usual adult dose (and child dose if the notes mention a child).
 Return ONLY JSON:
-{"ok":true,"condition_ar":"most likely condition in Egyptian Arabic","condition_en":"English name","pct":70,"others":[{"ar":"","en":"","pct":20}],"signs_ar":"one short line: what in the photo points to it","plan":[{"i":index,"role_ar":"short role e.g. مضاد فطريات موضعي","dose_ar":"very short daily use e.g. دهان طبقة رفيعة مرتين يوميًا لمدة أسبوعين","dose_en":"same in short English"}],"advice_ar":["max 3 short tips"],"red_flags_ar":["signs that need a doctor now, short"],"doctor":false,"missing":["useful generic treatments not in catalog"],"guest_en":"2-3 short sentences to tell the guest in simple English (what it likely is + how to use the products)"}
+{"ok":true,"condition_ar":"most likely condition in Egyptian Arabic","condition_en":"English name","pct":70,"others":[{"ar":"","en":"","pct":20}],"signs_ar":"one short line: what in the photo points to it","plan":[{"i":index,"role_ar":"short role e.g. مضاد فطريات موضعي","dose_ar":"very short daily use e.g. دهان طبقة رفيعة مرتين يوميًا لمدة أسبوعين","dose_en":"same in short English","rx":false}],"advice_ar":["max 3 short tips"],"red_flags_ar":["signs that need a doctor now, short"],"doctor":false,"missing":["useful generic treatments not in catalog"],"guest_en":"2-3 short sentences to tell the guest in simple English (what it likely is + how to use the products)","cautions_ar":"short: key contraindications/interactions to check (pregnancy, allergy, age)"}
 If the photo is not of a body area, return {"ok":false}. Set "doctor":true for anything serious (infection with fever, eye injury, deep wound, spreading redness, child under 2, etc.).`}
 function dxSheet(){if(!getKey())return keySheet(dxSheet);let img='',R0=null;
   const r=openSheet(`<h4>🩺 تشخيص بالصورة</h4><p class="hint" style="margin-top:0">صوّر المكان المصاب — هقولك المرض المحتمل وعلاجه من اللي موجود عندك بالجرعات.</p>
     <div class="photo"><img id="dxImg" hidden alt=""><div class="pbtns"><button class="btn sm primary" data-m="cam">📷 صوّر المكان</button><button class="btn sm" data-m="gal">🖼️ من الجاليري</button></div></div>
     <label for="dxN">تفاصيل <small>(اختياري: العمر، من إمتى، بيهرش؟، حامل؟)</small></label><input id="dxN" placeholder="مثلاً: 30 سنة، من أسبوع، بيهرش">
     <div class="actions"><button class="btn primary" data-m="go" style="flex:1">🔍 حلّل</button></div><div id="dxR"></div>
-    <p class="hint dxd">⚕️ اقتراح مساعد للصيدلي — مش تشخيص طبي نهائي.</p>`,
+    <p class="hint dxd">⚕️ اقتراح للدكتور يراجعه — ℞ = محتاج موافقة الدكتور</p>`,
   async(m,root,b)=>{
     if(m==='cam'||m==='gal')return pickPhoto(m==='cam',d=>{img=d;const i=root.querySelector('#dxImg');i.src=d;i.hidden=false;run2()},1400,.85);
     if(m==='go')return run2();
@@ -3305,7 +3306,8 @@ function dxSheet(){if(!getKey())return keySheet(dxSheet);let img='',R0=null;
       box.innerHTML=`<div class="dxc"><div class="dxt"><b>${esc(j.condition_ar||'')}</b>${j.pct?`<span>${+j.pct}%</span>`:''}</div>${j.condition_en?`<small dir="ltr">${esc(j.condition_en)}</small>`:''}${j.signs_ar?`<p>${esc(j.signs_ar)}</p>`:''}
         ${(j.others||[]).length?`<p class="hint" style="margin:2px 0">احتمالات تانية: ${(j.others||[]).map(o=>`${esc(o.ar||o.en)}${o.pct?` (${+o.pct}%)`:''}`).join('، ')}</p>`:''}</div>
         ${j.doctor||(j.red_flags_ar||[]).length?`<div class="dxw${j.doctor?' hot':''}">${j.doctor?'⚠️ <b>محتاج دكتور</b> — ':'⚠️ روح للدكتور لو: '}${(j.red_flags_ar||[]).map(esc).join(' · ')}</div>`:''}
-        ${plan.length?`<h5 class="dxh">💊 العلاج من اللي عندك</h5>${plan.map(x=>`<div class="dxp">${ico(x.p)}<div class="kit"><b>${esc(x.p.name)}</b><small>${esc(x.role_ar||'')}</small><em>${esc(x.dose_ar||'')}</em><i class="${good(x.p)>1?'':'rd'}">عندك ${fmtQ(x.p,good(x.p))}</i></div><button class="btn sm" data-m="add:${x.p.id}">➕ فاتورة</button></div>`).join('')}<button class="btn primary" data-m="all" style="width:100%;margin-top:4px">🧾 ضيف الكل للفاتورة</button>`:'<p class="hint rd">مالقيتش علاج مناسب في الأدوية اللي عندك</p>'}
+        ${plan.length?`<h5 class="dxh">💊 العلاج من اللي عندك</h5>${plan.map(x=>`<div class="dxp">${ico(x.p)}<div class="kit"><b>${esc(x.p.name)}${x.rx?' <span class="rxb">℞ الدكتور</span>':''}</b><small>${esc(x.role_ar||'')}</small><em>${esc(x.dose_ar||'')}</em><i class="${good(x.p)>1?'':'rd'}">عندك ${fmtQ(x.p,good(x.p))}</i></div><button class="btn sm" data-m="add:${x.p.id}">➕ فاتورة</button></div>`).join('')}<button class="btn primary" data-m="all" style="width:100%;margin-top:4px">🧾 ضيف الكل للفاتورة</button>`:'<p class="hint rd">مالقيتش علاج مناسب في الأدوية اللي عندك</p>'}
+        ${j.cautions_ar?`<p class="hint">⚠️ ${esc(j.cautions_ar)}</p>`:''}
         ${(j.advice_ar||[]).length?`<ul class="dxa">${j.advice_ar.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
         ${(j.missing||[]).length?`<p class="hint">ممكن يفيد ومش عندك: ${j.missing.map(esc).join('، ')}</p>`:''}
         ${j.guest_en?`<div class="dxg"><small>🗣️ قول للجيست:</small><p id="dxG" dir="ltr">${esc(j.guest_en)}</p>${plan.map(x=>x.dose_en?`<p dir="ltr" class="dxe">• ${esc(x.p.name)}: ${esc(x.dose_en)}</p>`:'').join('')}<button class="linkb" data-m="cp">📋 نسخ</button></div>`:''}`}
