@@ -825,6 +825,12 @@ h4{font-size:17px}
 .mreqb{width:auto;display:inline-block;margin:2px 0 8px;font-size:13px}
 .summary{margin:10px 2px 4px}
 .shsec>header b{font-size:14px}
+/* تشخيص */
+.toolbar:has(.dxbtn){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.toolbar:has(.dxbtn)>*{flex:none}.dxbtn{padding:9px 12px;border-color:var(--green);color:var(--green);font-weight:700}
+.dxc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0 8px}.dxt{display:flex;justify-content:space-between;align-items:center;gap:8px}.dxt b{font-size:18px}.dxt span{background:var(--green-soft);color:var(--green);border-radius:20px;padding:2px 10px;font-weight:800;font-size:14px}.dxc small{color:var(--muted)}.dxc p{margin:6px 0 0;font-size:14px}
+.dxw{border:1px solid rgba(240,170,40,.6);border-radius:10px;padding:8px 10px;font-size:13.5px;margin-bottom:8px}.dxw.hot{border-color:var(--red);color:var(--red)}
+.dxh{margin:10px 2px 6px;font-size:15px}.dxp{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:8px 2px}.dxp .kit{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.dxp .kit b{font-size:14px}.dxp small{color:var(--muted);font-size:12px}.dxp em{font-style:normal;font-size:13.5px;color:var(--green);font-weight:600}.dxp i{font-style:normal;font-size:12px;color:var(--muted)}.dxp i.rd{color:var(--red)}
+.dxa{margin:8px 0;padding-inline-start:20px;font-size:13.5px}.dxg{border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}.dxg p{margin:4px 0;font-size:14px}.dxg .dxe{font-size:13px;color:var(--muted)}.dxd{font-size:12px;text-align:center;margin-top:10px}
 </style>
 </head>
 <body>
@@ -885,7 +891,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10أ تسجيل البوكس السريع';
+const APP_V = '18-10ب تشخيص بالصورة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -990,7 +996,7 @@ function grouped(list,keyFn,rowFn){
 }
 function vItems(){
   const list=S.items.filter(mItem).sort(byName);
-  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${S.type!=='cos'&&can('ing')?'<button class="btn ghost sm" data-act="ing">💊 المادة الفعالة</button>':''}${can('coach')?'<button class="btn ghost sm" data-act="coach">🚀 مساعد البيع</button>':''}</div>`;
+  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${can('dx')?'<button class="btn dxbtn" data-act="dx">🩺 تشخيص بالصورة</button>':''}${S.type!=='cos'&&can('ing')?'<button class="btn ghost sm" data-act="ing">💊 مادة فعالة</button>':''}${can('coach')?'<button class="btn ghost sm" data-act="coach">🚀 مساعد البيع</button>':''}</div>`;
   if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>دوس «＋ إضافة» وابدأ.</div>`;
   else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
   else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
@@ -1140,11 +1146,12 @@ function quickBoxNew(code){let pimg='';
     <div class="photo"><img id="qbImg" hidden alt=""><div class="pbtns"><button class="btn sm primary" data-m="pcam">📷 صوّر العلبة</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button></div></div><p class="hint" id="qbSt"></p>
     <label for="qbN">اسم الدوا</label><input id="qbN" dir="auto" placeholder="بيتكتب لوحده من الصورة">
     <div class="two"><div><label for="qbQ">في البوكس كام علبة؟</label><input id="qbQ" type="number" inputmode="numeric" placeholder="العدد"></div><div><label for="qbM">حد البوكس</label><input id="qbM" type="number" inputmode="numeric" value="2"></div></div>
-    <label>الإكسباير</label><div id="qbE">${expSel('',null,null)}</div>
+    <label>الإكسباير <button class="linkb" data-m="dph" style="float:left">📅 صوّر التاريخ</button></label><div id="qbE">${expSel('',null,null)}</div><p class="hint" id="qbD" style="margin:2px"></p>
     <label>📉 الحد الأدنى للنواقص <b class="rd">(لازم)</b></label><div class="chips minq">${[1,2,3,4,5,6,8,10].map(n=>`<button class="chip" data-m="mq:${n}" aria-pressed="false">${n}</button>`).join('')}</div>
     ${code?`<p class="hint">🔳 الكود: <b class="ltr">${esc(code)}</b></p>`:''}
     <div class="sellacts"><button class="btn big" data-m="okn">🔳 احفظ وامسح التالي</button><button class="btn primary big" data-m="ok">✓ احفظ</button></div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,
   async(m,r,b)=>{if(m.startsWith('mq:')){r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
+    if(m==='dph')return datePhoto(r.querySelector('#qbE .ex'),null,null,r.querySelector('#qbD'));
     if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',async d=>{pimg=d;const im=r.querySelector('#qbImg');im.src=d;im.hidden=false;if(!getKey())return;const st=r.querySelector('#qbSt');st.innerHTML='<span class="spin"></span>🤖 بقرا الاسم والتاريخ…';
       try{const j=await askVision(d,productPrompt(),700);if(!r.isConnected)return;let nm=j.name?String(j.name).trim():'';if(nm&&j.size&&!norm(nm).includes(norm(String(j.size))))nm+=' '+String(j.size).trim();const ni=r.querySelector('#qbN');if(nm&&!ni.value.trim())ni.value=nm;
         const k=j.expiry?parseExp(String(j.expiry)):null,pp=k&&bkParse(k);if(pp){const e=r.querySelector('#qbE');e.querySelector('[data-x=m]').value=String(pp.m);const ys=e.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(pp.y)))ys.insertAdjacentHTML('beforeend',`<option>${pp.y}</option>`);ys.value=String(pp.y)}
@@ -3268,6 +3275,41 @@ function mgrReq(){if(!getKey())return keySheet(mgrReq);
       R=its.map(it=>{const c=mqMatch(it),top=c[0]?c[0].s:0;c.forEach(x=>x.on=x.s>=Math.max(.7,top*.85));return {it,c,man:''}});
       r.querySelector('#mqSt').innerHTML=R.length?`لقيت <b>${R.length}</b> طلب — اتأكد من الأصناف المعلّم عليها ✓ (دوس عشان تشيل أو تضيف)`:'مالقيتش أصناف في الصورة — جرب سكرين أوضح';r.querySelector('#mqO').hidden=!R.length;draw()}
     catch(e){const st=r.querySelector('#mqSt');if(st)st.innerHTML='مقدرتش أقرا الصور — '+(e==='key'?'المفتاح مرفوض':e==='quota'?'الحد المسموح خلص':e==='net'?'مفيش نت':'جرب صورة أوضح')+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')}})}
+/* 🩺 تشخيص بالصورة → علاج من الموجود في الصيدلية */
+function dxPrompt(note,cat){return `You assist the licensed pharmacy team of a pharmacy in a tourist beach resort in Egypt (guests are mostly European tourists).
+Look at the photo (a skin area, wound, bite, rash, eye, nail, etc.). Identify the most likely condition(s) from what is visible${note?` and these notes from the pharmacist: "${note}"`:''}.
+Then build a short OTC treatment set using ONLY products from this in-stock catalog (format: index|name|active ingredient|type|qty):
+${cat}
+Prefer 1–4 products that work together (e.g. antifungal cream + antihistamine tablet + soothing). Never suggest prescription-only systemic drugs (oral antibiotics, oral steroids) — list them in "missing" with a note to see a doctor instead.
+Return ONLY JSON:
+{"ok":true,"condition_ar":"most likely condition in Egyptian Arabic","condition_en":"English name","pct":70,"others":[{"ar":"","en":"","pct":20}],"signs_ar":"one short line: what in the photo points to it","plan":[{"i":index,"role_ar":"short role e.g. مضاد فطريات موضعي","dose_ar":"very short daily use e.g. دهان طبقة رفيعة مرتين يوميًا لمدة أسبوعين","dose_en":"same in short English"}],"advice_ar":["max 3 short tips"],"red_flags_ar":["signs that need a doctor now, short"],"doctor":false,"missing":["useful generic treatments not in catalog"],"guest_en":"2-3 short sentences to tell the guest in simple English (what it likely is + how to use the products)"}
+If the photo is not of a body area, return {"ok":false}. Set "doctor":true for anything serious (infection with fever, eye injury, deep wound, spreading redness, child under 2, etc.).`}
+function dxSheet(){if(!getKey())return keySheet(dxSheet);let img='',R0=null;
+  const r=openSheet(`<h4>🩺 تشخيص بالصورة</h4><p class="hint" style="margin-top:0">صوّر المكان المصاب — هقولك المرض المحتمل وعلاجه من اللي موجود عندك بالجرعات.</p>
+    <div class="photo"><img id="dxImg" hidden alt=""><div class="pbtns"><button class="btn sm primary" data-m="cam">📷 صوّر المكان</button><button class="btn sm" data-m="gal">🖼️ من الجاليري</button></div></div>
+    <label for="dxN">تفاصيل <small>(اختياري: العمر، من إمتى، بيهرش؟، حامل؟)</small></label><input id="dxN" placeholder="مثلاً: 30 سنة، من أسبوع، بيهرش">
+    <div class="actions"><button class="btn primary" data-m="go" style="flex:1">🔍 حلّل</button></div><div id="dxR"></div>
+    <p class="hint dxd">⚕️ اقتراح مساعد للصيدلي — مش تشخيص طبي نهائي.</p>`,
+  async(m,root,b)=>{
+    if(m==='cam'||m==='gal')return pickPhoto(m==='cam',d=>{img=d;const i=root.querySelector('#dxImg');i.src=d;i.hidden=false;run2()},1400,.85);
+    if(m==='go')return run2();
+    if(m.startsWith('add:')){const p=S.items.find(x=>x.id===m.slice(4));if(p){cartAdd(p,1,null,'',true);b.textContent='✓ اتضاف';b.disabled=true;toast(`🧾 ${p.name} اتضاف للفاتورة`)}return}
+    if(m==='all'){(R0||[]).forEach(p=>cartAdd(p,1,null,'',true));closeSheet();return invSheet()}
+    if(m==='cp'){const t=root.querySelector('#dxG');return copyText(t?t.textContent:'').then(ok=>toast(ok?'📋 اتنسخ':'مقدرتش أنسخ'))}
+    if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)openZoom(p)}});
+  async function run2(){if(!img){toast('صوّر المكان المصاب الأول');return}const box=r.querySelector('#dxR');box.innerHTML='<p class="hint"><span class="spin"></span>🩺 بحلل الصورة وبدوّر في الأدوية اللي عندك…</p>';
+    const L=S.items.filter(p=>good(p)>0).slice(0,600),cat=L.map((p,i)=>`${i}|${p.name}|${p.ing||''}|${tOf(p)}|${good(p)}`).join('\n');
+    try{const j=await askVision(img,dxPrompt(r.querySelector('#dxN').value.trim(),cat),1800);if(!r.isConnected)return;
+      if(!j||j.ok===false){box.innerHTML='<p class="hint rd">الصورة مش واضحة أو مش لمكان مصاب — صوّر أقرب وفي نور كويس</p>';return}
+      const plan=(j.plan||[]).map(x=>({...x,p:L[+x.i]})).filter(x=>x.p);R0=plan.map(x=>x.p);
+      box.innerHTML=`<div class="dxc"><div class="dxt"><b>${esc(j.condition_ar||'')}</b>${j.pct?`<span>${+j.pct}%</span>`:''}</div>${j.condition_en?`<small dir="ltr">${esc(j.condition_en)}</small>`:''}${j.signs_ar?`<p>${esc(j.signs_ar)}</p>`:''}
+        ${(j.others||[]).length?`<p class="hint" style="margin:2px 0">احتمالات تانية: ${(j.others||[]).map(o=>`${esc(o.ar||o.en)}${o.pct?` (${+o.pct}%)`:''}`).join('، ')}</p>`:''}</div>
+        ${j.doctor||(j.red_flags_ar||[]).length?`<div class="dxw${j.doctor?' hot':''}">${j.doctor?'⚠️ <b>محتاج دكتور</b> — ':'⚠️ روح للدكتور لو: '}${(j.red_flags_ar||[]).map(esc).join(' · ')}</div>`:''}
+        ${plan.length?`<h5 class="dxh">💊 العلاج من اللي عندك</h5>${plan.map(x=>`<div class="dxp">${ico(x.p)}<div class="kit"><b>${esc(x.p.name)}</b><small>${esc(x.role_ar||'')}</small><em>${esc(x.dose_ar||'')}</em><i class="${good(x.p)>1?'':'rd'}">عندك ${fmtQ(x.p,good(x.p))}</i></div><button class="btn sm" data-m="add:${x.p.id}">➕ فاتورة</button></div>`).join('')}<button class="btn primary" data-m="all" style="width:100%;margin-top:4px">🧾 ضيف الكل للفاتورة</button>`:'<p class="hint rd">مالقيتش علاج مناسب في الأدوية اللي عندك</p>'}
+        ${(j.advice_ar||[]).length?`<ul class="dxa">${j.advice_ar.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
+        ${(j.missing||[]).length?`<p class="hint">ممكن يفيد ومش عندك: ${j.missing.map(esc).join('، ')}</p>`:''}
+        ${j.guest_en?`<div class="dxg"><small>🗣️ قول للجيست:</small><p id="dxG" dir="ltr">${esc(j.guest_en)}</p>${plan.map(x=>x.dose_en?`<p dir="ltr" class="dxe">• ${esc(x.p.name)}: ${esc(x.dose_en)}</p>`:'').join('')}<button class="linkb" data-m="cp">📋 نسخ</button></div>`:''}`}
+    catch(e){box.innerHTML='<p class="hint rd">مقدرتش أحلل — '+(e==='key'?'المفتاح مرفوض':e==='quota'?'الحد المسموح خلص':e==='net'?'مفيش نت':'جرب صورة أوضح')+'</p>'+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')}}}
 async function shareAllShort(){
   const list=shortList();if(!list.length)return;
   const r=openSheet(`<h4>📤 ابعت كل النواقص صور</h4><p class="hint" id="saSt"><span class="spin"></span>جاري تجهيز ${list.length} صورة…</p><div class="actions" id="saBtns"></div><div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
@@ -3612,6 +3654,7 @@ ${part.map((x,i)=>`${i}: ${x.name}${x.str?' ('+x.str+')':''}`).join('\n')}`,2500
 const FEATURES={
   ing:{l:'💊 بحث بالمادة الفعالة',d:'البحث عن بديل بنفس المادة الفعالة وتكميل المادة الفعالة للأدوية',def:'owner'},
   coach:{l:'🚀 مساعد البيع',d:'المنتج البطل، اعتراضات الجيست، كلام البيع بلغته (3:2:2) والكارت المطابق',def:'owner'},
+  dx:{l:'🩺 تشخيص بالصورة',d:'صوّر المكان المصاب ← المرض المحتمل + علاج من الموجود عندك بالجرعات',def:'all'},
   info:{l:'📋 معلومات المنتج',d:'المشاكل اللي بيحلها، الجرعة ومدة الاستخدام، وسعره في أوروبا',def:'owner'},
 };
 const isOwner=()=>!!(S.member&&S.member.owner);
@@ -3859,6 +3902,7 @@ $app.addEventListener('click',e=>{
   else if(act==='share-short'&&p)shareShortSheet(p);
   else if(act==='share-all')shareAllShort();
   else if(act==='mreq')mgrReq();
+  else if(act==='dx')dxSheet();
   else if(act==='dr-peter')drSendPeter();
   else if(act==='qbox')quickBoxNew('');else if(act==='qboxscan')scanBox();else if(act==='nc-peter')ncSendPeter();
   else if(act==='sh-tab'){S.shortTab=k;LS.set('drc.shtab',k);render();scrollTo(0,0)}
