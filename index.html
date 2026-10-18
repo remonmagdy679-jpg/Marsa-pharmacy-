@@ -893,7 +893,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10د بدائل السوق المصري';
+const APP_V = '18-10ه البوكس يتحدث لوحده';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1094,7 +1094,7 @@ function rowShort(p){
 /* ---------- البوكس (جوه الصيدلية) مقابل المخزن ---------- */
 const hasDr=p=>p.drMin!=null&&p.drMin!=='';
 const drQ=p=>Math.max(0,Math.min(+p.dr||0,good(p)));
-const drLow=p=>hasDr(p)&&drQ(p)<=+p.drMin*spb(p)&&good(p)>drQ(p);
+const drLow=p=>{if(!hasDr(p)||!(good(p)>drQ(p)))return false;const q=drQ(p),lim=+p.drMin*spb(p);return q<lim||(q===lim&&!!p.drAt)};
 const drStore=p=>Math.max(0,good(p)-drQ(p));
 const drNeed=p=>{if(!hasDr(p))return 0;const K=spb(p);return Math.max(0,+p.drMin-Math.floor(drQ(p)/K))};
 const dLine=p=>{const K=spb(p),nc=p.needCount,n=drNeed(p),sb=Math.floor(drStore(p)/K),bx=Math.floor(drQ(p)/K);
