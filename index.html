@@ -818,6 +818,7 @@ button.alt.add{background:var(--bg);color:var(--green);border:1px dashed var(--g
 .dline{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:13px;color:var(--muted);margin-top:4px}.dline b{color:var(--ink);font-size:14.5px}.dline b small{font-size:11px;color:var(--muted)}.dline b.rd{color:var(--red)}
 .drcard .drhd{align-items:flex-start;margin-bottom:2px}.drm{flex:1;min-width:0}.drm>b{display:block;font-size:14px;line-height:1.35}.drcard .dneed{margin:2px 0 0;font-size:12.5px}.drcard .dact{margin-top:4px}
 .dstat .lim{display:block;font-size:11.5px;color:var(--amber);font-weight:700;margin-top:1px}
+.drinl{display:flex;gap:6px;align-items:flex-end;margin:6px 0 2px}.drinl label{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:2px;margin:0}.drinl small{font-size:11px;color:var(--muted)}.drinl input{padding:6px;font-size:16px;font-weight:700;text-align:center;min-width:0;width:100%!important;background:var(--bg)!important;color:var(--ink)!important;border:1px solid var(--line)!important;border-radius:9px}.drinl .btn{flex:none;padding:8px 12px;font-size:16px}
 .dline b,.drmini b{unicode-bidi:isolate}
 .actions.minor .btn{background:transparent!important;border:1px solid var(--line);color:var(--muted);font-weight:600;font-size:13.5px;padding:9px 6px}
 .stock.sm b{font-size:19px}.stock.sm div{padding:6px 10px}
@@ -894,7 +895,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10ط البوكس بالصورة';
+const APP_V = '18-10ي تعديل البوكس من بره';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1223,13 +1224,14 @@ const drRow=p=>{if(tOf(p)!=='med')return ncBan(p);if(!hasDr(p))return ncBan(p)+`
   const K=spb(p),bx=Math.floor(drQ(p)/K),n=drNeed(p),sb=Math.floor(drStore(p)/K),nc=p.needCount;
   return `<button class="drmini${n>0?' low':''}" data-m="${nc?'stc':'drset'}"><span>🗄️ في البوكس <b class="${n>0?'rd':''}">${fmtQs(p,drQ(p))}</b></span><span>الحد <b>${p.drMin}</b></span><span>📦 المخزن <b>${nc?'؟':fmtQs(p,drStore(p))}</b></span><span>∑ <b>${nc?'؟':fmtQs(p,good(p))}</b></span><i>✏️</i>${n>0?`<em>محتاج ${n} من المخزن</em>`:''}${nc?'<em>المخزن لسه متعدّش — دوس واكتبه</em>':''}</button>`};
 function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));const low=meds.filter(drLow).sort((a,b)=>drNeed(b)-drNeed(a)||(b.drAt?1:0)-(a.drAt?1:0)||drQ(a)-drQ(b)),tracked=meds.filter(p=>hasDr(p)&&!drLow(p)&&!p.needCount).sort(byName),untr=meds.filter(p=>!hasDr(p)&&good(p)>0).sort(byName);
-  const row=(p,act)=>`<div class="drcard"><div class="drhd">${ico(p)}<div class="drm"><b>${esc(p.name)}</b>${dLine(p)}</div></div><div class="dact">${act}</div></div>`;
+  const inl=p=>{const K=spb(p),q=drQ(p);return `<div class="drinl" data-id="${p.id}"><label><small>🗄️ في البوكس${K>1?' (علب)':''}</small><input type="number" inputmode="numeric" data-f="q" value="${Math.floor(q/K)}"></label>${K>1?`<label><small>+ شرايط</small><input type="number" inputmode="numeric" data-f="s" value="${q%K||''}" placeholder="0"></label>`:''}<label><small>الحد</small><input type="number" inputmode="numeric" data-f="m" value="${hasDr(p)?p.drMin:2}"></label><button class="btn sm primary" data-act="dr-inl" data-id="${p.id}">💾</button></div>`};
+  const row=(p,act)=>`<div class="drcard"><div class="drhd">${ico(p)}<div class="drm"><b>${esc(p.name)}</b>${dLine(p)}</div></div>${inl(p)}<div class="dact">${act}</div></div>`;
   const nc=S.items.filter(p=>p.needCount&&matchQ(hay(p))).sort((a,b)=>(a.needCount.t||0)-(b.needCount.t||0));
   const inDr=meds.filter(p=>hasDr(p)),tot=inDr.reduce((a,p)=>a+Math.floor(drQ(p)/spb(p)),0);
   let h=`<div class="summary"><strong style="color:${low.length||nc.length?'var(--red)':'var(--green)'}">${low.length+nc.length?`${low.length} هات · ${nc.length} عدّ`:'👌'}</strong><span>🗄️ البوكس: ${inDr.length} دوا — ${tot} علبة جوه${low.length?` · محتاج ${low.reduce((a,p)=>a+drNeed(p),0)} علبة`:''}</span></div>
   <div class="hint" style="margin:2px 2px 8px"><button class="linkb" data-act="dr-to">👤 بيتنبّه: ${drTo().length?esc(drTo().join('، ')):'الكل'}</button> · 🔳 السكان هنا بيضيف للبوكس</div>`;
   h+=`<div class="toolbar"><button class="btn primary" data-act="qbox">＋ سجّل دوا في البوكس</button><button class="btn ghost sm" data-act="qboxscan">🔳 بالسكان</button><button class="btn ghost sm" data-act="qboxvs">🤖 بالصورة</button></div>`;
-  if(nc.length)h+=`<section class="shsec fresh nc"><header><b>📦 لسه متعدّش في المخزن (${nc.length})</b><button class="btn sm" data-act="nc-peter">📤 ابعتهم لبيتر يعدّهم</button></header><div class="rows">${nc.map(p=>row(p,`<div class="ncq"><input type="number" inputmode="numeric" data-ncq="${p.id}" placeholder="${spb(p)>1?'علب':'العدد'}"><button class="btn sm primary" data-act="nc-save" data-id="${p.id}">💾 حفظ</button><button class="icon" data-act="nc-edit" data-id="${p.id}" aria-label="تعديل الصنف">✏️</button></div>`)).join('')}</div></section>`;
+  if(nc.length)h+=`<section class="shsec fresh nc"><header><b>📦 لسه متعدّش في المخزن (${nc.length})</b><button class="btn sm" data-act="nc-peter">📤 ابعتهم لبيتر يعدّهم</button></header><div class="rows">${nc.map(p=>row(p,`<div class="ncq"><input type="number" inputmode="numeric" data-ncq="${p.id}" placeholder="📦 المخزن${spb(p)>1?' (علب)':''}"><button class="btn sm primary" data-act="nc-save" data-id="${p.id}">💾 حفظ</button><button class="icon" data-act="nc-edit" data-id="${p.id}" aria-label="تعديل الصنف">✏️</button></div>`)).join('')}</div></section>`;
   h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><button class="btn primary drpeter" data-act="dr-peter">📤 ابعتهم لبيتر واتساب</button><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل${drNeed(p)?' '+Math.min(drNeed(p),Math.floor(drStore(p)/spb(p))||drNeed(p)):''}</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
   if(tracked.length)h+=`<section class="group"><h3>🗄️ متابَع في البوكس (${tracked.length})</h3><div class="rows">${tracked.map(p=>row(p,`<button class="icon" data-act="dr-set" data-id="${p.id}" aria-label="تعديل">✏️</button>`)).join('')}</div></section>`;
   return h}
@@ -3931,6 +3933,10 @@ $app.addEventListener('click',e=>{
   else if(act==='sh-aicat'){b.disabled=true;const l=S.items.filter(p=>!p.cat&&!guessCat(p));aiCats(l,b.parentElement).then(n=>{toast(`✓ اتصنّف ${n} صنف`);render()})}
   else if(act==='gby'){LS.set('drc.grpby',b.dataset.k);render()}
   else if(act==='go'){go(b.dataset.k)}
+  else if(act==='dr-inl'){const p=S.items.find(x=>x.id===b.dataset.id);if(!p)return;const box=b.closest('.drinl'),v=f=>{const e=box.querySelector(`[data-f="${f}"]`);return e?e.value.trim():''};
+    if(v('q')===''||v('m')===''){toast('اكتب العددين');return}const K=spb(p),dq=int(v('q'))*K+(K>1?int(v('s')||0):0),g=good(p),u={dr:dq,drMin:int(v('m')),drAt:FV().delete()};
+    if(dq>g){const lastK=bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,c)=>bkIdx(c)-bkIdx(a))[0];if(!lastK&&tOf(p)==='med'){toast('اختار تاريخ الصلاحية');return drSetSheet(p)}u['b.'+(lastK||'x')]=FV().increment(dq-g)}
+    const bb=fs.batch();bb.update(ref('items/'+p.id),u);if(dq>g)evt(bb,'fix',p.name,dq-g,'تسجيل البوكس');commit(bb,`🗄️ ${p.name} — في البوكس ${fmtQ(p,dq)} · الحد ${int(v('m'))}`)}
   else if(act==='nc-save'){const p=S.items.find(x=>x.id===b.dataset.id);if(!p)return;const inp=$app.querySelector(`[data-ncq="${p.id}"]`);if(!inp||inp.value.trim()===''){toast('اكتب العدد اللي في المخزن (حتى لو صفر)');if(inp)inp.focus();return}
     const K=spb(p),q=int(inp.value)*K,k=bats(p).filter(([kk])=>kk!=='x').map(([kk])=>kk).sort((a,c)=>bkIdx(c)-bkIdx(a))[0]||(tOf(p)==='med'?'':'x');if(q>0&&!k)return storeCount(p);
     const bb=fs.batch(),u={needCount:FV().delete(),counted:{t:Date.now(),by:me()}};if(q>0)u['b.'+k]=FV().increment(q);bb.update(ref('items/'+p.id),u);evt(bb,'fix',p.name,q,'عدّ المخزن');commit(bb,`📦 ${p.name}: ${fmtQ(p,q)} في المخزن — الإجمالي ${fmtQ(p,good(p)+q)}`)}
