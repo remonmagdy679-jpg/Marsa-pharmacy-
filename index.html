@@ -835,6 +835,7 @@ h4{font-size:17px}
 .dxw{border:1px solid rgba(240,170,40,.6);border-radius:10px;padding:8px 10px;font-size:13.5px;margin-bottom:8px}.dxw.hot{border-color:var(--red);color:var(--red)}
 .dxh{margin:10px 2px 6px;font-size:15px}.dxp{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:8px 2px}.dxp .kit{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.dxp .kit b{font-size:14px}.dxp small{color:var(--muted);font-size:12px}.dxp em{font-style:normal;font-size:13.5px;color:var(--green);font-weight:600}.dxp i{font-style:normal;font-size:12px;color:var(--muted)}.dxp i.rd{color:var(--red)}
 .dxa{margin:8px 0;padding-inline-start:20px;font-size:13.5px}.dxg{border:1px dashed var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}.dxg p{margin:4px 0;font-size:14px}.dxg .dxe{font-size:13px;color:var(--muted)}.dxd{font-size:12px;text-align:center;margin-top:10px}
+.sbwrong{background:rgba(198,42,47,.12);border:1px solid var(--red);color:var(--red);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:13.5px}.sbwrong small{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -895,7 +896,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10ي تعديل البوكس من بره';
+const APP_V = '18-10ك صور الفواتير + منع الشركة الغلط';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -2417,7 +2418,7 @@ function entrySheet(cid,kind,pre={},rec=null){
   function drawL(){const el=r.querySelector('#eLn');if(!el)return;el.innerHTML=lines.length?`<label>الأصناف ${k==='ret'?'المرتجعة':''}</label><div class="rlines">${lines.map((l,i)=>`<div><b>${esc(l.name||'—')}</b>${l.code?` <small dir="ltr">#${esc(l.code)}</small>`:''}<span>${l.qty?'× '+l.qty:''}${l.px?' — '+num(l.px)+' ج':''}</span><button class="icon" data-m="lx:${i}" aria-label="شيل">✕</button></div>`).join('')}</div>`:''}
   async function aiRead(){const st=r.querySelector('#eAi');if(!G.length)return;if(!getKey()){st.textContent='🔑 محتاج مفتاح الذكاء الاصطناعي';return}
     st.innerHTML=`<span class="spin"></span>🤖 بيقرا ${G.length} صورة…`;
-    try{const d=docFromAI(await askVision(G,DOC_PROMPT,1500));if(!r.isConnected)return;
+    try{const j0=await askVision(G,DOC_PROMPT,1500),d=docFromAI(j0);if(!r.isConnected)return;{const wc=wrongCo(j0.supplier,cid);if(wc){alertWrongCo(wc);const w=r.querySelector('#eW');if(w){w.hidden=false;w.innerHTML=`⛔ <b>مكان غلط!</b> دي فاتورة «${esc(wc.other.name)}» — انت فاتح «${esc(wc.cur?wc.cur.name:'')}». متحفظش هنا.`}}}
       if(!rec){k=d.kind;r.querySelectorAll('[data-m^="k:"]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.m==='k:'+k));r.querySelector('#eRefB').hidden=k!=='ret'}
       const set=(id,v)=>{const el=r.querySelector(id);if(el&&v!==''&&v!=null){el.value=v;el.classList.add('aifill')}};
       set('#eNo',d.no);set('#eRef',d.ref);set('#eAm',d.amount);if(d.notes&&!r.querySelector('#eNt').value)set('#eNt',d.notes);
@@ -2560,6 +2561,7 @@ async function scanFile(f){
     m=>{if(m==='man')entrySheet(cid,'inv',{img:r.querySelector('#scImg').src||''});if(m==='key')keySheet(()=>scanFile(f))});
   let img='';
   try{img=await toJpeg(f);r.querySelector('#scImg').src=img;const j=await readInvoice(img);if(!r.isConnected)return;
+    const wc=wrongCo(j.supplier,cid);if(wc){alertWrongCo(wc);r.querySelector('#scSt').innerHTML=`<span class="rd">⛔ <b>مكان غلط!</b> الفاتورة دي بتاعة «${esc(wc.other.name)}» وانت فاتح «${esc(wc.cur?wc.cur.name:'')}». افتح «${esc(wc.other.name)}» وصوّرها هناك.</span>`;return}
     const d=docFromAI(j);entrySheet(cid,d.kind,{...d,scan:true,imgs:[img]});
   }catch(e){if(!r.isConnected)return;const st=r.querySelector('#scSt');
     if(e==='key'){st.innerHTML='🔑 المفتاح مرفوض — غيّره وجرب تاني'+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'');r.querySelector('.actions').insertAdjacentHTML('beforeend','<button class="btn primary" data-m="key">تغيير المفتاح</button>')}
@@ -3425,9 +3427,16 @@ function datePhoto(ex,codeInput,life,st){
 /* ---------- إضافة يدوي / إرسال الكشف ---------- */
 function accManual(){openSheet(`<h4>＋ إضافة يدوي</h4><div class="menu"><button data-m="inv"><span>🧾</span><b>فاتورة</b><small>بضاعة جاية من الشركة</small></button><button data-m="ret"><span>↩️</span><b>مرتجع</b><small>بضاعة رجعت للشركة</small></button><button data-m="pay"><span>💵</span><b>دفعة</b><small>فلوس اتدفعت للشركة</small></button></div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>entrySheet(S.acc,m))}
 function accScanMenu(){openSheet(`<h4>📷 صوّر فواتير</h4><p class="hint" style="margin-top:0">كل صورة = فاتورة أو مرتجع. الذكاء الاصطناعي بيقرا الرقم والتاريخ والمبلغ — وفي المرتجع بيطلع الصنف ورقمه والفاتورة الأصلية والسعر بعد الخصم. لو المستند أكتر من صورة (إيصال + فاتورة + صورة المنتج) دوس «＋» تحت الكارت.</p><div class="menu"><button data-m="cam"><span>📷</span><b>صوّر بالكاميرا</b><small>فاتورة ورا التانية</small></button><button data-m="gal"><span>🖼️</span><b>من الجاليري</b><small>اختار كذا صورة مرة واحدة</small></button></div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{closeSheet();pickImage(m==='cam')})}
-function accSend(){const r=repAcc();openSheet(`<h4>📤 ابعت كشف الحساب</h4><p class="hint" style="margin-top:0">${esc(r.sub)}</p>
-  <button class="btn primary" data-m="pdf" style="width:100%;padding:13px">📄 PDF على الواتساب</button><div class="actions"><button class="btn" data-m="wa">💬 رسالة نص</button><button class="btn" data-m="copy">📋 نسخ</button><button class="btn" data-m="print">🖨️ طباعة</button></div>`,
-  m=>{closeSheet();if(m==='pdf')sharePdf(r);else doReport(r,m)})}
+function accSend(){const r=repAcc(),cid=S.acc,last=+LS.get('drc.accsent.'+cid)||0,withImg=S.ledger.filter(e=>e.cid===cid&&!e.cyc&&nImg(e)),fresh=withImg.filter(e=>(e.t||0)>last).sort((a,b)=>b.t-a.t),recent=(fresh.length?fresh:withImg.slice().sort((a,b)=>b.t-a.t).slice(0,5));
+  openSheet(`<h4>📤 ابعت كشف الحساب</h4><p class="hint" style="margin-top:0">${esc(r.sub)}</p>
+  ${recent.length?`<button class="btn primary" data-m="pdfimg" style="width:100%;padding:13px;margin-bottom:8px">📄 PDF + 🧾 صور ${recent.length} فاتورة<br><small style="font-weight:400">${fresh.length?'الفواتير اللي اتضافت من آخر مرة بعت':'آخر الفواتير'} — عشان المدير يراجع</small></button>`:''}
+  <button class="btn ${recent.length?'':'primary'}" data-m="pdf" style="width:100%;padding:13px">📄 PDF بس</button><div class="actions"><button class="btn" data-m="wa">💬 رسالة نص</button><button class="btn" data-m="copy">📋 نسخ</button><button class="btn" data-m="print">🖨️ طباعة</button></div>`,
+  async m=>{closeSheet();if(m==='pdfimg'){toast('جاري تجهيز الـ PDF والصور…');try{const files=[];
+      const pages=await reportPages(r),blob=await makePdf(pages),name=`${SHOP_NAME} - ${r.title||'كشف'} - ${today()}`.replace(/[\\/:*?"<>|]+/g,' ');files.push(new File([blob],name+'.pdf',{type:'application/pdf'}));
+      for(const e of recent.slice().reverse()){const L=await ledgerImgs(e);L.forEach((d,j)=>{const bs=atob(d.split(',')[1]),u8=new Uint8Array(bs.length);for(let i=0;i<bs.length;i++)u8[i]=bs.charCodeAt(i);files.push(new File([u8],`${KIND[e.kind].l} ${e.no||''}${L.length>1?' - '+(j+1):''}.jpg`.replace(/[\\/:*?"<>|]+/g,' '),{type:'image/jpeg'}))})}
+      const t=`${r.title||''}\n${r.sub||''}\n🧾 مرفق صور: ${recent.map(e=>KIND[e.kind].l+' '+(e.no||'')).join('، ')}`;
+      await shareFiles(files,t,true);LS.set('drc.accsent.'+cid,Date.now())}catch(err){console.warn(err);toast('مقدرتش أجهز الملفات — جرب «PDF بس»')}return}
+    if(m==='pdf'){LS.set('drc.accsent.'+cid,Date.now());return sharePdf(r)}doReport(r,m)})}
 
 /* ---------- PDF حقيقي (من غير مكتبات) ---------- */
 function cellText(c){const h=c&&typeof c==='object'?String(c.h??c.t??''):String(c??'');const d=document.createElement('div');d.innerHTML=h.replace(/<br\s*\/?>/gi,' ');return d.textContent.replace(/\s+/g,' ').trim()}
@@ -3481,12 +3490,16 @@ async function sharePdf(r){
 
 /* ---------- كذا فاتورة بالتصوير ---------- */
 let SB=null;
+const coKey=s=>norm(String(s||'')).replace(/[^\p{L}\p{N} ]/gu,' ').split(' ').filter(w=>w.length>2&&!['شركه','شركة','لتجاره','لتجارة','تجاره','الادويه','والمستلزمات','الطبيه','الطبية','ادويه','pharma','company','co','for','and','the','trading','drugs','medical'].includes(w));
+function coMatch(sup,c){if(!sup||!c)return 0;const a=coKey(sup),b=coKey(c.name+' '+(c.alias||''));if(!a.length||!b.length)return 0;return b.filter(w=>a.some(x=>x.includes(w)||w.includes(x))).length}
+function wrongCo(sup,cid){if(!sup)return null;const cur=S.companies.find(c=>c.id===cid);if(coMatch(sup,cur))return null;const other=S.companies.filter(c=>c.id!==cid).map(c=>({c,s:coMatch(sup,c)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s)[0];return other?{sup,cur,other:other.c}:null}
+function alertWrongCo(w){try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast(`⛔ الفاتورة دي بتاعة «${w.other.name}» وانت فاتح «${w.cur?w.cur.name:''}» — اتشالت`);}
 function scanBatch(files,cid){if(!files.length)return;if(!getKey()){keySheet(()=>scanBatch(files,cid));return}
   if(!SB||SB.cid!==cid)SB={cid,items:[]};files.forEach(f=>SB.items.push({fs:[f],imgs:[],st:'wait',inc:true,d:{kind:'inv',no:'',date:today(),amount:'',notes:''}}));drawSB();runSB()}
 async function runSB(){if(!SB||SB.running)return;SB.running=true;
   for(const it of SB.items){if(it.st!=='wait')continue;it.st='busy';drawSB();
     try{while(it.imgs.length<it.fs.length)it.imgs.push(await toJpeg(it.fs[it.imgs.length]));it.img=it.imgs[0];drawSB();const j=await readInvoice(it.imgs);
-      it.d=docFromAI(j);it.st='ok';if(sbDup(it)&&!it.force)it.inc=false;else it.inc=true}
+      it.d=docFromAI(j);it.st='ok';it.sup=String(j.supplier||'');const wc=wrongCo(it.sup,SB.cid);if(wc){it.wrong=wc;it.inc=false;alertWrongCo(wc)}else if(sbDup(it)&&!it.force)it.inc=false;else it.inc=true}
     catch(e){it.st='err';it.err=e;it.vErr=visionErr;try{while(it.imgs.length<it.fs.length)it.imgs.push(await toJpeg(it.fs[it.imgs.length]));it.img=it.imgs[0]}catch(_){}}
     if(!SB)return;drawSB()}
   if(SB)SB.running=false;drawSB()}
@@ -3494,8 +3507,8 @@ function syncSB(){const r=$modal.querySelector('.sbwrap');if(!r||!SB)return;r.qu
 function sbDup(it){if(!SB)return null;const d=findDup({...it.d,cid:SB.cid});if(d)return {t:dupTxt(d,SB.cid)};const n=normNo(it.d.no),i=SB.items.indexOf(it);
   const prev=n?SB.items.slice(0,i).find(x=>normNo(x.d.no)===n&&x.d.kind===it.d.kind):null;return prev?{t:`⛔ نفس الفاتورة دي متصورة مرتين (صورة ${SB.items.indexOf(prev)+1})`}:null}
 function drawSB(){if(!SB)return;const open=$modal.querySelector('.sbwrap');if(open)syncSB();else if($modal.querySelector('.sheet'))return;
-  const c=S.companies.find(x=>x.id===SB.cid),busy=SB.items.filter(i=>i.st==='busy'||i.st==='wait').length,ok=SB.items.filter(i=>i.inc&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)).length;
-  const card=(it,i)=>`<div class="sbc ${it.inc?'':'off'}"><div class="sbh">${it.imgs.length?`<span class="sbims">${it.imgs.map((d,j)=>`<img src="${d}" alt="" data-m="z:${i}:${j}">`).join('')}</span>`:'<div class="sbph"></div>'}<div class="sbst">${it.st==='busy'||it.st==='wait'?'<span class="spin"></span>جاري القراءة…':it.st==='err'?`<span class="rd">⚠️ مقدرتش أقراها — اكتبها يدوي</span>`:'<span class="ok">✓ اتقرت — راجعها</span>'}${sbDup(it)?`<br><b class="rd">${sbDup(it).t}</b>${it.force?' <small>(هتتسجل برضه)</small>':` <button class="linkb" data-m="f:${i}">سجّلها برضه</button>`}`:''}</div><label class="sbinc"><input type="checkbox" data-sbi="${i}" data-f="inc" ${it.inc&&(!sbDup(it)||it.force)?'checked':''} ${sbDup(it)&&!it.force?'disabled':''}> احفظ</label></div>
+  const c=S.companies.find(x=>x.id===SB.cid),busy=SB.items.filter(i=>i.st==='busy'||i.st==='wait').length,ok=SB.items.filter(i=>i.inc&&!i.wrong&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)).length;
+  const card=(it,i)=>`<div class="sbc ${it.inc?'':'off'}">${it.wrong?`<div class="sbwrong">⛔ <b>مكان غلط!</b> الفاتورة دي بتاعة «${esc(it.wrong.other.name)}» وانت فاتح «${esc(c?c.name:'')}» — مش هتتسجل هنا.<br><small>افتح «${esc(it.wrong.other.name)}» وصوّرها هناك.</small> <button class="linkb" data-m="wok:${i}">مش صح — سجّلها هنا</button></div>`:''}<div class="sbh">${it.imgs.length?`<span class="sbims">${it.imgs.map((d,j)=>`<img src="${d}" alt="" data-m="z:${i}:${j}">`).join('')}</span>`:'<div class="sbph"></div>'}<div class="sbst">${it.st==='busy'||it.st==='wait'?'<span class="spin"></span>جاري القراءة…':it.st==='err'?`<span class="rd">⚠️ مقدرتش أقراها — اكتبها يدوي</span>`:'<span class="ok">✓ اتقرت — راجعها</span>'}${sbDup(it)?`<br><b class="rd">${sbDup(it).t}</b>${it.force?' <small>(هتتسجل برضه)</small>':` <button class="linkb" data-m="f:${i}">سجّلها برضه</button>`}`:''}</div><label class="sbinc"><input type="checkbox" data-sbi="${i}" data-f="inc" ${it.inc&&(!sbDup(it)||it.force)?'checked':''} ${sbDup(it)&&!it.force?'disabled':''}> احفظ</label></div>
     <div class="sbf"><select data-sbi="${i}" data-f="kind">${Object.entries(KIND).map(([k,v])=>`<option value="${k}" ${it.d.kind===k?'selected':''}>${v.i} ${v.l}</option>`).join('')}</select><input data-sbi="${i}" data-f="no" value="${esc(it.d.no)}" placeholder="رقم الفاتورة" dir="ltr"><input data-sbi="${i}" data-f="amount" type="number" inputmode="decimal" value="${esc(it.d.amount)}" placeholder="المبلغ"></div>
     <div class="sbd">${dateSel('sbd'+i,it.d.date).replace('class="dsel"',`class="dsel" data-sbi="${i}" data-f="date"`)}</div>
     ${it.d.ref||(it.d.lines||[]).length?linesHtml(it.d):''}
@@ -3504,7 +3517,7 @@ function drawSB(){if(!SB)return;const open=$modal.querySelector('.sbwrap');if(op
     ${SB.items.map(card).join('')}
     <div class="actions"><button class="btn" data-m="cam">📷 صوّر كمان</button><button class="btn" data-m="gal">🖼️ من الجاليري</button></div>
     <div class="actions"><button class="btn" data-m="cancel">إلغاء</button><button class="btn primary" data-m="save" ${busy||!ok?'disabled':''}>💾 احفظ ${ok} فاتورة</button></div></div>`,
-  (m)=>{syncSB();if(m.startsWith('f:')){const it=SB.items[+m.slice(2)];if(it){it.force=true;it.inc=true;$modal.innerHTML='';drawSB()}return}if(m.startsWith('z:')){const [,a,b2]=m.split(':'),it=SB.items[+a];if(it&&it.imgs[+b2||0])openZoomSrc(it.imgs[+b2||0],'صورة '+((+b2||0)+1));return}
+  (m)=>{syncSB();if(m.startsWith('wok:')){const it=SB.items[+m.slice(4)];if(it){it.wrong=null;it.inc=true;$modal.innerHTML='';drawSB()}return}if(m.startsWith('f:')){const it=SB.items[+m.slice(2)];if(it){it.force=true;it.inc=true;$modal.innerHTML='';drawSB()}return}if(m.startsWith('z:')){const [,a,b2]=m.split(':'),it=SB.items[+a];if(it&&it.imgs[+b2||0])openZoomSrc(it.imgs[+b2||0],'صورة '+((+b2||0)+1));return}
     if(m.startsWith('ac:')||m.startsWith('ag:')){const it=SB.items[+m.slice(3)];if(!it)return;return pickFiles({cam:m[1]==='c',multiple:m[1]==='g'},fl=>{if(!fl.length||!SB)return;it.fs.push(...fl);it.st='wait';$modal.innerHTML='';drawSB();runSB()})}
     if(m==='cancel'){SB=null;closeSheet();return}
     if(m==='cam'||m==='gal'){pickImage(m==='cam');return}
@@ -3512,7 +3525,7 @@ function drawSB(){if(!SB)return;const open=$modal.querySelector('.sbwrap');if(op
   const sbw=$modal.querySelector('.sbwrap'),mark=e=>{const el=e.target.closest('[data-sbi]');if(el)el.dataset.dirty=1};sbw.addEventListener('change',mark,true);sbw.addEventListener('input',mark,true);
   sbw.addEventListener('input',()=>{syncSB();const ok2=SB.items.filter(i=>i.inc&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)).length,b=$modal.querySelector('[data-m=save]');if(b&&!SB.items.some(i=>i.st==='busy'||i.st==='wait')){b.disabled=!ok2;b.textContent=`💾 احفظ ${ok2} فاتورة`}});
 }
-async function saveSB(){syncSB();const L=SB.items.filter(i=>i.inc&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)),cid=SB.cid,c=S.companies.find(x=>x.id===cid);if(!L.length)return;
+async function saveSB(){syncSB();const L=SB.items.filter(i=>i.inc&&!i.wrong&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)),cid=SB.cid,c=S.companies.find(x=>x.id===cid);if(!L.length)return;
   const b=fs.batch(),imgs=[];L.forEach(it=>{const r=col('ledger').doc();b.set(r,{cid,kind:it.d.kind,no:String(it.d.no||'').trim(),date:it.d.date||today(),amount:amt(it.d.amount),notes:it.d.notes||'',t:Date.now(),by:me(),src:'scan',...(it.d.kind==='ret'&&it.d.ref?{ref:it.d.ref}:{}),...((it.d.lines||[]).length?{lines:it.d.lines}:{}),...(it.imgs.length?{img:it.imgs.length}:{})});if(it.imgs.length)imgs.push([r.id,it.imgs])});
   evt(b,'acc',c?c.name:'',L.reduce((a,it)=>a+amt(it.d.amount),0),`${L.length} فاتورة بالتصوير`);
   SB=null;closeSheet();await commit(b,`✓ اتسجل ${L.length} فاتورة`);
