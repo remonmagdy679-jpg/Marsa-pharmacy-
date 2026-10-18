@@ -894,7 +894,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10ح الشرايط اختياري';
+const APP_V = '18-10ط البوكس بالصورة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1144,7 +1144,7 @@ async function drSendPeter(){const L=S.items.filter(p=>tOf(p)==='med'&&drLow(p))
   await shareFiles([f],'',false)}
 /* سكان من تاب البوكس: يزوّد في البوكس (من المخزن أو بضاعة جديدة) أو يسجل صنف جديد */
 /* تسجيل سريع لدوا موجود في البوكس ومش متسجل — المخزن بيتبعت لبيتر يعدّه */
-function quickBoxNew(code){let pimg='';setTimeout(()=>{const k=$modal.querySelector('#qbK');if(k)k.addEventListener('input',()=>{$modal.querySelector('#qbSw').hidden=!(int(k.value)>1)})},50);
+function quickBoxNew(code,img0){let pimg='',qbUse=null;if(img0)setTimeout(()=>{if(qbUse)qbUse(img0)},80);setTimeout(()=>{const k=$modal.querySelector('#qbK');if(k)k.addEventListener('input',()=>{$modal.querySelector('#qbSw').hidden=!(int(k.value)>1)})},50);
   const r=openSheet(`<h4>🗄️ دوا جديد في البوكس</h4><p class="hint" style="margin-top:0">سجّل اللي في البوكس بس — المخزن هيتبعت لبيتر يعدّه.</p>
     <div class="photo"><img id="qbImg" hidden alt=""><div class="pbtns"><button class="btn sm primary" data-m="pcam">📷 صوّر العلبة</button><button class="btn sm" data-m="pgal">🖼️ من الجاليري</button></div></div><p class="hint" id="qbSt"></p>
     <label for="qbN">اسم الدوا</label><input id="qbN" dir="auto" placeholder="بيتكتب لوحده من الصورة">
@@ -1157,18 +1157,18 @@ function quickBoxNew(code){let pimg='';setTimeout(()=>{const k=$modal.querySelec
     <div class="sellacts"><button class="btn big" data-m="okn">🔳 احفظ وامسح التالي</button><button class="btn primary big" data-m="ok">✓ احفظ</button></div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,
   async(m,r,b)=>{if(m.startsWith('mq:')){r.querySelectorAll('.minq .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
     if(m==='dph')return datePhoto(r.querySelector('#qbE .ex'),null,null,r.querySelector('#qbD'));
-    if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',async d=>{pimg=d;const im=r.querySelector('#qbImg');im.src=d;im.hidden=false;if(!getKey())return;const st=r.querySelector('#qbSt');st.innerHTML='<span class="spin"></span>🤖 بقرا الاسم والتاريخ…';
-      try{const j=await askVision(d,productPrompt(),700);if(!r.isConnected)return;let nm=j.name?String(j.name).trim():'';if(nm&&j.size&&!norm(nm).includes(norm(String(j.size))))nm+=' '+String(j.size).trim();const ni=r.querySelector('#qbN');if(nm&&!ni.value.trim())ni.value=nm;const sv=(id,v)=>{const e=r.querySelector(id);if(e&&v&&!String(e.value).trim()){e.value=String(v).trim();e.classList.add('aifill')}};sv('#qbI',j.active_ingredients);sv('#qbT',j.strength);if(+j.strips>1){const kk=r.querySelector('#qbK');kk.value=String(+j.strips);kk.classList.add('aifill');r.querySelector('#qbSw').hidden=false;r.querySelector('#qbKd').open=true}
-        const k=j.expiry?parseExp(String(j.expiry)):null,pp=k&&bkParse(k);if(pp){const e=r.querySelector('#qbE');e.querySelector('[data-x=m]').value=String(pp.m);const ys=e.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(pp.y)))ys.insertAdjacentHTML('beforeend',`<option>${pp.y}</option>`);ys.value=String(pp.y)}
-        st.textContent=nm?'✓ اتقرا — راجع الاسم':''}catch(e){st.textContent='مقدرتش أقرا الصورة — اكتب الاسم'}});
+    if(m==='pcam'||m==='pgal')return pickPhoto(m==='pcam',qbUse);
     if(m!=='ok'&&m!=='okn')return;const name=r.querySelector('#qbN').value.trim(),KQ=Math.max(1,int(r.querySelector('#qbK').value)||1),q=int(r.querySelector('#qbQ').value)*KQ+(KQ>1?int(r.querySelector('#qbS').value||0):0),mb=r.querySelector('.minq [aria-pressed=true]');
     if(!name){toast('اكتب اسم الدوا');return}if(findByName(name)){toast('الاسم ده متسجل قبل كده — امسح كوده أو دوّر عليه');return}if(q<1){toast('اكتب العدد اللي في البوكس');return}
     const k=readExp(r.querySelector('#qbE'));if(k==='x'){toast('اختار تاريخ الإكسباير');return}if(!mb){toast('📉 اختار الحد الأدنى');r.querySelector('.minq').classList.add('need');return}
     const data={name,type:'med',codes:code?[code]:[],min:+mb.dataset.m.slice(3),spb:KQ,ing:r.querySelector('#qbI').value.trim(),str:r.querySelector('#qbT').value.trim(),dr:q,drMin:Math.max(0,int(r.querySelector('#qbM').value)),needCount:{t:Date.now(),by:me()},b:{[k]:q},created:Date.now(),by:me()};
     closeSheet();const nr=col('items').doc(),bb=fs.batch();if(pimg){data.img=await thumbOf(pimg);bb.set(ref('imgs/'+nr.id),{d:pimg,t:Date.now()})}bb.set(nr,data);evt(bb,'add',name,q,'في البوكس — المخزن لسه متعدّش');commit(bb,`🗄️ «${name}» اتسجل — بيتر هيتنبّه يعدّ المخزن`);
     push('📦 عدّ في المخزن — '+SHOP_NAME,`${name}\nاتسجل في البوكس (${q} علبة). عدّ اللي في المخزن واكتبه في التطبيق.`,{prio:4,tags:['package'],...(drTo().length?{only:drTo()}:{all:true})});
-    if(m==='okn')setTimeout(scanBox,300)})}
-function scanBox(){openScanner({title:'🗄️ امسح الدوا اللي هتحطه في البوكس',onCode:(c,g)=>handleBoxCode(c,g),onItem:p=>boxAdd(p)})}
+    if(m==='okn')setTimeout(scanBox,300)});qbUse=async d=>{pimg=d;const im=r.querySelector('#qbImg');im.src=d;im.hidden=false;if(!getKey())return;const st=r.querySelector('#qbSt');st.innerHTML='<span class="spin"></span>🤖 بقرا الاسم والتاريخ…';
+      try{const j=await askVision(d,productPrompt(),700);if(!r.isConnected)return;let nm=j.name?String(j.name).trim():'';if(nm&&j.size&&!norm(nm).includes(norm(String(j.size))))nm+=' '+String(j.size).trim();const ni=r.querySelector('#qbN');if(nm&&!ni.value.trim())ni.value=nm;const sv=(id,v)=>{const e=r.querySelector(id);if(e&&v&&!String(e.value).trim()){e.value=String(v).trim();e.classList.add('aifill')}};sv('#qbI',j.active_ingredients);sv('#qbT',j.strength);if(+j.strips>1){const kk=r.querySelector('#qbK');kk.value=String(+j.strips);kk.classList.add('aifill');r.querySelector('#qbSw').hidden=false;r.querySelector('#qbKd').open=true}
+        const k=j.expiry?parseExp(String(j.expiry)):null,pp=k&&bkParse(k);if(pp){const e=r.querySelector('#qbE');e.querySelector('[data-x=m]').value=String(pp.m);const ys=e.querySelector('[data-x=y]');if(![...ys.options].some(o=>o.value===String(pp.y)))ys.insertAdjacentHTML('beforeend',`<option>${pp.y}</option>`);ys.value=String(pp.y)}
+        st.textContent=nm?'✓ اتقرا — راجع الاسم':''}catch(e){st.textContent='مقدرتش أقرا الصورة — اكتب الاسم'}}}
+function scanBox(){openScanner({title:'🗄️ امسح الكود أو دوس «ابحث بالصورة»',onCode:(c,g)=>handleBoxCode(c,g),onItem:p=>boxAdd(p),onNew:d=>quickBoxNew('',d)})}
 function handleBoxCode(code,g){const l=itemsByCode(code),k=g&&g.y?bk(g.y,g.m):'';if(l.length===1)return boxAdd(l[0],{k});if(l.length>1)return varPick(l,'البوكس — اختار',p=>boxAdd(p,{k}));openSheet(`<h4>🔳 كود مش متسجل</h4><p class="hint" style="margin-top:0">الدوا ده مش متسجل لسه.</p><div class="menu"><button data-m="q"><span>🗄️</span><b>سجّله دوا جديد في البوكس</b><small>اسم + عدد البوكس — بيتر يعدّ المخزن</small></button><button data-m="o"><span>🔗</span><b>اربطه بصنف موجود</b><small>لو الدوا متسجل من غير الكود ده</small></button></div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`,m=>{if(m==='q'){closeSheet();return scanTwice('امسح الكود مرة كمان للتأكيد',c=>quickBoxNew(c),[code])}if(m==='o')unknownCode(code,g,'box')})}
 async function fillIng(p){if(!p||p.ing||tOf(p)!=='med'||!getKey()||fillIng[p.id])return;fillIng[p.id]=1;try{const img=p.img?((await fullImg(p.id))||p.img):'';if(!img)return;const j=await askVision(img,productPrompt(),600);const u={};if(j.active_ingredients)u.ing=String(j.active_ingredients).trim();if(j.strength&&!p.str)u.str=String(j.strength).trim();if(+j.strips>1&&!(+p.spb>1))u.spb=+j.strips;if(Object.keys(u).length){run(ref('items/'+p.id).update(u));toast('🧪 المادة الفعالة اتسجلت: '+(u.ing||''))}}catch(e){}}
 function boxAdd(p,pre={}){fillIng(p);const K=spb(p),u=K>1||tOf(p)==='med'?'علبة':'قطعة',st=Math.floor(drStore(p)/K),lastK=pre.k||(bats(p).filter(([k])=>k!=='x').map(([k])=>k).sort((a,b)=>bkIdx(b)-bkIdx(a))[0])||'';
@@ -1228,7 +1228,7 @@ function vDrawer(){const meds=S.items.filter(p=>tOf(p)==='med'&&matchQ(hay(p)));
   const inDr=meds.filter(p=>hasDr(p)),tot=inDr.reduce((a,p)=>a+Math.floor(drQ(p)/spb(p)),0);
   let h=`<div class="summary"><strong style="color:${low.length||nc.length?'var(--red)':'var(--green)'}">${low.length+nc.length?`${low.length} هات · ${nc.length} عدّ`:'👌'}</strong><span>🗄️ البوكس: ${inDr.length} دوا — ${tot} علبة جوه${low.length?` · محتاج ${low.reduce((a,p)=>a+drNeed(p),0)} علبة`:''}</span></div>
   <div class="hint" style="margin:2px 2px 8px"><button class="linkb" data-act="dr-to">👤 بيتنبّه: ${drTo().length?esc(drTo().join('، ')):'الكل'}</button> · 🔳 السكان هنا بيضيف للبوكس</div>`;
-  h+=`<div class="toolbar"><button class="btn primary" data-act="qbox">＋ سجّل دوا في البوكس</button><button class="btn ghost sm" data-act="qboxscan">🔳 بالسكان</button></div>`;
+  h+=`<div class="toolbar"><button class="btn primary" data-act="qbox">＋ سجّل دوا في البوكس</button><button class="btn ghost sm" data-act="qboxscan">🔳 بالسكان</button><button class="btn ghost sm" data-act="qboxvs">🤖 بالصورة</button></div>`;
   if(nc.length)h+=`<section class="shsec fresh nc"><header><b>📦 لسه متعدّش في المخزن (${nc.length})</b><button class="btn sm" data-act="nc-peter">📤 ابعتهم لبيتر يعدّهم</button></header><div class="rows">${nc.map(p=>row(p,`<div class="ncq"><input type="number" inputmode="numeric" data-ncq="${p.id}" placeholder="${spb(p)>1?'علب':'العدد'}"><button class="btn sm primary" data-act="nc-save" data-id="${p.id}">💾 حفظ</button><button class="icon" data-act="nc-edit" data-id="${p.id}" aria-label="تعديل الصنف">✏️</button></div>`)).join('')}</div></section>`;
   h+=low.length?`<section class="shsec fresh"><header><b>⚠️ هات من المخزن (${low.length})</b></header><button class="btn primary drpeter" data-act="dr-peter">📤 ابعتهم لبيتر واتساب</button><div class="rows">${low.map(p=>row(p,`<button class="btn sm primary" data-act="dr-move" data-id="${p.id}">✓ اتنقل${drNeed(p)?' '+Math.min(drNeed(p),Math.floor(drStore(p)/spb(p))||drNeed(p)):''}</button>`)).join('')}</div></section>`:`<div class="empty" style="padding:14px">البوكس كامل 👌</div>`;
   if(tracked.length)h+=`<section class="group"><h3>🗄️ متابَع في البوكس (${tracked.length})</h3><div class="rows">${tracked.map(p=>row(p,`<button class="icon" data-act="dr-set" data-id="${p.id}" aria-label="تعديل">✏️</button>`)).join('')}</div></section>`;
@@ -2931,7 +2931,7 @@ function variantSheet(p){let pimg='';const same=vSibs(p).length===0&&!p.vr;
     const up={vg};if(old){up.vr=old;if(!p.name.endsWith(' — '+old))up.name=base+' — '+old}b.update(ref('items/'+p.id),up);evt(b,'add',data.name,0,'لون جديد');
     await b.commit().then(()=>toast('🎨 «'+vr+'» اتضاف — اكتب العدد')).catch(()=>toast('ما اتحفظش — جرب تاني'));
     setTimeout(()=>restockSheet(S.items.find(x=>x.id===nr.id)||{id:nr.id,...data}),300)})}
-const $sc=$('scanner'),$scv=$('scVid');let scItem=null,scStream=null,scTimer=null,scReader=null,scCb=null,scBusy=false,scH5=null,scModes=false;
+const $sc=$('scanner'),$scv=$('scVid');let scNew=null,scItem=null,scStream=null,scTimer=null,scReader=null,scCb=null,scBusy=false,scH5=null,scModes=false;
 function scBeep(){try{if(!actx)return;const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;o.frequency.value=1650;g.gain.setValueAtTime(.25,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+.13)}catch(e){}}
 function stopScanner(){clearInterval(scTimer);clearTimeout(scTimer);scTimer=null;try{scReader&&scReader.reset()}catch(e){}scReader=null;if(scH5){const h=scH5;scH5=null;h.stop().catch(()=>{}).then(()=>{try{h.clear()}catch(e){}})}if(scStream){scStream.getTracks().forEach(t=>t.stop());scStream=null}$scv.srcObject=null;$sc.hidden=true;scBusy=false}
 function eanOk(c){if(!/^\d+$/.test(c)||![8,13].includes(c.length))return true;const chk=x=>{const d=x.split('').map(Number),ck=d.pop();let s_=0;d.reverse().forEach((v,i)=>{s_+=v*(i%2?1:3)});return (10-s_%10)%10===ck};if(chk(c))return true;
@@ -2948,7 +2948,7 @@ function zxMake(fast){const Z=window.ZXing,h=new Map(),F=Z.BarcodeFormat;h.set(Z
 function zxDecodeCanvas(cv,fast){const Z=window.ZXing;let rd;if(fast){if(!zxFast)zxFast=zxMake(true);rd=zxFast}else{if(!zxReader)zxReader=zxMake(false);rd=zxReader}
   try{return rd.decodeWithState(new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(cv)))).getText()}catch(e){return null}finally{try{rd.reset()}catch(e){}}}
 async function openScanner(o){
-  scCb=o.onCode;scItem=o.onItem||null;$('scAI').hidden=!scItem;scBusy=false;scModes=!!o.modes;$('scTitle').textContent=o.title||'امسح الكود';$('scHint').textContent='جاري تشغيل الكاميرا…';$('scTorch').hidden=true;$sc.hidden=false;
+  scCb=o.onCode;scItem=o.onItem||null;scNew=o.onNew||null;$('scAI').hidden=!scItem;scBusy=false;scModes=!!o.modes;$('scTitle').textContent=o.title||'امسح الكود';$('scHint').textContent='جاري تشغيل الكاميرا…';$('scTorch').hidden=true;$sc.hidden=false;
   $('scMode').hidden=!o.modes;if(o.modes)$('scMode').querySelectorAll('[data-sm]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sm===scMode()));
   $scv.hidden=false;$scv.muted=true;$scv.setAttribute('playsinline','');$('scBox').innerHTML='';
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('scHint').textContent='الكاميرا المباشرة مش متاحة هنا — دوس «📸 صوّر الكود»';return}
@@ -2980,7 +2980,7 @@ async function openScanner(o){
   }catch(e){console.warn(e);$('scHint').textContent=/NotAllowed|Permission/i.test(String(e&&e.name||e))?'الكاميرا مقفولة — اسمح للكاميرا من الإعدادات، أو دوس «📸 صوّر الكود»':'الكاميرا المباشرة مش شغالة هنا — دوس «📸 صوّر الكود»'}
 }
 $('scClose').addEventListener('click',stopScanner);
-$('scAI').addEventListener('click',()=>{const f=scItem;stopScanner();if(f)visualSearch(f,'لقيت الصنف بالصورة')});
+$('scAI').addEventListener('click',()=>{const f=scItem,nw=scNew;stopScanner();if(f)visualSearch(f,'لقيت الصنف بالصورة',nw)});
 $('scTorch').addEventListener('click',async e=>{try{const tr=scStream.getVideoTracks()[0];const on=!e.currentTarget.classList.contains('on');await tr.applyConstraints({advanced:[{torch:on}]});e.currentTarget.classList.toggle('on',on)}catch(x){}});
 $('scType').addEventListener('click',()=>{const cb=scCb;stopScanner();openSheet(`<h4>⌨️ اكتب الكود</h4><input id="mc" dir="ltr" inputmode="numeric" placeholder="الأرقام اللي تحت الباركود"><div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">تمام</button></div>`,(m,r)=>{const v=r.querySelector('#mc').value.trim();if(!v)return;closeSheet();const {code,g}=codeOf(v);if(cb)cb(code,g)})});
 const scMode=()=>LS.get('drc.scmode')||'sell';
@@ -3592,8 +3592,8 @@ document.addEventListener('keydown',e=>{if($calc.hidden)return;const m={Enter:'=
 
 
 /* ---------- البحث بالصورة (بديل الباركود) ---------- */
-function visualSearch(onPick,title){
-  if(!getKey()){keySheet(()=>visualSearch(onPick,title));return}
+function visualSearch(onPick,title,onNew){
+  if(!getKey()){keySheet(()=>visualSearch(onPick,title,onNew));return}
   pickPhoto(true,async d=>{
     const r=openSheet(`<h4>🤖 ${esc(title||'بحث بالصورة')}</h4><div class="cntbox"><img src="${d}" alt=""><div><span class="spin"></span>بيدوّر على المنتج ده في الأصناف…</div></div><div class="actions"><button class="btn" data-cancel>إلغاء</button></div>`);
     const live=S.items.filter(x=>!x.del),cat=live.slice().sort(byName).slice(0,600);
@@ -3611,9 +3611,10 @@ List up to 5 matches, best first; only include real candidates (score ≥ 40). U
     openSheet(`<h4>🤖 ${esc(title||'بحث بالصورة')}</h4><div class="cntbox"><img src="${d}" alt=""><div>اتقرا: <b>${esc(j.read||'—')}</b>${j.note?`<br><small class="mu">${esc(j.note)}</small>`:''}</div></div>
       ${list.length?`<label>اختار الصنف</label><div class="rows">${list.map(({p,s},k)=>`<div class="vsrow"><div class="row linkbtn vsr ${k===0&&s>=80?'best':''} prow" role="button" tabindex="0" data-m="p:${p.id}">${ico(p)}<div class="kit"><b>${esc(p.name)}</b><div class="meta"><span>عندك ${fmtQs(p,good(p))}</span>${nearExp(p)}</div></div><span class="vsc">${s>=80?'✓ ':''}${s}%</span></div><button class="icon vse" data-m="e:${p.id}" aria-label="تعديل الصنف">✏️</button></div>`).join('')}</div>`
         :'<div class="empty">مالقتش المنتج ده في الأصناف</div>'}
+      ${onNew?`<button class="btn ${list.length?'':'primary'}" data-m="new" style="width:100%;margin-top:8px">🆕 مش متسجل — سجّله في البوكس</button>`:''}
       <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn" data-m="again">📷 صورة تانية</button></div>`,
-    m=>{if(m.startsWith('e:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)return itemForm(p,{after:np=>onPick(np)});return}
-      if(m==='again'){closeSheet();return visualSearch(onPick,title)}if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p){closeSheet();onPick(p)}}});
+    m=>{if(m==='new'&&onNew){closeSheet();return onNew(d)}if(m.startsWith('e:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)return itemForm(p,{after:np=>onPick(np)});return}
+      if(m==='again'){closeSheet();return visualSearch(onPick,title,onNew)}if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p){closeSheet();onPick(p)}}});
   },1024,.82);
 }
 
@@ -3919,7 +3920,7 @@ $app.addEventListener('click',e=>{
   else if(act==='mreq')mgrReq();
   else if(act==='dx')dxSheet();
   else if(act==='dr-peter')drSendPeter();
-  else if(act==='qbox')quickBoxNew('');else if(act==='qboxscan')scanBox();else if(act==='nc-peter')ncSendPeter();
+  else if(act==='qbox')quickBoxNew('');else if(act==='qboxscan')scanBox();else if(act==='qboxvs')visualSearch(p=>boxAdd(p),'البوكس — لقيت الدوا بالصورة',d=>quickBoxNew('',d));else if(act==='nc-peter')ncSendPeter();
   else if(act==='sh-tab'){S.shortTab=k;LS.set('drc.shtab',k);render();scrollTo(0,0)}
   else if(act==='sh-tog'){const pp=S.items.find(x=>x.id===b.dataset.id);const on=!shSel(pp);shSet(pp.id,{on});const row=b.closest('.srow');row.classList.toggle('on',on);b.textContent=on?'✓':'';shRefreshBar()}
   else if(act==='sh-q'){const pp=S.items.find(x=>x.id===b.dataset.id);const v=Math.max(1,shQty(pp)+(+b.dataset.d));shSet(pp.id,{q:v,on:true});const row=b.closest('.srow');row.querySelector('[data-sq]').value=v;row.classList.add('on');row.querySelector('.sck').textContent='✓';shRefreshBar()}
