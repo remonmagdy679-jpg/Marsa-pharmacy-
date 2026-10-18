@@ -826,7 +826,8 @@ h4{font-size:17px}
 .summary{margin:10px 2px 4px}
 .shsec>header b{font-size:14px}
 /* تشخيص */
-.toolbar:has(.dxbtn){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.toolbar:has(.dxbtn)>*{flex:none}.rxb{font-size:11px;font-weight:700;color:#fff;background:var(--amber);border-radius:6px;padding:1px 6px;margin-inline-start:4px}
+.toolbar:has(.dxbtn){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.toolbar:has(.dxbtn)>*{flex:none}.dxp.eg .ti{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px dashed var(--line);border-radius:10px}
+.rxb{font-size:11px;font-weight:700;color:#fff;background:var(--amber);border-radius:6px;padding:1px 6px;margin-inline-start:4px}
 .dxbtn{padding:9px 12px;border-color:var(--green);color:var(--green);font-weight:700}
 .dxc{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0 8px}.dxt{display:flex;justify-content:space-between;align-items:center;gap:8px}.dxt b{font-size:18px}.dxt span{background:var(--green-soft);color:var(--green);border-radius:20px;padding:2px 10px;font-weight:800;font-size:14px}.dxc small{color:var(--muted)}.dxc p{margin:6px 0 0;font-size:14px}
 .dxw{border:1px solid rgba(240,170,40,.6);border-radius:10px;padding:8px 10px;font-size:13.5px;margin-bottom:8px}.dxw.hot{border-color:var(--red);color:var(--red)}
@@ -892,7 +893,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10ج تشخيص كامل';
+const APP_V = '18-10د بدائل السوق المصري';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -3279,11 +3280,11 @@ function mgrReq(){if(!getKey())return keySheet(mgrReq);
 /* 🩺 تشخيص بالصورة → علاج من الموجود في الصيدلية */
 function dxPrompt(note,cat){return `You assist the licensed pharmacy team of a pharmacy in a tourist beach resort in Egypt (guests are mostly European tourists).
 Look at the photo (a skin area, wound, bite, rash, eye, nail, etc.). Identify the most likely condition(s) from what is visible${note?` and these notes from the pharmacist: "${note}"`:''}.
-Then build the best treatment set using ONLY products from this in-stock catalog (format: index|name|active ingredient|type|qty):
+Then build the best treatment set. FIRST PRIORITY: products from this in-stock catalog (format: index|name|active ingredient|type|qty). Many lines have no active ingredient written — use your own knowledge of the brand name (Egyptian / international market) to know what it contains (e.g. Lamifen = terbinafine, Daktarin = miconazole, Fucidin = fusidic acid). Search the whole catalog carefully before saying nothing fits:
 ${cat}
-Prefer 1–5 products that work together (e.g. topical + oral + soothing). You MAY include prescription medicines (oral antibiotics, steroids, antifungals, etc.) when clinically appropriate — a doctor on site reviews every suggestion; mark them "rx":true. Give the usual adult dose (and child dose if the notes mention a child).
+If the catalog lacks a needed treatment (or has nothing suitable), fill "egypt" with the 2–4 most popular Egyptian-market brand names that treat this condition (only ones really sold in Egypt), otherwise leave it []. Prefer 1–5 catalog products that work together (e.g. topical + oral + soothing). You MAY include prescription medicines (oral antibiotics, steroids, antifungals, etc.) when clinically appropriate — a doctor on site reviews every suggestion; mark them "rx":true. Give the usual adult dose (and child dose if the notes mention a child).
 Return ONLY JSON:
-{"ok":true,"condition_ar":"most likely condition in Egyptian Arabic","condition_en":"English name","pct":70,"others":[{"ar":"","en":"","pct":20}],"signs_ar":"one short line: what in the photo points to it","plan":[{"i":index,"role_ar":"short role e.g. مضاد فطريات موضعي","dose_ar":"very short daily use e.g. دهان طبقة رفيعة مرتين يوميًا لمدة أسبوعين","dose_en":"same in short English","rx":false}],"advice_ar":["max 3 short tips"],"red_flags_ar":["signs that need a doctor now, short"],"doctor":false,"missing":["useful generic treatments not in catalog"],"guest_en":"2-3 short sentences to tell the guest in simple English (what it likely is + how to use the products)","cautions_ar":"short: key contraindications/interactions to check (pregnancy, allergy, age)"}
+{"ok":true,"condition_ar":"most likely condition in Egyptian Arabic","condition_en":"English name","pct":70,"others":[{"ar":"","en":"","pct":20}],"signs_ar":"one short line: what in the photo points to it","plan":[{"i":index,"role_ar":"short role e.g. مضاد فطريات موضعي","dose_ar":"very short daily use e.g. دهان طبقة رفيعة مرتين يوميًا لمدة أسبوعين","dose_en":"same in short English","rx":false}],"advice_ar":["max 3 short tips"],"red_flags_ar":["signs that need a doctor now, short"],"doctor":false,"egypt":[{"brand":"well-known brand name sold in Egyptian pharmacies","ing":"active ingredient + strength","form":"cream/tablet/…","dose_ar":"short daily use","rx":false}],"guest_en":"2-3 short sentences to tell the guest in simple English (what it likely is + how to use the products)","cautions_ar":"short: key contraindications/interactions to check (pregnancy, allergy, age)"}
 If the photo is not of a body area, return {"ok":false}. Set "doctor":true for anything serious (infection with fever, eye injury, deep wound, spreading redness, child under 2, etc.).`}
 function dxSheet(){if(!getKey())return keySheet(dxSheet);let img='',R0=null;
   const r=openSheet(`<h4>🩺 تشخيص بالصورة</h4><p class="hint" style="margin-top:0">صوّر المكان المصاب — هقولك المرض المحتمل وعلاجه من اللي موجود عندك بالجرعات.</p>
@@ -3297,9 +3298,10 @@ function dxSheet(){if(!getKey())return keySheet(dxSheet);let img='',R0=null;
     if(m.startsWith('add:')){const p=S.items.find(x=>x.id===m.slice(4));if(p){cartAdd(p,1,null,'',true);b.textContent='✓ اتضاف';b.disabled=true;toast(`🧾 ${p.name} اتضاف للفاتورة`)}return}
     if(m==='all'){(R0||[]).forEach(p=>cartAdd(p,1,null,'',true));closeSheet();return invSheet()}
     if(m==='cp'){const t=root.querySelector('#dxG');return copyText(t?t.textContent:'').then(ok=>toast(ok?'📋 اتنسخ':'مقدرتش أنسخ'))}
-    if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)openZoom(p)}});
+    if(m.startsWith('p:')){const p=S.items.find(x=>x.id===m.slice(2));if(p)openZoom(p)}
+    if(m.startsWith('egs:')){const q=norm(m.slice(4).split(' ')[0]),hit=S.items.find(x=>norm(hay(x)).includes(q));if(hit){toast('✓ لقيته عندك: '+hit.name);return sellSheet(hit)}toast('مش متسجل عندك — ضيفه للنواقص لو هتطلبه')}});
   async function run2(){if(!img){toast('صوّر المكان المصاب الأول');return}const box=r.querySelector('#dxR');box.innerHTML='<p class="hint"><span class="spin"></span>🩺 بحلل الصورة وبدوّر في الأدوية اللي عندك…</p>';
-    const L=S.items.filter(p=>good(p)>0).slice(0,600),cat=L.map((p,i)=>`${i}|${p.name}|${p.ing||''}|${tOf(p)}|${good(p)}`).join('\n');
+    const L=S.items.filter(p=>good(p)>0).slice(0,600),cat=L.map((p,i)=>`${i}|${p.name}${p.alias?' / '+p.alias:''}|${p.ing||''}|${tOf(p)}|${good(p)}`).join('\n');
     try{const j=await askVision(img,dxPrompt(r.querySelector('#dxN').value.trim(),cat),1800);if(!r.isConnected)return;
       if(!j||j.ok===false){box.innerHTML='<p class="hint rd">الصورة مش واضحة أو مش لمكان مصاب — صوّر أقرب وفي نور كويس</p>';return}
       const plan=(j.plan||[]).map(x=>({...x,p:L[+x.i]})).filter(x=>x.p);R0=plan.map(x=>x.p);
@@ -3309,6 +3311,7 @@ function dxSheet(){if(!getKey())return keySheet(dxSheet);let img='',R0=null;
         ${plan.length?`<h5 class="dxh">💊 العلاج من اللي عندك</h5>${plan.map(x=>`<div class="dxp">${ico(x.p)}<div class="kit"><b>${esc(x.p.name)}${x.rx?' <span class="rxb">℞ الدكتور</span>':''}</b><small>${esc(x.role_ar||'')}</small><em>${esc(x.dose_ar||'')}</em><i class="${good(x.p)>1?'':'rd'}">عندك ${fmtQ(x.p,good(x.p))}</i></div><button class="btn sm" data-m="add:${x.p.id}">➕ فاتورة</button></div>`).join('')}<button class="btn primary" data-m="all" style="width:100%;margin-top:4px">🧾 ضيف الكل للفاتورة</button>`:'<p class="hint rd">مالقيتش علاج مناسب في الأدوية اللي عندك</p>'}
         ${j.cautions_ar?`<p class="hint">⚠️ ${esc(j.cautions_ar)}</p>`:''}
         ${(j.advice_ar||[]).length?`<ul class="dxa">${j.advice_ar.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}
+        ${(j.egypt||[]).length?`<h5 class="dxh">🇪🇬 ${plan.length?'بدائل تانية من السوق المصري':'مش عندك — أشهر الأسامي في السوق المصري'}</h5>${j.egypt.map(e=>`<div class="dxp eg"><span class="ti">🛒</span><div class="kit"><b dir="ltr">${esc(e.brand||'')}${e.rx?' <span class="rxb">℞ الدكتور</span>':''}</b><small dir="ltr">${esc([e.ing,e.form].filter(Boolean).join(' · '))}</small><em>${esc(e.dose_ar||'')}</em></div><button class="btn sm" data-m="egs:${esc(e.brand||'')}">🔎</button></div>`).join('')}`:''}
         ${(j.missing||[]).length?`<p class="hint">ممكن يفيد ومش عندك: ${j.missing.map(esc).join('، ')}</p>`:''}
         ${j.guest_en?`<div class="dxg"><small>🗣️ قول للجيست:</small><p id="dxG" dir="ltr">${esc(j.guest_en)}</p>${plan.map(x=>x.dose_en?`<p dir="ltr" class="dxe">• ${esc(x.p.name)}: ${esc(x.dose_en)}</p>`:'').join('')}<button class="linkb" data-m="cp">📋 نسخ</button></div>`:''}`}
     catch(e){box.innerHTML='<p class="hint rd">مقدرتش أحلل — '+(e==='key'?'المفتاح مرفوض':e==='quota'?'الحد المسموح خلص':e==='net'?'مفيش نت':'جرب صورة أوضح')+'</p>'+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')}}}
