@@ -897,7 +897,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '18-10ل اختار الفواتير';
+const APP_V = '19-10 صور الفواتير بس';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -3431,15 +3431,15 @@ function accScanMenu(){openSheet(`<h4>📷 صوّر فواتير</h4><p class="h
 function accSend(){const r=repAcc(),cid=S.acc,last=+LS.get('drc.accsent.'+cid)||0,withImg=S.ledger.filter(e=>e.cid===cid&&!e.cyc&&nImg(e)),all_=withImg.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.t-a.t).slice(0,40),pre=new Set(all_.filter(e=>(e.t||0)>(last||Date.now()-864e5)).map(e=>e.id));
   openSheet(`<h4>📤 ابعت كشف الحساب</h4><p class="hint" style="margin-top:0">${esc(r.sub)}</p>
   ${all_.length?`<label>🧾 اختار الفواتير اللي هتبعت صورها <small>(${pre.size?'الجديدة متعلّم عليها':'علّم على اللي عايزه'})</small></label><div class="accpick">${all_.map(e=>`<label class="check apk"><input type="checkbox" value="${e.id}" ${pre.has(e.id)?'checked':''}><span>${KIND[e.kind].i} ${KIND[e.kind].l} <b dir="ltr">${esc(e.no||'—')}</b></span><small>${e.date?fmtDay(e.date):''} · ${num(e.amount)}${nImg(e)>1?` · ${nImg(e)} صور`:''}</small></label>`).join('')}</div>
-  <button class="btn primary" data-m="pdfimg" id="apkB" style="width:100%;padding:13px;margin:8px 0"></button>`:''}
+  <button class="btn primary" data-m="pdfimg" id="apkB" style="width:100%;padding:13px;margin:8px 0 6px"></button><button class="btn" data-m="img" id="apkI" style="width:100%;padding:13px;margin:0 0 8px"></button>`:''}
   <button class="btn ${all_.length?'':'primary'}" data-m="pdf" style="width:100%;padding:13px">📄 PDF بس</button><div class="actions"><button class="btn" data-m="wa">💬 رسالة نص</button><button class="btn" data-m="copy">📋 نسخ</button><button class="btn" data-m="print">🖨️ طباعة</button></div>`,
-  async(m,root)=>{let recent=[];if(m==='pdfimg'){const ids=[...root.querySelectorAll('.accpick input:checked')].map(i=>i.value);recent=all_.filter(e=>ids.includes(e.id));if(!recent.length){toast('علّم على فاتورة واحدة على الأقل');return}}closeSheet();if(m==='pdfimg'){toast('جاري تجهيز الـ PDF والصور…');try{const files=[];
-      const pages=await reportPages(r),blob=await makePdf(pages),name=`${SHOP_NAME} - ${r.title||'كشف'} - ${today()}`.replace(/[\\/:*?"<>|]+/g,' ');files.push(new File([blob],name+'.pdf',{type:'application/pdf'}));
+  async(m,root)=>{let recent=[];if(m==='pdfimg'||m==='img'){const ids=[...root.querySelectorAll('.accpick input:checked')].map(i=>i.value);recent=all_.filter(e=>ids.includes(e.id));if(!recent.length){toast('علّم على فاتورة واحدة على الأقل');return}}closeSheet();if(m==='pdfimg'||m==='img'){toast(m==='img'?'جاري تجهيز الصور…':'جاري تجهيز الـ PDF والصور…');try{const files=[];
+      if(m==='pdfimg'){const pages=await reportPages(r),blob=await makePdf(pages),name=`${SHOP_NAME} - ${r.title||'كشف'} - ${today()}`.replace(/[\\/:*?"<>|]+/g,' ');files.push(new File([blob],name+'.pdf',{type:'application/pdf'}))}
       for(const e of recent.slice().reverse()){const L=await ledgerImgs(e);L.forEach((d,j)=>{const bs=atob(d.split(',')[1]),u8=new Uint8Array(bs.length);for(let i=0;i<bs.length;i++)u8[i]=bs.charCodeAt(i);files.push(new File([u8],`${KIND[e.kind].l} ${e.no||''}${L.length>1?' - '+(j+1):''}.jpg`.replace(/[\\/:*?"<>|]+/g,' '),{type:'image/jpeg'}))})}
-      const t=`${r.title||''}\n${r.sub||''}\n🧾 مرفق صور: ${recent.map(e=>KIND[e.kind].l+' '+(e.no||'')).join('، ')}`;
+      const t=m==='img'?`🧾 صور فواتير ${r.title||''}: ${recent.map(e=>KIND[e.kind].l+' '+(e.no||'')).join('، ')}`:`${r.title||''}\n${r.sub||''}\n🧾 مرفق صور: ${recent.map(e=>KIND[e.kind].l+' '+(e.no||'')).join('، ')}`;
       await shareFiles(files,t,true);LS.set('drc.accsent.'+cid,Date.now())}catch(err){console.warn(err);toast('مقدرتش أجهز الملفات — جرب «PDF بس»')}return}
     if(m==='pdf'){LS.set('drc.accsent.'+cid,Date.now());return sharePdf(r)}doReport(r,m)});
-  const upd=()=>{const b=$modal.querySelector('#apkB');if(!b)return;const n=$modal.querySelectorAll('.accpick input:checked').length;b.innerHTML=n?`📄 PDF + 🧾 صور ${n} فاتورة`:'📄 PDF + 🧾 صور (علّم على الفواتير)';b.disabled=!n};$modal.querySelectorAll('.accpick input').forEach(i=>i.addEventListener('change',upd));upd()}
+  const upd=()=>{const b=$modal.querySelector('#apkB');if(!b)return;const n=$modal.querySelectorAll('.accpick input:checked').length;b.innerHTML=n?`📄 PDF + 🧾 صور ${n} فاتورة`:'📄 PDF + 🧾 صور (علّم على الفواتير)';b.disabled=!n;const bi=$modal.querySelector('#apkI');if(bi){bi.innerHTML=n?`🧾 صور ${n} فاتورة بس`:'🧾 صور بس (علّم على الفواتير)';bi.disabled=!n}};$modal.querySelectorAll('.accpick input').forEach(i=>i.addEventListener('change',upd));upd()}
 
 /* ---------- PDF حقيقي (من غير مكتبات) ---------- */
 function cellText(c){const h=c&&typeof c==='object'?String(c.h??c.t??''):String(c??'');const d=document.createElement('div');d.innerHTML=h.replace(/<br\s*\/?>/gi,' ');return d.textContent.replace(/\s+/g,' ').trim()}
