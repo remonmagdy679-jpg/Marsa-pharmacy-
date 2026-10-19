@@ -897,7 +897,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '19-10 صور الفواتير بس';
+const APP_V = '19-10ب صور فواتير بدون نص';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -3437,9 +3437,9 @@ function accSend(){const r=repAcc(),cid=S.acc,last=+LS.get('drc.accsent.'+cid)||
       if(m==='pdfimg'){const pages=await reportPages(r),blob=await makePdf(pages),name=`${SHOP_NAME} - ${r.title||'كشف'} - ${today()}`.replace(/[\\/:*?"<>|]+/g,' ');files.push(new File([blob],name+'.pdf',{type:'application/pdf'}))}
       for(const e of recent.slice().reverse()){const L=await ledgerImgs(e);L.forEach((d,j)=>{const bs=atob(d.split(',')[1]),u8=new Uint8Array(bs.length);for(let i=0;i<bs.length;i++)u8[i]=bs.charCodeAt(i);files.push(new File([u8],`${KIND[e.kind].l} ${e.no||''}${L.length>1?' - '+(j+1):''}.jpg`.replace(/[\\/:*?"<>|]+/g,' '),{type:'image/jpeg'}))})}
       const t=m==='img'?`🧾 صور فواتير ${r.title||''}: ${recent.map(e=>KIND[e.kind].l+' '+(e.no||'')).join('، ')}`:`${r.title||''}\n${r.sub||''}\n🧾 مرفق صور: ${recent.map(e=>KIND[e.kind].l+' '+(e.no||'')).join('، ')}`;
-      await shareFiles(files,t,true);LS.set('drc.accsent.'+cid,Date.now())}catch(err){console.warn(err);toast('مقدرتش أجهز الملفات — جرب «PDF بس»')}return}
+      await shareFiles(files,m==='img'?'':t,m!=='img');LS.set('drc.accsent.'+cid,Date.now())}catch(err){console.warn(err);toast('مقدرتش أجهز الملفات — جرب «PDF بس»')}return}
     if(m==='pdf'){LS.set('drc.accsent.'+cid,Date.now());return sharePdf(r)}doReport(r,m)});
-  const upd=()=>{const b=$modal.querySelector('#apkB');if(!b)return;const n=$modal.querySelectorAll('.accpick input:checked').length;b.innerHTML=n?`📄 PDF + 🧾 صور ${n} فاتورة`:'📄 PDF + 🧾 صور (علّم على الفواتير)';b.disabled=!n;const bi=$modal.querySelector('#apkI');if(bi){bi.innerHTML=n?`🧾 صور ${n} فاتورة بس`:'🧾 صور بس (علّم على الفواتير)';bi.disabled=!n}};$modal.querySelectorAll('.accpick input').forEach(i=>i.addEventListener('change',upd));upd()}
+  const upd=()=>{const b=$modal.querySelector('#apkB');if(!b)return;const n=$modal.querySelectorAll('.accpick input:checked').length;b.innerHTML=n?`📄 PDF + 🧾 صور ${n} فاتورة`:'📄 PDF + 🧾 صور (علّم على الفواتير)';b.disabled=!n;const bi=$modal.querySelector('#apkI');if(bi){bi.innerHTML=n?`🧾 صور ${n} فاتورة بس (من غير كلام)`:'🧾 صور بس (علّم على الفواتير)';bi.disabled=!n}};$modal.querySelectorAll('.accpick input').forEach(i=>i.addEventListener('change',upd));upd()}
 
 /* ---------- PDF حقيقي (من غير مكتبات) ---------- */
 function cellText(c){const h=c&&typeof c==='object'?String(c.h??c.t??''):String(c??'');const d=document.createElement('div');d.innerHTML=h.replace(/<br\s*\/?>/gi,' ');return d.textContent.replace(/\s+/g,' ').trim()}
