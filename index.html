@@ -2317,7 +2317,7 @@ const allStats=cid=>stats(S.ledger.filter(e=>e.cid===cid&&!e.cyc));
 const mon=n=>`${num(n)} ج`;
 let oldData=null;
 function vAcc(){const c=S.acc&&S.companies.find(x=>x.id===S.acc);if(!c)return vAccList();
-  const all=accList(c.id),list=all.filter(e=>matchQ([e.no,e.notes,KIND[e.kind].l,e.amount].join(' '))).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.t-a.t),st=stats(all);
+  const all=accList(c.id),list=all.filter(e=>matchQ([e.no,e.notes,KIND[e.kind].l,e.amount].join(' '))).sort(byDateDesc),st=stats(all);
   let h=`<div class="acctop"><button class="icon" data-act="acc-back" aria-label="كل الشركات">→</button><div class="cswitch">${S.companies.map(x=>`<button class="chip" data-act="acc-open" data-cid="${x.id}" aria-pressed="${x.id===c.id}">${esc(x.name)}</button>`).join('')}<button class="chip add" data-act="acc-newc">＋</button></div><button class="icon" data-act="acc-menu" aria-label="إعدادات الشركة">⋯</button></div>
   <div class="acchero"><small>الصافي المطلوب لـ <b>${esc(c.name)}</b></small><strong>${mon(st.net)}</strong>
     <div class="mini"><span>🧾 ${st.n} فاتورة <b>${num(st.inv)}</b></span>${st.ret?`<span>↩️ مرتجع <b>${num(st.ret)}</b></span>`:''}${st.pay?`<span>💵 مدفوع <b>${num(st.pay)}</b></span>`:''}</div>
@@ -2326,6 +2326,7 @@ function vAcc(){const c=S.acc&&S.companies.find(x=>x.id===S.acc);if(!c)return vA
   const cy=S.accCyc&&(c.cycles||[]).find(x=>x.id===S.accCyc);
   if(S.accCyc)h=h.replace(/<div class="accacts">[\s\S]*?<\/div>/,'')+`<div class="cycbar">📁 حساب قديم ${cy?`${fmtDay(cy.from)} ← ${fmtDay(cy.to)} — اتصفّر ${fmtDay(dayKey(new Date(cy.at)))}`:''}<div class="actions"><button class="btn sm primary" data-act="acc-cur">↩ الحساب الحالي</button><button class="btn sm" data-act="acc-pdfc">📤 ابعت الكشف ده</button><button class="btn sm" data-act="acc-unset">إلغاء التصفير</button></div></div>`;
   else{const dg=dupGroups(c.id).filter(g=>g.some(e=>!e.cyc));if(dg.length)h+=`<div class="setbn dupbn">⚠️ فيه <b>${dg.reduce((a,g)=>a+g.length-1,0)}</b> فاتورة متكررة (${dg.slice(0,3).map(g=>esc(g[0].no)).join('، ')}) <button class="btn sm danger" data-act="acc-dups">عرض ومسح المكرر</button></div>`;
+    const od=all.filter(e=>oddDate(e.date)).length;if(od)h+=`<div class="setbn dupbn">📅 فيه <b>${od}</b> فاتورة تاريخها غريب (سنة قديمة أو في المستقبل) وده اللي بيلخبط الترتيب <button class="btn sm primary" data-act="acc-odd">راجع وصلّح</button></div>`;
     const d=detectSettle(c.id);if(d)h+=`<div class="setbn">💡 دفعة <b>${num(d.pay.amount)} ج</b> صفّرت الفواتير لحد ${fmtDay(d.docs[d.docs.length-1].date)}. <button class="btn sm primary" data-act="acc-settle-auto">🔄 ابدأ حساب جديد</button></div>`;
     if((c.cycles||[]).length)h+=`<button class="linkb" data-act="acc-cycles" style="margin-top:8px">📁 حسابات قديمة (${c.cycles.length})</button>`}
   h+=list.length?`<div class="rows acclist">${list.map(e=>`<div class="row slim"><span class="ti">${KIND[e.kind].i}</span><div class="kit"><button class="linkbtn" data-act="acc-edit" data-eid="${e.id}"><b>${KIND[e.kind].l}${e.no?' <bdi dir="ltr">'+esc(e.no)+'</bdi>':''}</b></button><div class="meta"><span>${e.date?fmtDay(e.date):'—'}</span>${e.ref?`<span>على فاتورة <bdi dir="ltr">${esc(e.ref)}</bdi></span>`:''}${e.lines&&e.lines.length&&e.kind==='ret'?`<span>${esc(e.lines.slice(0,2).map(l=>l.name+(l.code?' #'+l.code:'')).join('، '))}${e.lines.length>2?' +'+(e.lines.length-2):''}</span>`:''}${e.notes?`<span>${esc(e.notes)}</span>`:''}</div></div>${e.img?`<button class="icon clip" data-act="acc-img" data-eid="${e.id}" aria-label="صور الفاتورة">📎${nImg(e)>1?`<sup>${nImg(e)}</sup>`:''}</button>`:`<button class="icon clip add" data-act="acc-addimg" data-eid="${e.id}" aria-label="ضيف صورة للفاتورة">📷</button>`}<span class="amt ${KIND[e.kind].s<0?'minus':''}">${KIND[e.kind].s<0?'−':''}${num(e.amount)}</span><button class="icon rdel" data-act="acc-del" data-eid="${e.id}" aria-label="امسح">🗑</button></div>`).join('')}</div>`
@@ -2382,7 +2383,7 @@ Use "return" if any photo is a return / credit note or shows a product being ret
 Dates on Egyptian documents are day/month/year. Use null for anything you cannot read. Never invent numbers.`;
 function docFromAI(j){const items=(Array.isArray(j.items)?j.items:[]).filter(x=>x&&(x.name||x.code)).slice(0,60).map(x=>({name:String(x.name||'').trim(),code:x.code==null?'':String(x.code).trim(),qty:+amt(x.qty)||0,px:+amt(x.price)||0}));
   const kind=/ret|credit|مرتجع|خصم/i.test(String(j.type||''))?'ret':'inv';let a=j.amount==null||j.amount===''?'':amt(j.amount);if(!(+a>0)&&kind==='ret'){const s_=items.reduce((t,x)=>t+(x.qty||1)*(x.px||0),0);if(s_>0)a=Math.round(s_*100)/100}
-  return {kind,no:j.number==null?'':String(j.number),ref:j.ref_invoice==null?'':String(j.ref_invoice),date:normDate(j.date)||today(),amount:a,notes:[j.supplier,kind==='inv'&&items.length?items.length+' صنف':''].filter(Boolean).join(' — '),lines:kind==='ret'||items.length<=15?items:[]}}
+  return {kind,no:j.number==null?'':String(j.number),ref:j.ref_invoice==null?'':String(j.ref_invoice),date:fixYr(normDate(j.date))||today(),amount:a,notes:[j.supplier,kind==='inv'&&items.length?items.length+' صنف':''].filter(Boolean).join(' — '),lines:kind==='ret'||items.length<=15?items:[]}}
 function entrySheet(cid,kind,pre={},rec=null){
   const c=S.companies.find(x=>x.id===cid);let warned=false,k=rec?rec.kind:kind;
   let G=(pre.imgs||(pre.img?[pre.img]:[])).slice(),gCh=!!G.length,lines=(rec?rec.lines:pre.lines)||[];
@@ -2411,8 +2412,9 @@ function entrySheet(cid,kind,pre={},rec=null){
     const cSel=root.querySelector('#eC');if(cSel&&cSel.value!==cid){cid=cSel.value;warned=false}
     const no=root.querySelector('#eNo').value.trim(),date=readDateSel(root.querySelector('#eDt'))||today(),amount=Math.round(flt(root.querySelector('#eAm').value)*100)/100,notes=root.querySelector('#eNt').value.trim(),rf=k==='ret'?root.querySelector('#eRef').value.trim():'';
     if(!(amount>0)){toast('اكتب المبلغ');return}
-    const dup=findDup({cid,kind:k,no,amount,date},rec&&rec.id);
-    if(dup&&!(warned&&m==='force')){warned=true;const w=root.querySelector('#eW');w.hidden=false;w.innerHTML=`${dupTxt(dup,cid)} — ما اتسجلتش تاني. <button class="linkb" data-m="force">سجّلها برضه</button>`;return}
+    const dup=findDup({cid,kind:k,no,amount,date},rec&&rec.id),w=root.querySelector('#eW');
+    if(dup){w.hidden=false;w.innerHTML=`${dupTxt(dup,cid)} — <b>مش هتتسجل تاني.</b>`;toast('⛔ الفاتورة دي متسجلة قبل كده');try{navigator.vibrate&&navigator.vibrate(200)}catch(_){}return}
+    if(oddDate(date)&&!(warned&&m==='force')){warned=true;w.hidden=false;w.innerHTML=`📅 التاريخ <b>${fmtDay(date)}</b> غريب (السنة ${date.slice(0,4)}) — غالباً اتقرا غلط وهيلخبط الترتيب. صلّح السنة، أو <button class="linkb" data-m="force">التاريخ صح، احفظ</button>`;return}
     closeSheet();const b2=fs.batch(),lr=rec?ref('ledger/'+rec.id):col('ledger').doc(),extra={...(rf?{ref:rf}:rec&&rec.ref?{ref:FV().delete()}:{}),...(lines.length?{lines}:rec&&rec.lines?{lines:FV().delete()}:{})};
     const imgF=gCh?(G.length?{img:G.length}:rec?{img:FV().delete()}:{}):{};
     if(rec){b2.update(lr,{cid,kind:k,no,date,amount,notes,...extra,...imgF});evt(b2,'acc',c?c.name:'',num(amount),'تعديل '+KIND[k].l+' '+no)}
@@ -2572,7 +2574,7 @@ async function scanFile(f){
     if(e==='key'){st.innerHTML='🔑 المفتاح مرفوض — غيّره وجرب تاني'+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'');r.querySelector('.actions').insertAdjacentHTML('beforeend','<button class="btn primary" data-m="key">تغيير المفتاح</button>')}
     else st.innerHTML=(e==='img'?'الصورة دي مش مدعومة — جرب صورة تانية':e==='quota'?'⏳ الحد المسموح للمفتاح خلص — استنى شوية':e==='net'?'📶 مش قادر يوصل للخدمة — اتأكد من النت':'مقدرتش أقرا الفاتورة — جرب صورة أوضح أو ضيفها يدوي')+(visionErr?`<small class="verr">${esc(visionErr)}</small>`:'')}
 }
-function repAcc(){const c=S.companies.find(x=>x.id===S.acc);const l=accList(c.id).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'')||a.t-b.t),st=stats(l);let bal=0;
+function repAcc(){const c=S.companies.find(x=>x.id===S.acc);const l=accList(c.id).slice().sort((a,b)=>-byDateDesc(a,b)),st=stats(l);let bal=0;
   const rows=l.map(e=>{const a=+e.amount||0;bal+=KIND[e.kind].s*a;return [e.date?fmtDay(e.date):'—',KIND[e.kind].l,e.no||'—',e.notes||'',e.kind==='inv'?num(a):'',e.kind!=='inv'?num(a):'',num(bal)]});
   let t=`حساب ${c.name} — ${SHOP_NAME}\n${RANGES[S.accRange]} — لحد ${fmtDay(today())}\n\nعدد الفواتير: ${st.n}\nإجمالي الفواتير: ${mon(st.inv)}\nإجمالي المرتجعات: ${mon(st.ret)}\nالمدفوع: ${mon(st.pay)}\n💰 الصافي المطلوب: ${mon(st.net)}\n\nالتفاصيل:\n`;
   l.forEach(e=>{t+=`${e.date?fmtDay(e.date):'—'} — ${KIND[e.kind].l}${e.no?' '+e.no:''} — ${KIND[e.kind].s<0?'−':''}${num(e.amount)}\n`});
@@ -3506,7 +3508,7 @@ function scanBatch(files,cid){if(!files.length)return;if(!getKey()){keySheet(()=
 async function runSB(){if(!SB||SB.running)return;SB.running=true;
   for(const it of SB.items){if(it.st!=='wait')continue;it.st='busy';drawSB();
     try{while(it.imgs.length<it.fs.length)it.imgs.push(await toJpeg(it.fs[it.imgs.length]));it.img=it.imgs[0];drawSB();const j=await readInvoice(it.imgs);
-      it.d=docFromAI(j);it.st='ok';it.sup=String(j.supplier||'');const wc=wrongCo(it.sup,SB.cid);if(wc){it.wrong=wc;it.inc=false;alertWrongCo(wc)}else if(sbDup(it)&&!it.force)it.inc=false;else it.inc=true}
+      it.d=docFromAI(j);it.st='ok';it.sup=String(j.supplier||'');const wc=wrongCo(it.sup,SB.cid);if(wc){it.wrong=wc;it.inc=false;alertWrongCo(wc)}else if(sbDup(it))it.inc=false;else it.inc=true}
     catch(e){it.st='err';it.err=e;it.vErr=visionErr;try{while(it.imgs.length<it.fs.length)it.imgs.push(await toJpeg(it.fs[it.imgs.length]));it.img=it.imgs[0]}catch(_){}}
     if(!SB)return;drawSB()}
   if(SB)SB.running=false;drawSB()}
@@ -3514,8 +3516,8 @@ function syncSB(){const r=$modal.querySelector('.sbwrap');if(!r||!SB)return;r.qu
 function sbDup(it){if(!SB)return null;const d=findDup({...it.d,cid:SB.cid});if(d)return {t:dupTxt(d,SB.cid)};const n=normNo(it.d.no),i=SB.items.indexOf(it);
   const prev=n?SB.items.slice(0,i).find(x=>normNo(x.d.no)===n&&x.d.kind===it.d.kind):null;return prev?{t:`⛔ نفس الفاتورة دي متصورة مرتين (صورة ${SB.items.indexOf(prev)+1})`}:null}
 function drawSB(){if(!SB)return;const open=$modal.querySelector('.sbwrap');if(open)syncSB();else if($modal.querySelector('.sheet'))return;
-  const c=S.companies.find(x=>x.id===SB.cid),busy=SB.items.filter(i=>i.st==='busy'||i.st==='wait').length,ok=SB.items.filter(i=>i.inc&&!i.wrong&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)).length;
-  const card=(it,i)=>`<div class="sbc ${it.inc?'':'off'}">${it.wrong?`<div class="sbwrong">⛔ <b>مكان غلط!</b> الفاتورة دي بتاعة «${esc(it.wrong.other.name)}» وانت فاتح «${esc(c?c.name:'')}» — مش هتتسجل هنا.<br><small>افتح «${esc(it.wrong.other.name)}» وصوّرها هناك.</small> <button class="linkb" data-m="wok:${i}">مش صح — سجّلها هنا</button></div>`:''}<div class="sbh">${it.imgs.length?`<span class="sbims">${it.imgs.map((d,j)=>`<img src="${d}" alt="" data-m="z:${i}:${j}">`).join('')}</span>`:'<div class="sbph"></div>'}<div class="sbst">${it.st==='busy'||it.st==='wait'?'<span class="spin"></span>جاري القراءة…':it.st==='err'?`<span class="rd">⚠️ مقدرتش أقراها — اكتبها يدوي</span>`:'<span class="ok">✓ اتقرت — راجعها</span>'}${sbDup(it)?`<br><b class="rd">${sbDup(it).t}</b>${it.force?' <small>(هتتسجل برضه)</small>':` <button class="linkb" data-m="f:${i}">سجّلها برضه</button>`}`:''}</div><label class="sbinc"><input type="checkbox" data-sbi="${i}" data-f="inc" ${it.inc&&(!sbDup(it)||it.force)?'checked':''} ${sbDup(it)&&!it.force?'disabled':''}> احفظ</label></div>
+  const c=S.companies.find(x=>x.id===SB.cid),busy=SB.items.filter(i=>i.st==='busy'||i.st==='wait').length,ok=SB.items.filter(i=>i.inc&&!i.wrong&&+amt(i.d.amount)>0&&!sbDup(i)).length;
+  const card=(it,i)=>`<div class="sbc ${it.inc?'':'off'}">${it.wrong?`<div class="sbwrong">⛔ <b>مكان غلط!</b> الفاتورة دي بتاعة «${esc(it.wrong.other.name)}» وانت فاتح «${esc(c?c.name:'')}» — مش هتتسجل هنا.<br><small>افتح «${esc(it.wrong.other.name)}» وصوّرها هناك.</small> <button class="linkb" data-m="wok:${i}">مش صح — سجّلها هنا</button></div>`:''}<div class="sbh">${it.imgs.length?`<span class="sbims">${it.imgs.map((d,j)=>`<img src="${d}" alt="" data-m="z:${i}:${j}">`).join('')}</span>`:'<div class="sbph"></div>'}<div class="sbst">${it.st==='busy'||it.st==='wait'?'<span class="spin"></span>جاري القراءة…':it.st==='err'?`<span class="rd">⚠️ مقدرتش أقراها — اكتبها يدوي</span>`:'<span class="ok">✓ اتقرت — راجعها</span>'}${sbDup(it)?`<br><b class="rd">${sbDup(it).t}</b> <small>— مش هتتسجل</small>`:''}</div><label class="sbinc"><input type="checkbox" data-sbi="${i}" data-f="inc" ${it.inc&&(!sbDup(it)||it.force)?'checked':''} ${sbDup(it)&&!it.force?'disabled':''}> احفظ</label></div>
     <div class="sbf"><select data-sbi="${i}" data-f="kind">${Object.entries(KIND).map(([k,v])=>`<option value="${k}" ${it.d.kind===k?'selected':''}>${v.i} ${v.l}</option>`).join('')}</select><input data-sbi="${i}" data-f="no" value="${esc(it.d.no)}" placeholder="رقم الفاتورة" dir="ltr"><input data-sbi="${i}" data-f="amount" type="number" inputmode="decimal" value="${esc(it.d.amount)}" placeholder="المبلغ"></div>
     <div class="sbd">${dateSel('sbd'+i,it.d.date).replace('class="dsel"',`class="dsel" data-sbi="${i}" data-f="date"`)}</div>
     ${it.d.ref||(it.d.lines||[]).length?linesHtml(it.d):''}
@@ -3530,9 +3532,9 @@ function drawSB(){if(!SB)return;const open=$modal.querySelector('.sbwrap');if(op
     if(m==='cam'||m==='gal'){pickImage(m==='cam');return}
     if(m==='save')saveSB()});
   const sbw=$modal.querySelector('.sbwrap'),mark=e=>{const el=e.target.closest('[data-sbi]');if(el)el.dataset.dirty=1};sbw.addEventListener('change',mark,true);sbw.addEventListener('input',mark,true);
-  sbw.addEventListener('input',()=>{syncSB();const ok2=SB.items.filter(i=>i.inc&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)).length,b=$modal.querySelector('[data-m=save]');if(b&&!SB.items.some(i=>i.st==='busy'||i.st==='wait')){b.disabled=!ok2;b.textContent=`💾 احفظ ${ok2} فاتورة`}});
+  sbw.addEventListener('input',()=>{syncSB();const ok2=SB.items.filter(i=>i.inc&&+amt(i.d.amount)>0&&!sbDup(i)).length,b=$modal.querySelector('[data-m=save]');if(b&&!SB.items.some(i=>i.st==='busy'||i.st==='wait')){b.disabled=!ok2;b.textContent=`💾 احفظ ${ok2} فاتورة`}});
 }
-async function saveSB(){syncSB();const L=SB.items.filter(i=>i.inc&&!i.wrong&&+amt(i.d.amount)>0&&(!sbDup(i)||i.force)),cid=SB.cid,c=S.companies.find(x=>x.id===cid);if(!L.length)return;
+async function saveSB(){syncSB();const L=SB.items.filter(i=>i.inc&&!i.wrong&&+amt(i.d.amount)>0&&!sbDup(i)),cid=SB.cid,c=S.companies.find(x=>x.id===cid);if(!L.length)return;
   const b=fs.batch(),imgs=[];L.forEach(it=>{const r=col('ledger').doc();b.set(r,{cid,kind:it.d.kind,no:String(it.d.no||'').trim(),date:it.d.date||today(),amount:amt(it.d.amount),notes:it.d.notes||'',t:Date.now(),by:me(),src:'scan',...(it.d.kind==='ret'&&it.d.ref?{ref:it.d.ref}:{}),...((it.d.lines||[]).length?{lines:it.d.lines}:{}),...(it.imgs.length?{img:it.imgs.length}:{})});if(it.imgs.length)imgs.push([r.id,it.imgs])});
   evt(b,'acc',c?c.name:'',L.reduce((a,it)=>a+amt(it.d.amount),0),`${L.length} فاتورة بالتصوير`);
   SB=null;closeSheet();await commit(b,`✓ اتسجل ${L.length} فاتورة`);
@@ -3898,6 +3900,20 @@ async function unsettle(c,cid){const ents=S.ledger.filter(e=>e.cid===c.id&&e.cyc
     if(x)await ref('companies/'+c.id).update({cycles:FV().arrayRemove(x)});S.accCyc='';toast('رجعوا للحساب الحالي');render()}catch(e){toast('حصلت مشكلة')}}
 
 
+/* ---------- ترتيب وتواريخ الفواتير ---------- */
+const noNum=e=>+(toEn(String(e.no||'')).replace(/\D/g,'').slice(-12))||0;
+const byDateDesc=(a,b)=>(b.date||'').localeCompare(a.date||'')||noNum(b)-noNum(a)||(b.t||0)-(a.t||0);
+// تاريخ غريب = قبل السنة اللي فاتت أو في المستقبل (غالباً السنة اتقرت غلط من الصورة)
+function oddDate(d){if(!d)return false;const y=new Date().getFullYear(),dy=+d.slice(0,4);return dy<y-1||d>dayKey(new Date(Date.now()+2*864e5))}
+function fixYr(d){if(!d||!oddDate(d))return d;const y=new Date().getFullYear();let n=y+d.slice(4);if(n>today())n=(y-1)+d.slice(4);return n}
+function oddSheet(c){const L=S.ledger.filter(e=>e.cid===c.id&&!e.del&&!e.cyc&&oddDate(e.date)).sort(byDateDesc);if(!L.length){toast('مفيش تواريخ غريبة');return}
+  openSheet(`<h4>📅 تواريخ غريبة — ${esc(c.name)}</h4><p class="hint" style="margin-top:0">دول السنة بتاعتهم غالباً اتقرت غلط من الصورة، وهما اللي بيلخبطوا الترتيب. «صلّح» بيخلي السنة ${new Date().getFullYear()} (واليوم والشهر زي ما هما).</p>
+    <div class="rows">${L.map(e=>`<div class="row slim"><div class="kit"><b>${KIND[e.kind].l} <bdi dir="ltr">${esc(e.no||'—')}</bdi> — ${num(e.amount)} ج</b><div class="meta"><span>${fmtDay(e.date)} ← <b>${fmtDay(fixYr(e.date))}</b></span></div></div><button class="btn sm" data-m="fx:${e.id}">صلّح</button></div>`).join('')}</div>
+    <div class="actions"><button class="btn" data-cancel>قفل</button><button class="btn primary" data-m="all">صلّح الكل (${L.length})</button></div>`,
+  (m)=>{const ids=m==='all'?L.map(e=>e.id):m.startsWith('fx:')?[m.slice(3)]:[];if(!ids.length)return;const b=fs.batch();
+    ids.forEach(id=>{const e=L.find(x=>x.id===id);b.update(ref('ledger/'+id),{date:fixYr(e.date)});evt(b,'acc',c.name,num(e.amount),'تصليح تاريخ '+KIND[e.kind].l+' '+(e.no||'')+': '+fmtDay(e.date)+' ← '+fmtDay(fixYr(e.date)))});
+    closeSheet();commit(b,ids.length>1?`اتصلح ${ids.length} تاريخ ✓`:'التاريخ اتصلح ✓');if(m!=='all')setTimeout(()=>oddSheet(c),400)})}
+
 /* ---------- منع تكرار الفواتير ---------- */
 const normNo=v=>{const t=toEn(String(v||'')),d=t.replace(/\D/g,'').replace(/^0+/,'');return d.length>=3?d:norm(t)};
 function findDup(o,exceptId){const n=normNo(o.no),a=Math.round((+amt(o.amount)||0)*100);
@@ -4007,6 +4023,7 @@ $app.addEventListener('click',e=>{
   else if(act==='acc-cam')pickImage(true);
   else if(act==='acc-del'){const e=S.ledger.find(x=>x.id===b.dataset.eid);if(e)delEntry(e)}
   else if(act==='acc-dups'){const c=S.companies.find(x=>x.id===S.acc);if(c)dupSheet(c)}
+  else if(act==='acc-odd'){const c=S.companies.find(x=>x.id===S.acc);if(c)oddSheet(c)}
   else if(act==='acc-cycles'){const c=S.companies.find(x=>x.id===S.acc);if(c)cyclesSheet(c)}
   else if(act==='acc-cur'){S.accCyc='';render()}
   else if(act==='acc-pdfc')accSend();
