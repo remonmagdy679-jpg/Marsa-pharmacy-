@@ -547,7 +547,7 @@ body.hasinv .wrap{padding-bottom:230px}
 .dcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:10px 0}.dcard.paid{opacity:.7}.dcard header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}.dcard header b{font-size:16px}
 .dtot{font-weight:800;color:var(--amber);direction:ltr;white-space:nowrap}.dcard.paid .dtot{color:var(--green)}
 .dl{display:flex;gap:8px;align-items:flex-start;width:100%;background:none;border:0;border-top:1px dashed var(--line);padding:7px 0;text-align:start;color:inherit;font:inherit;cursor:pointer}.dl .dd{font-size:12px;color:var(--muted);min-width:62px}.dl .di{flex:1;font-size:14px}.dl .di small{display:block;color:var(--muted);font-size:12px}.dl>b{direction:ltr;white-space:nowrap;text-align:left}.dl>b small{display:block;color:var(--amber);font-size:11.5px;direction:rtl}
-.gst.rd{color:var(--red)}.daycash small{color:var(--muted)}
+.gst.rd{color:var(--red)}.daycash small{color:var(--muted)}.daycash .eurt{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;border-top:1px dashed var(--line);margin-top:4px;padding-top:8px}.daycash .eurt strong{font-size:1.35em;color:var(--green);direction:ltr}.daycash .eurt small{flex-basis:100%;line-height:1.6}
 .prow{cursor:pointer;text-align:start}.prow:active{background:var(--bg)}
 .row.qhit{background:rgba(240,170,40,.12)}
 .gby{align-items:center}
@@ -1027,7 +1027,7 @@ function vSales(){
   if(S.q&&raw.length)h+=`<div class="setbn">🔍 بتدوّر على «${esc(S.q)}» — ظاهر ${hk.size} فاتورة بس <button class="btn sm" data-act="clearq">✕ اعرض الكل</button></div>`;
   if(list.length){
     {const T={};let dp=0;(S.debts||[]).forEach(x=>(x.pays||[]).forEach(p=>{if(p.day===d){T[p.c]=(T[p.c]||0)+(+p.a||0);dp++}}));invGroups(raw).forEach(g=>{const d=g.inv&&S.invs[g.inv];if(d&&d.credit)return;if(d&&d.pay)Object.entries(d.pay).forEach(([c,v])=>T[c]=(T[c]||0)+(+v||0));else if(g.cur){const v=g.inv?invTotalOf(g):lineSum(g.lines);if(v>0)T[g.cur]=(T[g.cur]||0)+v}});
-      const ks=PCUR.filter(c=>T[c]>0);if(ks.length)h+=`<div class="daycash"><span>💰 اتحصّل ${isT?'النهارده':'اليوم ده'}:</span>${ks.map(c=>`<b>${fmtPx(Math.round(T[c]*100)/100,c)}</b>`).join('')}${dp?'<small>(فيها دفعات آجل)</small>':''}</div>`}
+      const ks=PCUR.filter(c=>T[c]>0);if(ks.length)h+=`<div class="daycash"><span>💰 اتحصّل ${isT?'النهارده':'اليوم ده'}:</span>${ks.map(c=>`<b>${fmtPx(Math.round(T[c]*100)/100,c)}</b>`).join('')}${dp?'<small>(فيها دفعات آجل)</small>':''}${eurLine(T)}</div>`}
     h+=`<div class="chips"><button class="chip" data-act="smode2" data-k="inv" aria-pressed="${mode==='inv'}">🧾 بالفواتير</button><button class="chip" data-act="smode2" data-k="item" aria-pressed="${mode==='item'}">📦 حسب الصنف</button></div>
       <div class="toolbar"><button class="btn" data-act="rep-sales" data-k="copy">نسخ</button><button class="btn" data-act="rep-sales" data-k="pdf">PDF</button><button class="btn" data-act="rep-sales" data-k="wa">واتساب</button></div>`;
     if(mode==='inv')h+=invGroups(list).map(g=>`<section class="invc"><header><b>${g.inv?'🧾 فاتورة #'+(g.no||''):'🛒 بيعة'}</b><span>🕒 ${fmtTime(g.t)}</span><span>👤 ${esc(g.by||'—')}</span>${g.cur?`<span class="cu">${g.cur==='VISA'?'💳 فيزا':CUR[g.cur].s+' '+CUR[g.cur].l}</span>`:''}${g.inv?`<button class="icon" data-act="undo-inv" data-inv="${g.inv}" aria-label="إلغاء الفاتورة">⋯</button>`:''}</header>${g.inv&&g.lines.some(s=>s.price>0)?`<button class="itot" data-act="inv-total" data-inv="${g.inv}"><span>الإجمالي${S.invs[g.inv]&&S.invs[g.inv].total!=null&&+S.invs[g.inv].total!==lineSum(g.lines)?' (بعد التعديل)':''}</span><b>${fmtPx(invTotalOf(g),g.cur)}</b><i>✏️</i></button>`:''}${(()=>{const ids=[...new Set(g.lines.map(s=>s.id))].filter(id=>isShort(S.items.find(i=>i.id===id)||{}));return ids.length>1?`<button class="shqall" data-act="sh-ids" data-ids="${ids.join(',')}">⚠️ ${ids.length} صنف في الفاتورة دي ناقصين — 📤 ابعتهم للمدير مرة واحدة</button>`:''})()}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].credit?`<div class="gst rd">📒 آجل على ${esc(S.invs[g.inv].credit.name)}${(()=>{const d=(S.debts||[]).find(x=>x.inv===g.inv);return d?(dLeft(d)?' — لسه ما دفعش':' — ✓ دفع'):''})()}</div>`:''}${g.inv&&S.invs[g.inv]&&S.invs[g.inv].pay?`<div class="gst">💰 اتدفع: <b>${payTxt(S.invs[g.inv].pay)}</b></div>`:''}${g.guest?`<div class="gst">👤 ${esc(g.guest)}</div>`:''}
@@ -3111,6 +3111,23 @@ function creditSheet(){
   setTimeout(()=>{try{r.querySelector('#cN').focus()}catch(e){}},200)}
 /* الدفع بأكتر من عملة (مثلاً 8€ + 2$) — أسعار الصرف بتتحفظ للفريق كله */
 const PCUR=['EUR','USD','VISA','EGP'];
+/* ---------- سعر الصرف: توتال اليوم باليورو (الفيزا −2% مصاريف المكنة) ---------- */
+const VISA_FEE=0.02;
+let FX=(()=>{try{return JSON.parse(LS.get('drc.fx')||'null')}catch(e){return null}})();
+async function loadFX(force){
+  if(!force&&FX&&Date.now()-FX.at<3*36e5)return;
+  const srcs=[['https://open.er-api.com/v6/latest/EUR',j=>j.rates&&{USD:j.rates.USD,EGP:j.rates.EGP}],
+    ['https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json',j=>j.eur&&{USD:j.eur.usd,EGP:j.eur.egp}],
+    ['https://latest.currency-api.pages.dev/v1/currencies/eur.json',j=>j.eur&&{USD:j.eur.usd,EGP:j.eur.egp}]];
+  for(const [u,f] of srcs){try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)continue;const x=f(await r.json());
+    if(x&&x.USD>0&&x.EGP>0){FX={...x,at:Date.now()};LS.set('drc.fx',JSON.stringify(FX));if(S.view==='sales')render();return}}catch(e){}}}
+function eurTotal(T){if(!FX)return null;const egp=(T.EGP||0)+(T.VISA||0)*(1-VISA_FEE);
+  return {tot:(T.EUR||0)+(T.USD||0)/FX.USD+egp/FX.EGP,usd:(T.USD||0)/FX.USD,egp:(T.EGP||0)/FX.EGP,visa:(T.VISA||0)*(1-VISA_FEE)/FX.EGP}}
+function eurLine(T){const e=eurTotal(T);if(!e){loadFX();return '<div class="eurt"><small>⏳ بجيب سعر الصرف…</small></div>'}
+  const r2=v=>num(Math.round(v*100)/100),age=Date.now()-FX.at,old=age>24*36e5;
+  return `<div class="eurt"><span>🇪🇺 التوتال باليورو:</span><strong>€${r2(e.tot)}</strong>
+    <small>${T.EUR?`€${r2(T.EUR)}`:''}${T.USD?` + $${num(T.USD)} = €${r2(e.usd)}`:''}${T.EGP?` + ${num(T.EGP)} ج = €${r2(e.egp)}`:''}${T.VISA?` + 💳 ${num(T.VISA)} −2% = €${r2(e.visa)}`:''}<br>
+    السعر: 1€ = ${num(Math.round(FX.EGP*100)/100)} ج — 1€ = $${(+FX.USD).toFixed(3)} · ${old?'<span class="rd">⚠️ سعر قديم</span>':'اتحدّث '+fmtTime(FX.at)} <button class="linkb" data-act="fx-reload">↻ حدّث</button></small></div>`}
 const rates=()=>({usd:+((S.cfg||{}).rates||{}).usd||1.17,egp:+((S.cfg||{}).rates||{}).egp||55});
 const toE=(v,c)=>{const R_=rates();return c==='USD'?v/R_.usd:c==='EGP'?v/R_.egp:v};
 const fromE=(v,c)=>{const R_=rates();return c==='USD'?v*R_.usd:c==='EGP'?v*R_.egp:v};
@@ -4023,6 +4040,7 @@ $app.addEventListener('click',e=>{
   else if(act==='acc-cam')pickImage(true);
   else if(act==='acc-del'){const e=S.ledger.find(x=>x.id===b.dataset.eid);if(e)delEntry(e)}
   else if(act==='acc-dups'){const c=S.companies.find(x=>x.id===S.acc);if(c)dupSheet(c)}
+  else if(act==='fx-reload'){toast('بجيب السعر…');loadFX(true).then(()=>render())}
   else if(act==='acc-odd'){const c=S.companies.find(x=>x.id===S.acc);if(c)oddSheet(c)}
   else if(act==='acc-cycles'){const c=S.companies.find(x=>x.id===S.acc);if(c)cyclesSheet(c)}
   else if(act==='acc-cur'){S.accCyc='';render()}
