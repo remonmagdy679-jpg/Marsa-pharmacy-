@@ -1018,7 +1018,7 @@ function invGroups(list){const g=[],m={};list.forEach(s=>{const k=s.inv||('s_'+s
 function vSales(){
   const d=S.day,isT=d===today(),raw=salesOf(d);let mode=S.salesMode||'inv';if(mode==='time')mode='inv';
   let h=`<div class="dayhead"><button class="btn sm" data-act="day-prev">‹ قبله</button><input type="date" id="dayIn" value="${d}" max="${today()}"><button class="btn sm" data-act="day-next" ${isT?'disabled':''}>بعده ›</button></div><p class="hint" style="margin-top:6px"><b>${isT?'النهارده':dayName(d)}</b> ${fmtDay(d)}</p>`;
-  h+=`<div class="toolbar"><button class="btn primary" data-act="inv-open">${CART.lines.length?'🧾 الفاتورة المفتوحة ('+CART.lines.length+')':'🛒 بيع جديد'}</button></div>`;
+  h+=`<div class="toolbar"><button class="btn primary" data-act="inv-open">${CART.lines.length?'🧾 الفاتورة المفتوحة ('+CART.lines.length+')':'🛒 بيع جديد'}</button>${isT?'<button class="btn" data-act="misc-sale">💵 مبلغ من غير صنف</button>':''}</div>`;
   if(raw===null){$app.innerHTML=h+'<p class="hint">جاري تحميل اليوم ده…</p>';return}
   const hit=raw.filter(s=>matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))),hk=new Set(hit.map(s=>s.inv||('s_'+s.sid)));
   // في وضع الفواتير: لو صنف واحد في الفاتورة طابق البحث، تظهر الفاتورة كلها
@@ -2758,7 +2758,7 @@ function startAcc(){
 
 
 /* ---------- product photos + zoom ---------- */
-function ico(p){return p&&p.img?`<button class="thumb" data-act="zoom" data-id="${p.id}" aria-label="كبّر صورة ${esc(p.name)}"><img src="${p.img}" alt="" loading="lazy"></button>`:`<span class="ti">${TYPES[p&&p.type==='med'?'med':'cos'].icon}</span>`}
+function ico(p){if(p&&p.type==='misc')return '<span class="ti">💵</span>';return p&&p.img?`<button class="thumb" data-act="zoom" data-id="${p.id}" aria-label="كبّر صورة ${esc(p.name)}"><img src="${p.img}" alt="" loading="lazy"></button>`:`<span class="ti">${TYPES[p&&p.type==='med'?'med':'cos'].icon}</span>`}
 function thumbOf(dataUrl){return new Promise(res=>{const im=new Image();im.onload=()=>{const n=160,c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d'),s=Math.min(im.width,im.height);x.fillStyle='#fff';x.fillRect(0,0,n,n);x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,n,n);res(c.toDataURL('image/jpeg',.7))};im.onerror=()=>res('');im.src=dataUrl})}
 
 /* ---------- اختيار صورة/ملف: input ثابت في الصفحة عشان الموبايل ما يضيّعش الصورة بعد الكاميرا ---------- */
@@ -3262,6 +3262,20 @@ function finishInvoice(){
   toast(`✓ فاتورة #${no} اتسجلت (${L.length} صنف) — الإجمالي ${fmtPx(tot,CART.cur)}${cr?` — 📒 آجل على ${cr.name}`:pay?' — اتدفع '+payTxt(pay):''}${al?' — واتبعت تنبيه للكل':''}`);go('sales');
 }
 $('invbar').addEventListener('click',()=>invSheet());
+/* بيع مبلغ من غير صنف (صنف لسه مش متضاف) — بيدخل في «اتحصّل النهارده» والتوتال باليورو */
+function miscSale(){let cur=LS.get('drc.mcur')||'EUR';
+  const r=openSheet(`<h4>💵 مبلغ من غير صنف</h4><p class="hint" style="margin-top:0">لصنف بعته ولسه مش متضاف. المبلغ بيدخل في حساب اليوم والتوتال باليورو، ومش بيخصم من المخزن.</p>
+    <label>العملة</label><div class="seg" id="mCur">${PCUR.map(c=>`<button data-m="u:${c}" aria-pressed="${c===cur}">${c==='VISA'?'💳 فيزا':CUR[c].s+' '+CUR[c].l}</button>`).join('')}</div>
+    <label for="mA">المبلغ</label><input id="mA" type="number" inputmode="decimal" step="0.01" placeholder="0" autofocus>
+    <label for="mN">إيه اللي اتباع؟ (اختياري — عشان تضيفه بعدين)</label><input id="mN" placeholder="مثلاً: كريم شمس La Roche SPF50" list="mNames"><datalist id="mNames">${[...new Set(S.sales.filter(x=>x.type==='misc'&&!x.del).map(x=>x.name))].slice(0,30).map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+    <div class="actions"><button class="btn" data-cancel>إلغاء</button><button class="btn primary" data-m="ok">✓ سجّل</button></div>`,
+  (m,root,b)=>{if(m.startsWith('u:')){cur=m.slice(2);LS.set('drc.mcur',cur);root.querySelectorAll('#mCur button').forEach(x=>x.setAttribute('aria-pressed',x===b));return}
+    if(m!=='ok')return;const a=Math.round(flt(root.querySelector('#mA').value)*100)/100;if(!(a>0)){toast('اكتب المبلغ');return}
+    const nm=root.querySelector('#mN').value.trim()||'مبلغ من غير صنف',today_=salesOf(today())||[],no=new Set(today_.filter(s=>s.inv).map(s=>s.inv)).size+1,inv='i'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),t=Date.now();
+    const bt=fs.batch();bt.set(col('sales').doc(),{t,day:today(),by:me(),id:'_misc',name:nm,type:'misc',qty:1,units:0,price:a,cur,inv,invNo:no,misc:1});
+    bt.set(ref('invoices/'+inv),{t,day:today(),no,cur,auto:a,total:a,by:me(),misc:1});evt(bt,'sale',nm,1,fmtPx(a,cur));
+    closeSheet();S.day=today();commit(bt,`✓ ${fmtPx(a,cur)} اتسجل — ${nm}`);go('sales')});
+  setTimeout(()=>{const i=r&&r.querySelector('#mA');if(i)i.focus()},120)}
 /* تذكير بالنواقص الجديدة اللي لسه ما اتبعتتش للمدير — كل 30 دقيقة لحد ما تتبعت */
 const SHREM=30*6e4;
 function drRemind(){if(!S.ready)return;const L=S.items.filter(p=>drLow(p)||p.needCount);if(!L.length)return;const last=+LS.get('drc.drrem')||0;if(Date.now()-last<SHREM)return;LS.set('drc.drrem',Date.now());
@@ -4079,6 +4093,7 @@ $app.addEventListener('click',e=>{
   else if(act==='out'&&p)outSheet(p,k);
   else if(act==='smode'){S.shortMode=k;render()}
   else if(act==='clearq'){S.q='';$q.value='';render()}
+  else if(act==='misc-sale')miscSale();
   else if(act==='inv-open'){if(CART.lines.length)invSheet();else pickItemSheet()}
   else if(act==='smode2'){S.salesMode=k;LS.set('drc.smode',k);render()}
   else if(act==='epre'){S.expPreset=k;render()}
