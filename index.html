@@ -2326,6 +2326,7 @@ function vAcc(){const c=S.acc&&S.companies.find(x=>x.id===S.acc);if(!c)return vA
   const cy=S.accCyc&&(c.cycles||[]).find(x=>x.id===S.accCyc);
   if(S.accCyc)h=h.replace(/<div class="accacts">[\s\S]*?<\/div>/,'')+`<div class="cycbar">📁 حساب قديم ${cy?`${fmtDay(cy.from)} ← ${fmtDay(cy.to)} — اتصفّر ${fmtDay(dayKey(new Date(cy.at)))}`:''}<div class="actions"><button class="btn sm primary" data-act="acc-cur">↩ الحساب الحالي</button><button class="btn sm" data-act="acc-pdfc">📤 ابعت الكشف ده</button><button class="btn sm" data-act="acc-unset">إلغاء التصفير</button></div></div>`;
   else{const dg=dupGroups(c.id).filter(g=>g.some(e=>!e.cyc));if(dg.length)h+=`<div class="setbn dupbn">⚠️ فيه <b>${dg.reduce((a,g)=>a+g.length-1,0)}</b> فاتورة متكررة (${dg.slice(0,3).map(g=>esc(g[0].no)).join('، ')}) <button class="btn sm danger" data-act="acc-dups">عرض ومسح المكرر</button></div>`;
+    const sw=all.filter(e=>e.kind!=='pay'&&looksSwapped(e.no,e.amount,c.id,e.kind,e.id)).length;if(sw)h+=`<div class="setbn dupbn">🔀 فيه <b>${sw}</b> فاتورة شكل رقمها والصافي متبدّلين — ده بيبوّظ الجمع <button class="btn sm primary" data-act="acc-swap">راجع وصلّح</button></div>`;
     const od=all.filter(e=>oddDate(e.date)).length;if(od)h+=`<div class="setbn dupbn">📅 فيه <b>${od}</b> فاتورة تاريخها غريب (سنة قديمة أو في المستقبل) وده اللي بيلخبط الترتيب <button class="btn sm primary" data-act="acc-odd">راجع وصلّح</button></div>`;
     const d=detectSettle(c.id);if(d)h+=`<div class="setbn">💡 دفعة <b>${num(d.pay.amount)} ج</b> صفّرت الفواتير لحد ${fmtDay(d.docs[d.docs.length-1].date)}. <button class="btn sm primary" data-act="acc-settle-auto">🔄 ابدأ حساب جديد</button></div>`;
     if((c.cycles||[]).length)h+=`<button class="linkb" data-act="acc-cycles" style="margin-top:8px">📁 حسابات قديمة (${c.cycles.length})</button>`}
@@ -2420,7 +2421,10 @@ function docFromAI(j,v,cid){const items=(Array.isArray(j.items)?j.items:[]).filt
   if(a>0&&kind==='inv'&&items.length>=2&&items.every(x=>x.qty>0&&x.px>0)){const s_=items.reduce((t,x)=>t+x.qty*x.px,0);if(Math.abs(s_-a)/a>0.05)w('amount',`مجموع الأصناف ${num(Math.round(s_))} بعيد عن الصافي`)}
   if(/رصيد|مديونية|balance/i.test(String(j.net_label||'')))w('amount',`اتقرا من «${j.net_label}» — ده رصيد مش صافي الفاتورة`);
   // الرقم
-  const no=j.number==null?'':toEn(String(j.number)).trim();
+  let no=j.number==null?'':toEn(String(j.number)).trim();
+  if(no&&a>0&&noVal(no)===Math.round(a)&&Math.abs(a-Math.round(a))<.001){w('no','نفس قيمة الصافي — واحد منهم غلط');w('amount','نفس قيمة رقم الفاتورة — واحد منهم غلط')}
+  if(looksSwapped(no,a,cid,kind)){const n0=no,a0=a;no=String(Math.round(a0));a=numOrNull(n0);
+    w('no',`اتقرا ${n0} في خانة الرقم — وده بعيد عن أرقام فواتير الشركة، فبدّلته مع الصافي`);w('amount',`كان ${num(a0)} — اتبدّل مع رقم الفاتورة، اتأكد من الصورة`)}
   if(!no)w('no','رقم الفاتورة مش مقروء');
   else{if(/ضريب|سجل|عميل|طلب|تليفون|هاتف|tax|customer|order|phone/i.test(String(j.number_label||'')))w('no',`اتقرا من «${j.number_label}» — مش رقم الفاتورة`);
     if(/^\d{3}-\d{3}-\d{3}$/.test(no))w('no','شكله رقم التسجيل الضريبي مش رقم الفاتورة');
@@ -2433,12 +2437,19 @@ function docFromAI(j,v,cid){const items=(Array.isArray(j.items)?j.items:[]).filt
     const dd=Math.round((new Date(today())-new Date(date))/864e5);if(dd>120)w('date',`من ${dd} يوم — اتأكد`)}
   // القراءة التانية (مستقلة) للمقارنة
   if(v){const vn=v.number==null?'':toEn(String(v.number)).trim(),vd=fixYr(parseDMY(v.date_printed)),va=numOrNull(v.net_total);
-    if(vn&&no&&normNo(vn)!==normNo(no))w('no',`القراءة التانية طلعت ${vn}`,vn);else if(vn&&!no)w('no','القراءة التانية',vn);
+    if(vn&&a>0&&va>0&&(Math.abs(noVal(vn)-a)<1||Math.abs(noVal(no)-va)<1)){w('no','القراءتين بدّلوا الرقم والصافي — بص على الصورة');w('amount','القراءتين بدّلوا الرقم والصافي — بص على الصورة')}
+    else if(vn&&no&&normNo(vn)!==normNo(no))w('no',`القراءة التانية طلعت ${vn}`,vn);else if(vn&&!no)w('no','القراءة التانية',vn);
     if(vd&&date&&vd!==date)w('date',`القراءة التانية طلعت ${fmtDay(vd)}`,vd);else if(vd&&!date)w('date','القراءة التانية',vd);
-    if(va>0&&a>0&&Math.abs(va-a)>0.5)w('amount',`القراءة التانية طلعت ${num(va)}`,va);else if(va>0&&!(a>0))w('amount','القراءة التانية',va)}
+    if(va>0&&a>0&&Math.abs(va-a)>0.5&&!(W.no&&/بدّلوا/.test(W.no.t.join())))w('amount',`القراءة التانية طلعت ${num(va)}`,va);else if(va>0&&!(a>0))w('amount','القراءة التانية',va)}
   const U=(Array.isArray(j.unsure)?j.unsure:[]).join(' ');if(/number/.test(U))w('no','الذكاء الاصطناعي مش متأكد منه');if(/date/.test(U))w('date','الذكاء الاصطناعي مش متأكد منه');if(/net|total|amount/.test(U))w('amount','الذكاء الاصطناعي مش متأكد منه');
   return {kind,no,ref:j.ref_invoice==null?'':String(j.ref_invoice),date:date||today(),amount:a>0?a:'',notes:[j.supplier,kind==='inv'&&items.length?items.length+' صنف':''].filter(Boolean).join(' — '),lines:kind==='ret'||items.length<=15?items:[],warn:W}}
 const AWN={no:'رقم الفاتورة',date:'التاريخ',amount:'الصافي'};
+/* الرقم والصافي متبدّلين؟ أرقام فواتير كل شركة بتمشي ورا بعض، فبنقارن بالمدى بتاعها */
+const noVal=v=>{const d=toEn(String(v||'')).replace(/[^\d]/g,'');return d.length&&d.length<=9?+d:0};
+function noRange(cid,kind,exceptId){const H=S.ledger.filter(e=>e.cid===cid&&!e.del&&e.kind===kind&&e.id!==exceptId).sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,25).map(e=>noVal(e.no)).filter(n=>n>0).sort((x,y)=>x-y);
+  if(H.length<3)return null;const M=H[H.length>>1];return {M,near:x=>x>0&&Math.abs(x-M)<=Math.max(300,M*.15)}}
+function looksSwapped(no,amount,cid,kind,exceptId){const R=noRange(cid,kind,exceptId),n=noVal(no),a=+amount||0;if(!R||!n||!(a>0))return false;
+  return !R.near(n)&&R.near(a)&&Math.abs(a-Math.round(a))<.001}
 // قراءتين مستقلتين في نفس الوقت: الكاملة + تأكيد للرقم والتاريخ والصافي
 async function readDoc(imgs){const [m,v]=await Promise.allSettled([askVision(imgs,DOC_PROMPT,3000,{think:1,hi:1}),askVision(imgs,VERIFY_PROMPT,600,{think:1,hi:1})]);
   if(m.status!=='fulfilled')throw m.reason;return {j:m.value,v:v.status==='fulfilled'?v.value:null}}
@@ -2475,6 +2486,8 @@ function entrySheet(cid,kind,pre={},rec=null){
     const dup=findDup({cid,kind:k,no,amount,date},rec&&rec.id),w=root.querySelector('#eW');
     if(dup){w.hidden=false;w.innerHTML=`${dupTxt(dup,cid)} — <b>مش هتتسجل تاني.</b>`;toast('⛔ الفاتورة دي متسجلة قبل كده');try{navigator.vibrate&&navigator.vibrate(200)}catch(_){}return}
     const chk=[];if(oddDate(date))chk.push(`📅 التاريخ <b>${fmtDay(date)}</b> غريب (السنة ${date.slice(0,4)}) — غالباً اتقرا غلط وهيلخبط الترتيب.`);
+    if(k!=='pay'&&looksSwapped(no,amount,cid,k,rec&&rec.id))chk.push(`🔀 رقم الفاتورة <b>${esc(no)}</b> والصافي <b>${num(amount)}</b> شكلهم متبدّلين (أرقام فواتير الشركة دي حوالين ${num(noRange(cid,k,rec&&rec.id).M)}).`);
+    if(no&&amount>0&&noVal(no)===amount)chk.push(`🔀 رقم الفاتورة والصافي نفس القيمة (${num(amount)}) — واحد منهم غلط.`);
     if(AW.size)chk.push(`⚠️ لسه ما راجعتش <b>${[...AW].map(f=>AWN[f]).join(' و')}</b> على الصورة (المتعلّم بالأحمر).`);
     if(chk.length&&m!=='force'){w.hidden=false;w.innerHTML=chk.join('<br>')+` <button class="linkb" data-m="force">راجعت، احفظ</button>`;return}
     closeSheet();const b2=fs.batch(),lr=rec?ref('ledger/'+rec.id):col('ledger').doc(),extra={...(rf?{ref:rf}:rec&&rec.ref?{ref:FV().delete()}:{}),...(lines.length?{lines}:rec&&rec.lines?{lines:FV().delete()}:{})};
@@ -4007,6 +4020,14 @@ const byDateDesc=(a,b)=>(b.date||'').localeCompare(a.date||'')||noNum(b)-noNum(a
 // تاريخ غريب = قبل السنة اللي فاتت أو في المستقبل (غالباً السنة اتقرت غلط من الصورة)
 function oddDate(d){if(!d)return false;const y=new Date().getFullYear(),dy=+d.slice(0,4);return dy<y-1||d>dayKey(new Date(Date.now()+2*864e5))}
 function fixYr(d){if(!d||!oddDate(d))return d;const y=new Date().getFullYear();let n=y+d.slice(4);if(n>today())n=(y-1)+d.slice(4);return n}
+function swapSheet(c){const L=S.ledger.filter(e=>e.cid===c.id&&!e.del&&!e.cyc&&e.kind!=='pay'&&looksSwapped(e.no,e.amount,c.id,e.kind,e.id)).sort(byDateDesc);if(!L.length){toast('مفيش حاجة متبدّلة');return}
+  const R=noRange(c.id,'inv');
+  openSheet(`<h4>🔀 رقم وصافي متبدّلين — ${esc(c.name)}</h4><p class="hint" style="margin-top:0">أرقام فواتير ${esc(c.name)} حوالين <b>${R?num(R.M):'—'}</b>. الفواتير دي رقمها بعيد عن كده والصافي هو اللي قريب منه — يعني غالباً اتبدّلوا. بص على الصورة 📎 قبل ما تدوس «بدّل».</p>
+    <div class="rows">${L.map(e=>`<div class="row slim"><div class="kit"><b>${KIND[e.kind].l} — ${fmtDay(e.date)}</b><div class="meta"><span>دلوقتي: رقم <bdi dir="ltr">${esc(e.no)}</bdi> — صافي ${num(e.amount)}</span><span>بعد التبديل: رقم <b dir="ltr">${Math.round(e.amount)}</b> — صافي <b>${num(noVal(e.no))}</b></span></div></div>${e.img?`<button class="icon" data-m="im:${e.id}" aria-label="الصورة">📎</button>`:''}<button class="btn sm primary" data-m="sw:${e.id}">بدّل</button></div>`).join('')}</div>
+    <div class="actions"><button class="btn" data-cancel>قفل</button></div>`,
+  (m)=>{const [k,id]=m.split(':'),e=L.find(x=>x.id===id);if(!e)return;if(k==='im'){ledgerGallery(e);return}if(k!=='sw')return;
+    const b=fs.batch(),nNo=String(Math.round(e.amount)),nAm=noVal(e.no);b.update(ref('ledger/'+e.id),{no:nNo,amount:nAm});evt(b,'acc',c.name,num(nAm),`تبديل رقم/صافي: ${e.no}/${num(e.amount)} ← ${nNo}/${num(nAm)}`);
+    closeSheet();commit(b,`اتبدّل ✓ — فاتورة ${nNo} بـ ${num(nAm)} ج`);setTimeout(()=>swapSheet(c),500)})}
 function oddSheet(c){const L=S.ledger.filter(e=>e.cid===c.id&&!e.del&&!e.cyc&&oddDate(e.date)).sort(byDateDesc);if(!L.length){toast('مفيش تواريخ غريبة');return}
   openSheet(`<h4>📅 تواريخ غريبة — ${esc(c.name)}</h4><p class="hint" style="margin-top:0">دول السنة بتاعتهم غالباً اتقرت غلط من الصورة، وهما اللي بيلخبطوا الترتيب. «صلّح» بيخلي السنة ${new Date().getFullYear()} (واليوم والشهر زي ما هما).</p>
     <div class="rows">${L.map(e=>`<div class="row slim"><div class="kit"><b>${KIND[e.kind].l} <bdi dir="ltr">${esc(e.no||'—')}</bdi> — ${num(e.amount)} ج</b><div class="meta"><span>${fmtDay(e.date)} ← <b>${fmtDay(fixYr(e.date))}</b></span></div></div><button class="btn sm" data-m="fx:${e.id}">صلّح</button></div>`).join('')}</div>
@@ -4126,6 +4147,7 @@ $app.addEventListener('click',e=>{
   else if(act==='acc-del'){const e=S.ledger.find(x=>x.id===b.dataset.eid);if(e)delEntry(e)}
   else if(act==='acc-dups'){const c=S.companies.find(x=>x.id===S.acc);if(c)dupSheet(c)}
   else if(act==='fx-reload'){toast('بجيب السعر…');loadFX(true).then(()=>render())}
+  else if(act==='acc-swap'){const c=S.companies.find(x=>x.id===S.acc);if(c)swapSheet(c)}
   else if(act==='acc-odd'){const c=S.companies.find(x=>x.id===S.acc);if(c)oddSheet(c)}
   else if(act==='acc-cycles'){const c=S.companies.find(x=>x.id===S.acc);if(c)cyclesSheet(c)}
   else if(act==='acc-cur'){S.accCyc='';render()}
