@@ -3210,7 +3210,7 @@ function eurTotal(T){if(!FX)return null;const egp=(T.EGP||0)+(T.VISA||0)*(1-VISA
 function eurLine(T){const e=eurTotal(T);if(!e){loadFX();return '<div class="eurt"><small>⏳ بجيب سعر الصرف…</small></div>'}
   const r2=v=>num(Math.round(v*100)/100),age=Date.now()-FX.at,old=age>24*36e5;
   const hi=e.tot>300,cm=e.tot*(hi?.10:.08);
-  return `<div class="eurt"><span>🇪🇺 التوتال باليورو:</span><strong>€${r2(e.tot)}</strong><b class="cmx ${hi?'hi':'lo'}">€${r2(cm)}</b>
+  return `<div class="eurt"><span>🇪🇺 التوتال باليورو:</span><strong>€${r2(e.tot)}</strong><b class="cmx ${hi?'hi':'lo'}">${num(Math.round(cm*FX.EGP))} ج.م</b>
     <small>${T.EUR?`€${r2(T.EUR)}`:''}${T.USD?` + $${num(T.USD)} = €${r2(e.usd)}`:''}${T.EGP?` + ${num(T.EGP)} ج = €${r2(e.egp)}`:''}${T.VISA?` + 💳 ${num(T.VISA)} −2% = €${r2(e.visa)}`:''}<br>
     السعر: 1€ = ${num(Math.round(FX.EGP*100)/100)} ج — 1€ = $${(+FX.USD).toFixed(3)} · ${old?'<span class="rd">⚠️ سعر قديم</span>':'اتحدّث '+fmtTime(FX.at)} <button class="linkb" data-act="fx-reload">↻ حدّث</button></small></div>`}
 const rates=()=>({usd:+((S.cfg||{}).rates||{}).usd||1.17,egp:+((S.cfg||{}).rates||{}).egp||55});
