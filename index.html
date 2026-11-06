@@ -908,7 +908,7 @@ const pad=n=>String(n).padStart(2,'0');
 const dayKey=(d=new Date())=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const today=()=>dayKey();
 const DEV=LS.get('drc.dev')||('d'+Math.random().toString(36).slice(2,10));LS.set('drc.dev',DEV);
-const S={shortTab:LS.get('drc.shtab')||'med',invs:{},salesMode:LS.get('drc.smode')||'inv',trash:{items:[],companies:[],ledger:[]},loaded:{},companies:[],ledger:[],acc:LS.get('drc.acc')||'',accRange:'all',notes:[],items:[],sales:[],dayCache:{},events:[],alerts:[],cfg:{cur:'ج.م'},type:LS.get('drc.type')||'all',view:'items',q:'',
+const S={shortTab:LS.get('drc.shtab')||'med',invs:{},salesMode:'inv',trash:{items:[],companies:[],ledger:[]},loaded:{},companies:[],ledger:[],acc:LS.get('drc.acc')||'',accRange:'all',notes:[],items:[],sales:[],dayCache:{},events:[],alerts:[],cfg:{cur:'ج.م'},type:LS.get('drc.type')||'all',view:'items',q:'',
   me:LS.get('drc.me')||'',day:today(),expPreset:'m3',expFrom:'',expTo:'',shortMode:'all',ready:false,offline:false,error:''};
 const $=id=>document.getElementById(id);
 const $app=$('app'),$tabs=$('tabs'),$modal=$('modal'),$q=$('q'),$sb=$('searchbar'),$st=$('status'),$seg=$('seg'),$bell=$('bell'),$bp=$('bellpill'),$ab=$('alertbar'),$pr=$('print');
@@ -1011,7 +1011,7 @@ function vItems(){
     h+=gbyChips()+secs.map(({g,l})=>`<section class="group"><h3>${esc(secLabel(g,l[0]))} (${l.length})</h3><div class="rows">${l.map(rowItem).join('')}</div></section>`).join('')}
   $app.innerHTML=h;
 }
-function aggSales(list){const m={};list.forEach(s=>{const key=s.id||s.name;const a=m[key]=m[key]||{id:s.id,name:s.name,type:s.type||'cos',qty:0,d:{},short:0,last:null};a.qty+=+(s.units!=null?s.units:s.qty)||0;a.short+=+s.short||0;for(const k in (s.alloc||{}))a.d[k]=(a.d[k]||0)+s.alloc[k];if(!a.last||s.t>a.last.t)a.last=s});return Object.values(m).sort(byName)}
+function aggSales(list){const m={};list.forEach(s=>{const key=s.type==='misc'?'m_'+s.name:(s.id||s.name);const a=m[key]=m[key]||{id:s.id,name:s.name,type:s.type||'cos',qty:0,d:{},short:0,last:null};a.qty+=+(s.type==='misc'?s.qty:s.units!=null?s.units:s.qty)||0;a.short+=+s.short||0;for(const k in (s.alloc||{}))a.d[k]=(a.d[k]||0)+s.alloc[k];if(!a.last||s.t>a.last.t)a.last=s});return Object.values(m).sort(byName)}
 const dChips=d=>Object.entries(d).sort((a,b)=>bkIdx(a[0])-bkIdx(b[0])).map(([k,v])=>`<span class="bt ${expCls(k)}" data-n="${v}"><i>${bkShort(k)}</i></span>`).join('');
 const dText=d=>Object.entries(d).filter(([k])=>k!=='x').sort((a,b)=>bkIdx(a[0])-bkIdx(b[0])).map(([k,v])=>`${bkLabel(k)}×${v}`).join('، ');
 function invGroups(list){const g=[],m={};list.forEach(s=>{const k=s.inv||('s_'+s.sid);if(!m[k]){m[k]={k,inv:s.inv,no:s.invNo,t:s.t,by:s.by,cur:s.cur,guest:s.guest,lines:[]};g.push(m[k])}m[k].lines.push(s);if(s.t<m[k].t)m[k].t=s.t});g.forEach(x=>x.lines.sort((a,b)=>a.t-b.t));return g}
@@ -4144,7 +4144,7 @@ $app.addEventListener('click',e=>{
   else if(act==='clearq'){S.q='';$q.value='';render()}
   else if(act==='misc-sale')miscSale();
   else if(act==='inv-open'){if(CART.lines.length)invSheet();else pickItemSheet()}
-  else if(act==='smode2'){S.salesMode=k;LS.set('drc.smode',k);render()}
+  else if(act==='smode2'){S.salesMode=k;render()}
   else if(act==='epre'){S.expPreset=k;render()}
   else if(act==='day-prev'||act==='day-next'){const d=new Date(S.day+'T12:00:00');d.setDate(d.getDate()+(act==='day-prev'?-1:1));const nk=dayKey(d);S.day=nk>today()?today():nk;render()}
   else if(act==='undo-inv')undoInv(b.dataset.inv);
