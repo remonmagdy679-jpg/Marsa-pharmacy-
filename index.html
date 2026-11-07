@@ -3213,23 +3213,24 @@ function eurLine(T){const e=eurTotal(T);if(!e){loadFX();return '<div class="eurt
   return `<div class="eurt"><span>🇪🇺 التوتال باليورو:</span><strong>€${r2(e.tot)}</strong><b class="cmx ${hi?'hi':'lo'}">${num(Math.round(cm*FX.EGP))} ج.م</b>
     <small>${T.EUR?`€${r2(T.EUR)}`:''}${T.USD?` + $${num(T.USD)} = €${r2(e.usd)}`:''}${T.EGP?` + ${num(T.EGP)} ج = €${r2(e.egp)}`:''}${T.VISA?` + 💳 ${num(T.VISA)} −2% = €${r2(e.visa)}`:''}<br>
     السعر: 1€ = ${num(Math.round(FX.EGP*100)/100)} ج — 1€ = $${(+FX.USD).toFixed(3)} · ${old?'<span class="rd">⚠️ سعر قديم</span>':'اتحدّث '+fmtTime(FX.at)} <button class="linkb" data-act="fx-reload">↻ حدّث</button></small></div>`}
-const rates=()=>({usd:+((S.cfg||{}).rates||{}).usd||1.17,egp:+((S.cfg||{}).rates||{}).egp||55});
-const toE=(v,c)=>{const R_=rates();return c==='USD'?v/R_.usd:c==='EGP'?v/R_.egp:v};
-const fromE=(v,c)=>{const R_=rates();return c==='USD'?v*R_.usd:c==='EGP'?v*R_.egp:v};
+const rates=()=>{const m=(S.cfg||{}).rates||{};if(typeof FX!=='undefined'&&FX&&FX.USD>0&&FX.EGP>0&&!(m.manual&&Date.now()-(m.at||0)<12*36e5))return {usd:Math.round(FX.USD*1000)/1000,egp:Math.round(FX.EGP*100)/100};return {usd:+m.usd||1.17,egp:+m.egp||55}};
+const toE=(v,c)=>{const R_=rates();return c==='USD'?v/R_.usd:c==='EGP'||c==='VISA'?v/R_.egp:v};
+const fromE=(v,c)=>{const R_=rates();return c==='USD'?v*R_.usd:c==='EGP'||c==='VISA'?v*R_.egp:v};
 const payTxt=p=>PCUR.filter(c=>+p[c]>0).map(c=>fmtPx(+p[c],c)).join(' + ');
 function invSheet(o){o=o&&o.focus?o:{};
   const lines=CART.lines.map((l,i)=>({...l,i,p:S.items.find(x=>x.id===l.id)})).filter(l=>l.p);
   const sumNow=()=>lineSum(CART.lines),allPx=()=>CART.lines.length&&CART.lines.every(l=>+l.price>0);
-  const ST=!!CART.staff,E=CART.edit;
+  const ST=!!CART.staff,E=CART.edit;if(CART.split)loadFX();
   const r=openSheet(`<h4>${ST?'👔 بيع لاستيف':'🧾 الفاتورة'} — ${lines.length} صنف</h4>${E?`<div class="editbn">✏️ بتعدّل فاتورة #${E.no} — ${fmtDay(E.day)}. غيّر اللي عايزه ودوس «حفظ التعديل». لو لغيت، الفاتورة الأصلية بتفضل زي ما هي.</div>`:''}${ST?'<div class="staffbn">👔 بيع لاستيف الفندق — الكمية بتنزل من المخزن بس، من غير فلوس</div>':''}
     <div class="sellacts top"><button class="btn big" data-m="scan">🔳 امسح صنف تاني</button><button class="btn big" data-m="addp">🔍 ضيف بالاسم</button></div>
     <div class="rows">${lines.length?lines.map(l=>`<div class="row slim iln" data-i="${l.i}">${ico(l.p)}<div class="kit"><b>${esc(l.p.name)}</b><div class="meta">${l.start&&l.start!=='x'?`<span>⏳ ${bkLabel(l.start)}</span>`:''}<span>عندك ${fmtQs(l.p,good(l.p))}</span>${spb(l.p)>1?`<span>${l.unit==='strip'?'💊 بالشريط':'📦 بالعلبة'}</span>`:''}</div></div>
       <div class="ilc"><div class="stepper sm"><button class="icon" data-m="q-:${l.i}">−</button><input type="number" inputmode="numeric" data-q="${l.i}" value="${l.qty}"><button class="icon" data-m="q+:${l.i}">+</button></div>${ST?'':`<div class="pxin"><span>${CUR[CART.cur].s}</span><input type="number" inputmode="decimal" step="0.01" data-px="${l.i}" value="${+l.price>0?l.price:''}" placeholder="سعر؟"></div>`}<button class="icon" data-m="rm:${l.i}" aria-label="شيل">✕</button></div></div>`).join(''):'<div class="empty">الفاتورة فاضية — امسح أول صنف</div>'}</div>
     ${lines.length&&!ST?`<div class="gtot"><label for="cT">💰 إجمالي الفاتورة (بعد الخصم)</label><div class="seg cursel" id="iCur">${curBtns(CART.cur)}</div><div class="pxin big"><span id="cTs">${CUR[CART.cur].s}</span><input id="cT" type="number" inputmode="decimal" step="0.01" value="${CART.total!=null&&CART.total!==''?CART.total:allPx()?num(sumNow()).replace(/,/g,''):''}" placeholder="اكتب الإجمالي"></div><p class="hint" id="cTh" style="margin:6px 2px 0"></p>
-      <button class="linkb" data-m="split" style="margin-top:6px">${CART.split?'✕ دفع بعملة واحدة':'💶💵 دفع بأكتر من عملة (مثلاً يورو + دولار)'}</button>
+      <div class="seg" style="margin-top:8px"><button data-m="split1" aria-pressed="${!CART.split}">💶 عملة واحدة</button><button data-m="split2" aria-pressed="${!!CART.split}">💶💵 أكتر من عملة</button></div>
+      ${CART.split?'<p class="hint" style="margin:6px 2px 0">اكتب اللي الجيست دفعه بكل عملة — مثلاً 5 يورو + 6 دولار. مش لازم تكتب الإجمالي فوق.</p>':''}
       ${CART.split?`<div class="spl">${PCUR.map(c=>`<div class="pxin"><span>${CUR[c].s}</span><input type="number" inputmode="decimal" step="0.01" data-pc="${c}" value="${CART.pay&&+CART.pay[c]>0?CART.pay[c]:''}" placeholder="${CUR[c].l}"></div>`).join('')}</div>
       <p class="splh" id="splH"></p>
-      <details class="rates"><summary>سعر الصرف: 1€ = ${num(rates().usd)}$ = ${num(rates().egp)} ج.م ✏️</summary><div class="two"><div><label>1€ = كام دولار</label><input type="number" inputmode="decimal" step="0.01" id="rUsd" value="${rates().usd}"></div><div><label>1€ = كام جنيه</label><input type="number" inputmode="decimal" step="0.01" id="rEgp" value="${rates().egp}"></div></div></details>`:''}</div>`:''}
+      <details class="rates"><summary>سعر الصرف${(S.cfg||{}).rates&&S.cfg.rates.manual&&Date.now()-(S.cfg.rates.at||0)<12*36e5?' (متعدّل يدوي)':FX?' النهارده':''}: 1€ = ${num(rates().usd)}$ = ${num(rates().egp)} ج.م ✏️</summary><div class="two"><div><label>1€ = كام دولار</label><input type="number" inputmode="decimal" step="0.01" id="rUsd" value="${rates().usd}"></div><div><label>1€ = كام جنيه</label><input type="number" inputmode="decimal" step="0.01" id="rEgp" value="${rates().egp}"></div></div></details>`:''}</div>`:''}
     <button class="linkb" data-m="gshow" ${CART.guest?'hidden':''}>＋ اسم الجيست أو رقم الأوضة (اختياري)</button><div id="gBox" ${CART.guest?'':'hidden'}><label for="gN">اسم الجيست أو رقم الأوضة</label><input id="gN" value="${esc(CART.guest||'')}" placeholder="مثلاً: Room 214 — Anna"></div>
     <button class="btn primary sellbig" data-m="done" ${lines.length?'':'disabled'}>${E?'💾 حفظ التعديل':ST?'👔 سجّل بيع لاستيف':'✓ تم — سجّل الفاتورة'}</button>
     <button class="linkb" data-m="staff" style="margin-top:8px">${ST?'💶 لأ — دي بيعة عادية بفلوس':'👔 دي بيع لاستيف الفندق (كمية بس، من غير فلوس)'}</button>
@@ -3242,10 +3243,13 @@ function invSheet(o){o=o&&o.focus?o:{};
     if(k==='rm'){CART.lines.splice(+i,1);if(!CART.totEd)CART.total=null;saveCart();return invSheet()}
     if(m==='addp')return pickItemSheet();
     if(m==='staff'){CART.staff=!CART.staff;if(CART.staff){CART.split=false;CART.pay=null}saveCart();return invSheet()}
+    if(m==='split1'||m==='split2'){if((m==='split2')===!!CART.split)return;m='split'}
     if(m==='split'){CART.split=!CART.split;if(CART.split&&!CART.pay){const t=CART.total!=null&&CART.total!==''?+CART.total:(allPx()?sumNow():0);CART.pay=t>0?{[CART.cur]:t}:{}}if(!CART.split)CART.pay=null;saveCart();return invSheet()}
     if(m==='scan'){closeSheet();LS.set('drc.scmode','sell');return openScanner({title:CART.staff?'👔 بيع لاستيف — امسح الصنف':'امسح الصنف للفاتورة',onCode:(c,g)=>{const l=itemsByCode(c);if(l.length===1)sellSheet(l[0],{start:g&&g.y?bk(g.y,g.m):null,back:'inv',scan:true});else handleSellCode(c,g)},onItem:p=>sellSheet(p,{back:'inv'})})}
     if(m==='clr'&&CART.edit)return openSheet('<h4>تلغي التعديل؟</h4><p class="hint" style="margin-top:0">الفاتورة الأصلية هتفضل زي ما هي.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">إلغاء التعديل</button></div>',()=>{clearCart();closeSheet();toast('التعديل اتلغى — الفاتورة زي ما هي')});
     if(m==='clr')return openSheet('<h4>تلغي الفاتورة المفتوحة؟</h4><p class="hint" style="margin-top:0">مفيش حاجة اتخصمت من المخزون لسه.</p><div class="actions"><button class="btn" data-cancel>لأ</button><button class="btn danger" data-m="ok">ألغيها</button></div>',()=>{CART.lines=[];CART.guest='';CART.total=null;CART.totEd=false;CART.staff=false;saveCart();closeSheet();toast('الفاتورة اتلغت')});
+    const payT=()=>{const P=CART.split&&CART.pay||{};const e=PCUR.reduce((a,c)=>a+toE(+P[c]||0,c),0);return e>0?Math.round(fromE(e,CART.cur)*100)/100:0};
+    if(m==='done'&&CART.split&&!(CART.total>0)&&!allPx()&&payT()>0){CART.total=payT();CART.totEd=true;saveCart()}
     if(m==='credit'){const t=CART.total!=null&&CART.total!==''?+CART.total:(allPx()?sumNow():0);if(!(t>0)){toast('اكتب إجمالي الفاتورة الأول');const ct=root.querySelector('#cT');if(ct)ct.focus();return}return creditSheet()}
     if(m==='done'&&CART.staff)return finishInvoice();
     if(m==='done'){const t=CART.total!=null&&CART.total!==''?+CART.total:(allPx()?sumNow():0);if(!(t>0)){toast('اكتب إجمالي الفاتورة');const ct=root.querySelector('#cT');if(ct)ct.focus();return}finishInvoice()}});
@@ -3255,10 +3259,10 @@ function invSheet(o){o=o&&o.focus?o:{};
   function splHint(){const h=r.querySelector('#splH');if(!h)return;const t=CART.total!=null&&CART.total!==''?+CART.total:(allPx()?sumNow():0),P=CART.pay||{};
     const paidE=PCUR.reduce((a,c)=>a+toE(+P[c]||0,c),0),remE=toE(t,CART.cur)-paidE,show=v=>['EUR','USD','EGP'].map(c=>fmtPx(Math.round(fromE(v,c)*100)/100,c)).join(' = ');
     h.className='splh '+(Math.abs(remE)<.05?'ok':remE>0?'rd':'lw');
-    h.innerHTML=!paidE?'اكتب اللي دفعه بكل عملة':Math.abs(remE)<.05?`✓ دفع الحساب كله (${payTxt(P)})`:remE>0?`⏳ لسه باقي: <b>${show(remE)}</b>`:`↩️ يرجعله: <b>${show(-remE)}</b>`}
+    h.innerHTML=!paidE?'اكتب اللي دفعه بكل عملة':!(t>0)?`💰 الإجمالي: <b>${show(paidE)}</b> (${payTxt(P)})`:Math.abs(remE)<.05?`✓ دفع الحساب كله (${payTxt(P)})`:remE>0?`⏳ لسه باقي: <b>${show(remE)}</b>`:`↩️ يرجعله: <b>${show(-remE)}</b>`}
   function hint(){const h=r.querySelector('#cTh');if(!h)return;const priced=CART.lines.filter(l=>+l.price>0),un=CART.lines.length-priced.length,sm=lineSum(priced),t=CART.total;
     h.innerHTML=priced.length?`مجموع الأسعار: <b>${fmtPx(sm,CART.cur)}</b>${un?` + ${un} صنف من غير سعر`:''}${t>0&&!un&&Math.abs(t-sm)>.009?` — <b class="${t<sm?'ok':'rd'}">${t<sm?'خصم':'زيادة'} ${fmtPx(Math.abs(sm-t),CART.cur)}</b>`:''}`:'مش لازم تكتب سعر كل صنف — اكتب الإجمالي بس'}
-  r.addEventListener('input',e=>{if(e.target.id==='cT')CART.totEd=e.target.value!=='';sync()});r.addEventListener('change',e=>{if(e.target.id==='rUsd'||e.target.id==='rEgp'){const u=flt(r.querySelector('#rUsd').value),g=flt(r.querySelector('#rEgp').value);if(u>0&&g>0){S.cfg={...(S.cfg||{}),rates:{usd:u,egp:g}};run(ref('settings/app').set({rates:{usd:u,egp:g}},{merge:true}),'سعر الصرف اتحفظ ✓')}splHint();return}sync()});hint();splHint();
+  r.addEventListener('input',e=>{if(e.target.id==='cT')CART.totEd=e.target.value!=='';sync()});r.addEventListener('change',e=>{if(e.target.id==='rUsd'||e.target.id==='rEgp'){const u=flt(r.querySelector('#rUsd').value),g=flt(r.querySelector('#rEgp').value);if(u>0&&g>0){S.cfg={...(S.cfg||{}),rates:{usd:u,egp:g,manual:1,at:Date.now()}};run(ref('settings/app').set({rates:{usd:u,egp:g,manual:1,at:Date.now()}},{merge:true}),'سعر الصرف اتحفظ ✓ (لمدة 12 ساعة)')}splHint();return}sync()});hint();splHint();
   const ct=r.querySelector('#cT');if(ct&&o.focus&&!ct.value)setTimeout(()=>{try{ct.focus()}catch(e){}},250);
 }
 function pickItemSheet(){
