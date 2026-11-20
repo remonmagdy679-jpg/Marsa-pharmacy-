@@ -961,7 +961,8 @@ const openAlerts=()=>S.alerts.filter(a=>!a.done);
 /* ---------- sales ---------- */
 const WIN=62*864e5;const winStart=Date.now()-WIN;const winDay=dayKey(new Date(winStart));
 /* ساعة الموبايل: لو غلط، البيعات بتتسجل في يوم تاني ومحدش يشوفها */
-S.clk=0;async function checkClock(){try{const r=await fetch(location.href.split('#')[0]+(location.href.includes('?')?'&':'?')+'clk='+Date.now(),{method:'HEAD',cache:'no-store'}),d=r.headers.get('date');if(!d)return;const off=new Date(d).getTime()-Date.now();S.clk=Math.abs(off)>10*6e4?off:0;render()}catch(e){}}
+S.clk=0;try{S.werr=JSON.parse(LS.get('drc.werr')||'null')}catch(e){S.werr=null}
+async function checkClock(){try{const r=await fetch(location.href.split('#')[0]+(location.href.includes('?')?'&':'?')+'clk='+Date.now(),{method:'HEAD',cache:'no-store'}),d=r.headers.get('date');if(!d)return;const off=new Date(d).getTime()-Date.now();S.clk=Math.abs(off)>10*6e4?off:0;render()}catch(e){}}
 function clockBn(){if(!S.clk)return '';const real=new Date(Date.now()+S.clk);return `<div class="setbn dupbn" style="font-weight:700">⛔ ساعة أو تاريخ الموبايل ده غلط: الموبايل فاكر النهارده ${fmtDay(today())} ${fmtTime(Date.now())}، والصح ${fmtDay(dayKey(real))} ${fmtTime(real.getTime())}. صلّحها من إعدادات الموبايل (التاريخ والوقت ← تلقائي) — البيع مقفول لحد ما تتصلح.</div>`}
 function pendBn(){if(!S.pend)return '';const since=+LS.get('drc.pendSince')||Date.now(),min=Math.round((Date.now()-since)/6e4);return `<div class="setbn dupbn">📵 فيه <b>${S.pend}</b> بيعة متسجلة على الموبايل ده بس ولسه <b>ما وصلتش</b> لباقي الموبايلات${min>=2?` (من ${min} دقيقة)`:''}. شغّل النت أو الواي فاي و<b>متمسحش التطبيق ولا الكاش</b> لحد ما الرسالة دي تختفي.</div>`}
 function salesOf(day){if(day>=winDay)return S.sales.filter(s=>s.day===day);if(S.dayCache[day])return S.dayCache[day];fetchDay(day);return null}
@@ -1021,7 +1022,7 @@ const dText=d=>Object.entries(d).filter(([k])=>k!=='x').sort((a,b)=>bkIdx(a[0])-
 function invGroups(list){const g=[],m={};list.forEach(s=>{const k=s.inv||('s_'+s.sid);if(!m[k]){m[k]={k,inv:s.inv,no:s.invNo,t:s.t,by:s.by,cur:s.cur,guest:s.guest,lines:[]};g.push(m[k])}m[k].lines.push(s);if(s.t<m[k].t)m[k].t=s.t});g.forEach(x=>x.lines.sort((a,b)=>a.t-b.t));return g}
 function vSales(){
   const d=S.day,isT=d===today(),raw=salesOf(d);let mode=S.salesMode||'inv';if(mode==='time')mode='inv';
-  let h=clockBn()+pendBn()+`<div class="dayhead"><button class="btn sm" data-act="day-prev">‹ قبله</button><input type="date" id="dayIn" value="${d}" max="${today()}"><button class="btn sm" data-act="day-next" ${isT?'disabled':''}>بعده ›</button></div><p class="hint" style="margin-top:6px"><b>${isT?'النهارده':dayName(d)}</b> ${fmtDay(d)}</p>`;
+  let h=clockBn()+syncBn()+pendBn()+`<div class="dayhead"><button class="btn sm" data-act="day-prev">‹ قبله</button><input type="date" id="dayIn" value="${d}" max="${today()}"><button class="btn sm" data-act="day-next" ${isT?'disabled':''}>بعده ›</button></div><p class="hint" style="margin-top:6px"><b>${isT?'النهارده':dayName(d)}</b> ${fmtDay(d)}</p>`;
   h+=`<div class="toolbar"><button class="btn primary" data-act="inv-open">${CART.lines.length?'🧾 الفاتورة المفتوحة ('+CART.lines.length+')':'🛒 بيع جديد'}</button>${isT?'<button class="btn" data-act="misc-sale">💵 مبلغ من غير صنف</button>':''}</div>`;
   if(raw===null){$app.innerHTML=h+'<p class="hint">جاري تحميل اليوم ده…</p>';return}
   const hit=raw.filter(s=>matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))),hk=new Set(hit.map(s=>s.inv||('s_'+s.sid)));
@@ -1741,8 +1742,22 @@ const SOFT=g=>({del:true,delT:Date.now(),delBy:S.me||'بدون اسم',...(g?{de
 const UNSOFT=()=>({del:FV().delete(),delT:FV().delete(),delBy:FV().delete(),delG:FV().delete()});
 const ref=p=>fs.doc(`shops/${SHOP_ID}/${p}`);
 const col=p=>fs.collection(`shops/${SHOP_ID}/${p}`);
-function run(promise,okMsg){if(okMsg)toast(okMsg);promise.catch(e=>{console.error(e);toast(e&&e.code==='permission-denied'?'Firebase رافض الحفظ — راجع القواعد (Rules)':'محصلش حفظ — جرب تاني')})}
+/* الحفظ: «اتسجل» بيظهر بس لما السيرفر يأكد، ولو فشل بيقول السبب */
+const WQ=[];
+function werr(e){const c=e&&e.code||'';return c==='permission-denied'?'Firebase رافض الحفظ: الحساب ده ملوش صلاحية (يمكن موقوف أو مش متفعّل) — المدير يفعّله من «المستخدمين»'
+  :c==='resource-exhausted'?'خلص الحد اليومي المجاني بتاع Firebase — الحفظ هيرجع لوحده بعد نص الليل بتوقيت أمريكا (حوالي 10 الصبح مصر)، أو ارفع خطة Firebase لـ Blaze'
+  :c==='unauthenticated'?'تسجيل الدخول خلص — اطلع وادخل تاني':c==='invalid-argument'?'فيه بيانات غلط في اللي اتحفظ — ابعت سكرين للمطوّر':(c||'مشكلة')+' — '+String(e&&e.message||'').slice(0,90)}
+function run(promise,okMsg){const p=Promise.resolve(promise);let done=false,slow=false;WQ.push(p);
+  const t1=setTimeout(()=>{if(!done&&okMsg)toast('⏳ بيتحفظ…')},700),t2=setTimeout(()=>{if(!done){slow=true;S.unsent=(S.unsent||0)+1;if(S.ready)render()}},10000);
+  const fin=()=>{done=true;clearTimeout(t1);clearTimeout(t2);if(slow){S.unsent=Math.max(0,(S.unsent||0)-1)}};
+  p.then(()=>{fin();if(okMsg)toast(okMsg);if(slow&&S.ready)render()},e=>{fin();console.error(e);S.werr={m:werr(e),t:Date.now()};LS.set('drc.werr',JSON.stringify(S.werr));toast('⛔ ما اتحفظش: '+S.werr.m);if(S.ready)render()});
+  return p}
 const commit=(b,msg)=>run(b.commit(),msg);
+// رسالة «اتسجلت» بعد ما كل الحفظ اللي بدأ من w0 يوصل للسيرفر
+function afterSave(w0,msg){const ps=WQ.slice(w0);let shown=false;const t=setTimeout(()=>{shown=true;toast('⏳ بيتحفظ…')},700);
+  Promise.race([Promise.all(ps).then(()=>'ok'),new Promise(r=>setTimeout(()=>r('slow'),9000))]).then(x=>{clearTimeout(t);toast(x==='ok'?msg:'📵 اتسجلت على الموبايل ده بس ولسه ما وصلتش — اتأكد من النت ومتقفلش التطبيق')},()=>clearTimeout(t))}
+function syncBn(){let h='';if(S.unsent>0)h+=`<div class="setbn dupbn">📵 فيه <b>${S.unsent}</b> عملية اتسجلت على الموبايل ده بس ولسه ما وصلتش للسيرفر — شغّل النت ومتقفلش التطبيق.</div>`;
+  if(S.werr&&Date.now()-S.werr.t<6*36e5)h+=`<div class="setbn dupbn">⛔ آخر حفظ <b>فشل</b> (${fmtTime(S.werr.t)}): ${esc(S.werr.m)} <button class="btn sm" data-act="werr-x">تمام</button></div>`;return h}
 const me=()=>S.me||'بدون اسم';
 function evt(b,a,name,n,note,anon){b.set(col('events').doc(),{t:Date.now(),by:anon?'':me(),a,name:name||'',n:n??'',note:note||''})}
 function newAlert(b,p,q,auto,msg,silent){if(openAlerts().some(a=>a.id===p.id))return false;b.set(col('alerts').doc(),{t:Date.now(),by:auto?'تلقائي':me(),dev:DEV,uid:S.uid||'',id:p.id,name:p.name,type:tOf(p),qty:q,auto:!!auto,msg:msg||'',done:false});evt(b,'alert',p.name,q,msg);if(!silent)push('🔔 ناقص عاجل — '+SHOP_NAME,`${p.name} — ${q?'فاضل '+q:'خلص'}${msg&&msg!=='عاجل'?' ('+msg+')':''}${auto?'':' — '+me()}`,{prio:5,tags:['rotating_light']});return true}
@@ -3294,7 +3309,7 @@ function editInv(inv,l,d){
   const tot=d.total!=null?+d.total:lineSum(l),auto=lineSum(l);
   Object.assign(CART,{lines,cur:d.cur||l[0].cur||CART.cur,guest:d.guest||'',total:d.staff?null:tot,totEd:!d.staff&&Math.abs(tot-auto)>.009,split:!!d.pay&&Object.keys(d.pay).length>1,pay:d.pay||null,credit:null,staff:!!d.staff,
     edit:{inv,no:d.no||l[0].invNo||'',t:d.t||l[0].t,day:d.day||l[0].day,old:l.map(s=>s.sid)}});saveCart();invSheet()}
-function finishInvoice(){if(S.clk){toast('⛔ صلّح تاريخ وساعة الموبايل الأول — البيعة هتتسجل في يوم غلط');return}
+function finishInvoice(){const w0=WQ.length;if(S.clk){toast('⛔ صلّح تاريخ وساعة الموبايل الأول — البيعة هتتسجل في يوم غلط');return}
   const E=CART.edit,ST=!!CART.staff,today_=salesOf(today())||[],no=E?E.no:new Set(today_.filter(s=>s.inv).map(s=>s.inv)).size+1,inv=E?E.inv:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
   const dayX=E?E.day:today(),tX=E?E.t:Date.now();
   if(E){// رجّع الكميات القديمة للمخزن وامسح البيعات القديمة — قبل ما نسجل الجديدة
@@ -3312,8 +3327,8 @@ function finishInvoice(){if(S.clk){toast('⛔ صلّح تاريخ وساعة ا�
   const cr=CART.credit;if(cr){const dc=CART.cur==='VISA'?'EUR':CART.cur;run(col('debts').doc().set({name:cr.name,cat:cr.cat,amount:tot,cur:dc,items:L.map(l=>{const p=S.items.find(x=>x.id===l.id);return (p?p.name:'')+(l.qty>1?' ×'+l.qty:'')}).join('، '),note:'',inv,t:Date.now(),day:today(),by:me(),pays:[]}))}
   run(ref('invoices/'+inv).set({t:tX,day:dayX,no,cur:CART.cur,auto,total:ST?0:tot,guest:CART.guest||cr&&cr.name||'',by:me(),...(pay&&!cr?{pay}:{}),...(cr?{credit:{name:cr.name,cat:cr.cat}}:{}),...(ST?{staff:1}:{}),...(E?{edited:{by:me(),t:Date.now(),full:1}}:tot!==auto?{edited:{by:me(),t:Date.now()}}:{})}));
   const cur_=CART.cur;clearCart();closeSheet();S.day=dayX;
-  if(ST||E){toast(E?`✏️ فاتورة #${no} اتعدلت${ST?' — بيع لاستيف':` — الإجمالي ${fmtPx(tot,cur_)}`}`:`👔 بيع لاستيف اتسجل (${L.length} صنف) — الكمية نزلت من المخزن`);go('sales');return}
-  toast(`✓ فاتورة #${no} اتسجلت (${L.length} صنف) — الإجمالي ${fmtPx(tot,CART.cur)}${cr?` — 📒 آجل على ${cr.name}`:pay?' — اتدفع '+payTxt(pay):''}${al?' — واتبعت تنبيه للكل':''}`);go('sales');
+  if(ST||E){afterSave(w0,E?`✏️ فاتورة #${no} اتعدلت${ST?' — بيع لاستيف':` — الإجمالي ${fmtPx(tot,cur_)}`}`:`👔 بيع لاستيف اتسجل (${L.length} صنف) — الكمية نزلت من المخزن`);go('sales');return}
+  afterSave(w0,`✓ فاتورة #${no} اتسجلت (${L.length} صنف) — الإجمالي ${fmtPx(tot,CART.cur)}${cr?` — 📒 آجل على ${cr.name}`:pay?' — اتدفع '+payTxt(pay):''}${al?' — واتبعت تنبيه للكل':''}`);go('sales');
 }
 $('invbar').addEventListener('click',()=>invSheet());
 /* بيع مبلغ من غير صنف (صنف لسه مش متضاف) — بيدخل في «اتحصّل النهارده» والتوتال باليورو */
@@ -4189,6 +4204,7 @@ $app.addEventListener('click',e=>{
   else if(act==='acc-del'){const e=S.ledger.find(x=>x.id===b.dataset.eid);if(e)delEntry(e)}
   else if(act==='acc-dups'){const c=S.companies.find(x=>x.id===S.acc);if(c)dupSheet(c)}
   else if(act==='pinc'){if(!(S.member&&S.member.owner))return;const k='drc.pinc.'+b.dataset.d;try{LS.set(k,pInc(b.dataset.d)?'0':'1')}catch(e){}render()}
+  else if(act==='werr-x'){S.werr=null;LS.set('drc.werr','');render()}
   else if(act==='fx-reload'){toast('بجيب السعر…');loadFX(true).then(()=>render())}
   else if(act==='acc-swap'){const c=S.companies.find(x=>x.id===S.acc);if(c)swapSheet(c)}
   else if(act==='acc-odd'){const c=S.companies.find(x=>x.id===S.acc);if(c)oddSheet(c)}
