@@ -898,7 +898,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '20-11ج قراية أقل';
+const APP_V = '20-11د مسح المبيعات القديمة';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1367,7 +1367,7 @@ function vExp(){
 function vLog(){
   const list=S.events.filter(e=>matchQ(e.name+' '+(e.by||'')+' '+(ACT[e.a]||'')));
   const ppl=[...new Set(S.events.slice(0,200).map(e=>e.by).filter(Boolean))];
-  let h=`<div class="toolbar"><button class="btn" data-act="account">👤 ${esc(S.me||'حسابي')}</button>${S.role==='admin'?'<button class="btn" data-act="users">👥 المستخدمين</button>':''}${isOwner()?'<button class="btn" data-act="perm2">🔒 مميزات خاصة</button>':''}<button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="acc-key">🔑 مفتاح الذكاء الاصطناعي${getKey()?' ✓':''}</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button><button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
+  let h=`<div class="toolbar"><button class="btn" data-act="account">👤 ${esc(S.me||'حسابي')}</button>${S.role==='admin'?'<button class="btn" data-act="users">👥 المستخدمين</button>':''}${isOwner()?'<button class="btn" data-act="perm2">🔒 مميزات خاصة</button>':''}<button class="btn" data-act="settings">الإعدادات</button><button class="btn primary" data-act="app">📲 التطبيق وإشعارات الموبايل</button><button class="btn" data-act="perm">فعّل إشعارات الصفحة</button><button class="btn" data-act="acc-key">🔑 مفتاح الذكاء الاصطناعي${getKey()?' ✓':''}</button><button class="btn" data-act="backups">🛡️ النسخ الاحتياطية</button>${isOwner()?'<button class="btn" data-act="purge-old">🧹 امسح المبيعات القديمة</button>':''}<button class="btn" data-act="trash">🗑️ سلة المحذوفات${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length?` (${S.trash.items.length+S.trash.companies.length+S.trash.ledger.length})`:''}</button></div>`;
   h+=`<p class="hint">نسخة التطبيق: <b>${APP_V}</b></p>`;
   if(ppl.length)h+=`<p class="hint">اللي بيستخدموا الموقع: ${ppl.map(esc).join('، ')}</p>`;
   h+=list.length?`<div class="rows log">${list.slice(0,300).map(e=>`<div class="row slim"><time>${fmtTime(e.t,1)}</time><span class="tag ${e.a}">${ACT[e.a]||e.a}</span><div class="kit"><b>${esc(e.name)}${e.n!==''&&e.n!=null?` × ${esc(e.n)}`:''}</b><div class="meta">${e.by?`<span>👤 ${esc(e.by)}</span>`:''}${e.note?`<span>${esc(e.note)}</span>`:''}</div></div></div>`).join('')}</div>`:`<div class="empty">مفيش حركات لسه</div>`;
@@ -3868,6 +3868,25 @@ const FEATURES={
   info:{l:'📋 معلومات المنتج',d:'المشاكل اللي بيحلها، الجرعة ومدة الاستخدام، وسعره في أوروبا',def:'owner'},
 };
 const isOwner=()=>!!(S.member&&S.member.owner);
+/* مسح المبيعات القديمة: بيمسح سجلات البيع والفواتير بس — المخزون والكميات مش بتتلمس */
+function purgeOld(){const d0=new Date();const def=dayKey(new Date(d0.getFullYear(),d0.getMonth(),1));
+  openSheet(`<h4>🧹 امسح المبيعات القديمة</h4><p class="hint" style="margin-top:0">هيمسح سجلات البيع والفواتير <b>قبل</b> التاريخ ده بس. <b>المخزون والكميات مش هتتغيّر خالص.</b> قبل المسح هينزّلك ملف نسخة احتياطية بيهم.</p>
+    <label for="pgD">امسح كل اللي قبل يوم</label><input type="date" id="pgD" value="${def}" max="${today()}">
+    <p class="hint" id="pgSt"></p><button class="btn primary" data-m="go" style="width:100%;padding:13px">🧹 نزّل نسخة وامسح</button>`,
+  async(m,root)=>{if(m!=='go')return;const dv=root.querySelector('#pgD').value;if(!dv){toast('اختار تاريخ');return}
+    const cut=new Date(dv+'T00:00:00').getTime(),st=root.querySelector('#pgSt'),btn=root.querySelector('[data-m=go]');
+    if(!confirm(`متأكد؟ هيتمسح كل المبيعات والفواتير قبل ${fmtDay(dv)}. المخزون مش هيتلمس.`))return;
+    btn.disabled=true;const say=t=>{st.innerHTML=t};
+    try{say('<span class="spin"></span>بيجمع المبيعات القديمة…');
+      const sq=await col('sales').where('t','<',cut).get(),iq=await col('invoices').where('t','<',cut).get();
+      const n=sq.size+iq.size;if(!n){say('مفيش مبيعات قبل التاريخ ده ✓');btn.disabled=false;return}
+      const bk={v:1,kind:'sales-purge',before:dv,t:Date.now(),by:S.me||'',sales:Object.fromEntries(sq.docs.map(d=>[d.id,d.data()])),invoices:Object.fromEntries(iq.docs.map(d=>[d.id,d.data()]))};
+      const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(bk)],{type:'application/json'}));a.download=`${SHOP_NAME} - مبيعات قبل ${dv}.json`.replace(/[\\/:*?"<>|]+/g,' ');document.body.appendChild(a);a.click();a.remove();
+      const refs=[...sq.docs,...iq.docs].map(d=>d.ref);let done=0;
+      for(let i=0;i<refs.length;i+=400){const b=fs.batch();refs.slice(i,i+400).forEach(r=>b.delete(r));await b.commit();done=Math.min(refs.length,i+400);say(`<span class="spin"></span>اتمسح ${done} من ${refs.length}…`)}
+      Object.keys(S.dayCache).forEach(k=>{if(k.replace('_','')<dv)delete S.dayCache[k]});
+      say(`✓ اتمسح ${sq.size} بيعة و ${iq.size} فاتورة قبل ${fmtDay(dv)} — المخزون زي ما هو.`);toast('✓ المبيعات القديمة اتمسحت');
+    }catch(e){console.error(e);say('⛔ وقف: '+esc(werr(e))+' — اللي اتمسح اتمسح، وتقدر تكمّل بعدين بنفس الزرار.');btn.disabled=false}})}
 function can(f){if(isOwner())return true;const F=FEATURES[f];if(!F)return true;const lv=((S.cfg&&S.cfg.perm)||{})[f]||F.def;return lv==='all'||(lv==='admin'&&S.role==='admin')}
 function permSheet(){if(!isOwner()){toast('الصفحة دي لصاحب التطبيق بس');return}
   const perm={...((S.cfg&&S.cfg.perm)||{})};
@@ -4223,6 +4242,7 @@ $app.addEventListener('click',e=>{
   else if(act==='export')exportData();
   else if(act==='import')importData();
   else if(act==='backups')backupsSheet();
+  else if(act==='purge-old'&&isOwner())purgeOld();
   else if(act==='trash')trashSheet();
   else if(act==='note-new')noteSheet();
   else if(act==='note-edit'){const n=S.notes.find(x=>x.id===b.dataset.nid);if(n)noteSheet({},n)}
