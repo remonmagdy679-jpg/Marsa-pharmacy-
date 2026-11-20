@@ -960,6 +960,10 @@ const openAlerts=()=>S.alerts.filter(a=>!a.done);
 
 /* ---------- sales ---------- */
 const WIN=62*864e5;const winStart=Date.now()-WIN;const winDay=dayKey(new Date(winStart));
+/* ساعة الموبايل: لو غلط، البيعات بتتسجل في يوم تاني ومحدش يشوفها */
+S.clk=0;async function checkClock(){try{const r=await fetch(location.href.split('#')[0]+(location.href.includes('?')?'&':'?')+'clk='+Date.now(),{method:'HEAD',cache:'no-store'}),d=r.headers.get('date');if(!d)return;const off=new Date(d).getTime()-Date.now();S.clk=Math.abs(off)>10*6e4?off:0;render()}catch(e){}}
+function clockBn(){if(!S.clk)return '';const real=new Date(Date.now()+S.clk);return `<div class="setbn dupbn" style="font-weight:700">⛔ ساعة أو تاريخ الموبايل ده غلط: الموبايل فاكر النهارده ${fmtDay(today())} ${fmtTime(Date.now())}، والصح ${fmtDay(dayKey(real))} ${fmtTime(real.getTime())}. صلّحها من إعدادات الموبايل (التاريخ والوقت ← تلقائي) — البيع مقفول لحد ما تتصلح.</div>`}
+function pendBn(){if(!S.pend)return '';const since=+LS.get('drc.pendSince')||Date.now(),min=Math.round((Date.now()-since)/6e4);return `<div class="setbn dupbn">📵 فيه <b>${S.pend}</b> بيعة متسجلة على الموبايل ده بس ولسه <b>ما وصلتش</b> لباقي الموبايلات${min>=2?` (من ${min} دقيقة)`:''}. شغّل النت أو الواي فاي و<b>متمسحش التطبيق ولا الكاش</b> لحد ما الرسالة دي تختفي.</div>`}
 function salesOf(day){if(day>=winDay)return S.sales.filter(s=>s.day===day);if(S.dayCache[day])return S.dayCache[day];fetchDay(day);return null}
 async function fetchDay(day){if(S.dayCache['_'+day])return;S.dayCache['_'+day]=1;try{const q=await col('sales').where('day','==',day).get();S.dayCache[day]=q.docs.map(d=>({sid:d.id,...d.data()})).filter(x=>!x.del).sort((a,b)=>b.t-a.t)}catch(e){S.dayCache[day]=[];toast('مقدرتش أجيب مبيعات اليوم ده')}if(S.view==='sales')render()}
 const sum=(l,f='total')=>l.reduce((a,s)=>a+(+s[f]||0),0);
@@ -1017,7 +1021,7 @@ const dText=d=>Object.entries(d).filter(([k])=>k!=='x').sort((a,b)=>bkIdx(a[0])-
 function invGroups(list){const g=[],m={};list.forEach(s=>{const k=s.inv||('s_'+s.sid);if(!m[k]){m[k]={k,inv:s.inv,no:s.invNo,t:s.t,by:s.by,cur:s.cur,guest:s.guest,lines:[]};g.push(m[k])}m[k].lines.push(s);if(s.t<m[k].t)m[k].t=s.t});g.forEach(x=>x.lines.sort((a,b)=>a.t-b.t));return g}
 function vSales(){
   const d=S.day,isT=d===today(),raw=salesOf(d);let mode=S.salesMode||'inv';if(mode==='time')mode='inv';
-  let h=`<div class="dayhead"><button class="btn sm" data-act="day-prev">‹ قبله</button><input type="date" id="dayIn" value="${d}" max="${today()}"><button class="btn sm" data-act="day-next" ${isT?'disabled':''}>بعده ›</button></div><p class="hint" style="margin-top:6px"><b>${isT?'النهارده':dayName(d)}</b> ${fmtDay(d)}</p>`;
+  let h=clockBn()+pendBn()+`<div class="dayhead"><button class="btn sm" data-act="day-prev">‹ قبله</button><input type="date" id="dayIn" value="${d}" max="${today()}"><button class="btn sm" data-act="day-next" ${isT?'disabled':''}>بعده ›</button></div><p class="hint" style="margin-top:6px"><b>${isT?'النهارده':dayName(d)}</b> ${fmtDay(d)}</p>`;
   h+=`<div class="toolbar"><button class="btn primary" data-act="inv-open">${CART.lines.length?'🧾 الفاتورة المفتوحة ('+CART.lines.length+')':'🛒 بيع جديد'}</button>${isT?'<button class="btn" data-act="misc-sale">💵 مبلغ من غير صنف</button>':''}</div>`;
   if(raw===null){$app.innerHTML=h+'<p class="hint">جاري تحميل اليوم ده…</p>';return}
   const hit=raw.filter(s=>matchQ(s.name+' '+(s.by||'')+' '+(s.guest||''))),hk=new Set(hit.map(s=>s.inv||('s_'+s.sid)));
@@ -3290,7 +3294,7 @@ function editInv(inv,l,d){
   const tot=d.total!=null?+d.total:lineSum(l),auto=lineSum(l);
   Object.assign(CART,{lines,cur:d.cur||l[0].cur||CART.cur,guest:d.guest||'',total:d.staff?null:tot,totEd:!d.staff&&Math.abs(tot-auto)>.009,split:!!d.pay&&Object.keys(d.pay).length>1,pay:d.pay||null,credit:null,staff:!!d.staff,
     edit:{inv,no:d.no||l[0].invNo||'',t:d.t||l[0].t,day:d.day||l[0].day,old:l.map(s=>s.sid)}});saveCart();invSheet()}
-function finishInvoice(){
+function finishInvoice(){if(S.clk){toast('⛔ صلّح تاريخ وساعة الموبايل الأول — البيعة هتتسجل في يوم غلط');return}
   const E=CART.edit,ST=!!CART.staff,today_=salesOf(today())||[],no=E?E.no:new Set(today_.filter(s=>s.inv).map(s=>s.inv)).size+1,inv=E?E.inv:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
   const dayX=E?E.day:today(),tX=E?E.t:Date.now();
   if(E){// رجّع الكميات القديمة للمخزن وامسح البيعات القديمة — قبل ما نسجل الجديدة
@@ -4215,6 +4219,7 @@ $app.addEventListener('click',e=>{
 /* ---------- start ---------- */
 (function start(){
   if(typeof firebase==='undefined'){S.error='مش قادر أحمّل Firebase — اتأكد إن النت شغال وافتح الصفحة تاني.';render();return}
+  checkClock();setInterval(checkClock,36e5);
   try{firebase.initializeApp(FIREBASE_CONFIG);fs=firebase.firestore();fs.enablePersistence({synchronizeTabs:true}).catch(()=>{});auth=firebase.auth()}catch(e){S.error='بيانات Firebase غلط.';render();return}
   render();
   auth.onAuthStateChanged(u=>{if(settingUp)return;if(u)afterAuth(u);else showLogin()});
@@ -4226,7 +4231,7 @@ function startData(){
     S.offline=snap.metadata.fromCache;const all=snap.docs.map(d=>({id:d.id,...d.data()}));S.items=all.filter(x=>!x.del);S.trash.items=all.filter(x=>x.del);S.loaded.items=1;
     if(!S.ready){S.ready=true;S.error=''}render();
   },fail);
-  col('sales').where('t','>=',winStart).orderBy('t','desc').onSnapshot(snap=>{S.sales=snap.docs.map(d=>({sid:d.id,...d.data()})).filter(x=>!x.del);if(S.ready)render()},fail);
+  col('sales').where('t','>=',winStart).orderBy('t','desc').onSnapshot({includeMetadataChanges:true},snap=>{S.sales=snap.docs.map(d=>({sid:d.id,...d.data()})).filter(x=>!x.del);const pd=snap.docs.filter(d=>d.metadata.hasPendingWrites).length;const ch=pd!==S.pend;S.pend=pd;if(pd){LS.set('drc.pendSince',LS.get('drc.pendSince')||String(Date.now()))}else LS.set('drc.pendSince','');if(S.ready&&(!snap.metadata.hasPendingWrites||ch||snap.docChanges().length))render()},fail);
   col('alerts').orderBy('t','desc').limit(80).onSnapshot(snap=>{
     S.alerts=snap.docs.map(d=>({aid:d.id,...d.data()}));
     const fresh=S.alerts.filter(a=>!a.done&&a.t>seen&&!isMine(a));
