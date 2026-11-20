@@ -898,7 +898,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '20-11ب تشخيص القراية';
+const APP_V = '20-11ج قراية أقل';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -959,7 +959,7 @@ function tags(p){const bl=bats(p);if(!bl.length)return `<div class="bts"><span c
 const openAlerts=()=>S.alerts.filter(a=>!a.done);
 
 /* ---------- sales ---------- */
-const WIN=62*864e5;const winStart=Date.now()-WIN;const winDay=dayKey(new Date(winStart));
+const WIN=14*864e5;/* كان 62 يوم وكان بيقرا آلاف البيعات مع كل فتحة — بيخلّص حد Firebase المجاني */const winStart=Date.now()-WIN;const winDay=dayKey(new Date(winStart));
 /* ساعة الموبايل: لو غلط، البيعات بتتسجل في يوم تاني ومحدش يشوفها */
 S.clk=0;try{S.werr=JSON.parse(LS.get('drc.werr')||'null')}catch(e){S.werr=null}
 async function checkClock(){try{const r=await fetch(location.href.split('#')[0]+(location.href.includes('?')?'&':'?')+'clk='+Date.now(),{method:'HEAD',cache:'no-store'}),d=r.headers.get('date');if(!d)return;const off=new Date(d).getTime()-Date.now();S.clk=Math.abs(off)>10*6e4?off:0;render()}catch(e){}}
@@ -3376,7 +3376,7 @@ async function attachLedgerImg(e,cam){pickFiles({cam:!!cam,multiple:!cam},async 
 
 
 /* ---------- إرسال الناقص كصورة + الكمية المقترحة ---------- */
-function sold30(p){const from=Date.now()-30*864e5;return S.sales.filter(s=>s.id===p.id&&s.t>=from).reduce((a,s)=>a+(+(s.units!=null?s.units:s.qty)||0),0)}
+function sold30(p){const from=Date.now()-WIN;return Math.round(S.sales.filter(s=>s.id===p.id&&s.t>=from).reduce((a,s)=>a+(+(s.units!=null?s.units:s.qty)||0),0)*30*864e5/WIN)}
 function suggestTarget(p){const K=spb(p);if(p.target>0)return +p.target*K;const m=minOf(p)*K;return Math.max(m*2,m+K,Math.ceil(sold30(p)*0.75))}
 function rrPath(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
 async function makeShortCard(p,target,aud,badge,qOn){aud=aud||'co';
@@ -4255,7 +4255,7 @@ function startData(){
     if(fresh.length&&!snap.metadata.hasPendingWrites)notify(fresh);
     if(S.ready)render();
   },e=>console.error(e));
-  col('events').orderBy('t','desc').limit(400).onSnapshot(snap=>{S.events=snap.docs.map(d=>d.data());if(S.view==='log')render()},e=>console.error(e));
+  col('events').orderBy('t','desc').limit(120).onSnapshot(snap=>{S.events=snap.docs.map(d=>d.data());if(S.view==='log')render()},e=>console.error(e));
   startChat();startNotes();startAcc();startDebts();
   col('invoices').where('t','>=',winStart).onSnapshot(snap=>{S.invs={};snap.docs.forEach(d=>S.invs[d.id]=d.data());if(S.view==='sales')render()},()=>{});
   startFb();
