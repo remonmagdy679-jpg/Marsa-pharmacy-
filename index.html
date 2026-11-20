@@ -898,7 +898,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '20-11 تشخيص الحفظ';
+const APP_V = '20-11ب تشخيص القراية';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1756,7 +1756,7 @@ const commit=(b,msg)=>run(b.commit(),msg);
 // رسالة «اتسجلت» بعد ما كل الحفظ اللي بدأ من w0 يوصل للسيرفر
 function afterSave(w0,msg){const ps=WQ.slice(w0);let shown=false;const t=setTimeout(()=>{shown=true;toast('⏳ بيتحفظ…')},700);
   Promise.race([Promise.all(ps).then(()=>'ok'),new Promise(r=>setTimeout(()=>r('slow'),9000))]).then(x=>{clearTimeout(t);toast(x==='ok'?msg:'📵 اتسجلت على الموبايل ده بس ولسه ما وصلتش — اتأكد من النت ومتقفلش التطبيق')},()=>clearTimeout(t))}
-function syncBn(){let h='';if(S.unsent>0)h+=`<div class="setbn dupbn">📵 فيه <b>${S.unsent}</b> عملية اتسجلت على الموبايل ده بس ولسه ما وصلتش للسيرفر — شغّل النت ومتقفلش التطبيق.</div>`;
+function syncBn(){let h='';if(S.lerr)h+=`<div class="setbn dupbn" style="font-weight:700">⛔ التطبيق مش قادر يجيب المبيعات الجديدة من السيرفر (${fmtTime(S.lerr.t)}): ${esc(S.lerr.m)} — الفواتير ممكن تكون اتسجلت بس مش ظاهرة.</div>`;if(S.unsent>0)h+=`<div class="setbn dupbn">📵 فيه <b>${S.unsent}</b> عملية اتسجلت على الموبايل ده بس ولسه ما وصلتش للسيرفر — شغّل النت ومتقفلش التطبيق.</div>`;
   if(S.werr&&Date.now()-S.werr.t<6*36e5)h+=`<div class="setbn dupbn">⛔ آخر حفظ <b>فشل</b> (${fmtTime(S.werr.t)}): ${esc(S.werr.m)} <button class="btn sm" data-act="werr-x">تمام</button></div>`;return h}
 const me=()=>S.me||'بدون اسم';
 function evt(b,a,name,n,note,anon){b.set(col('events').doc(),{t:Date.now(),by:anon?'':me(),a,name:name||'',n:n??'',note:note||''})}
@@ -4242,7 +4242,7 @@ $app.addEventListener('click',e=>{
 })();
 function startData(){
   let lastErr='';
-  const fail=e=>{console.error(e);lastErr=(e&&(e.code||e.message))||'';if(e&&e.code==='permission-denied'){S.error='Firebase رافض القراية — الحساب ده ملوش صلاحية، أو القواعد (Rules) محتاجة تتراجع. <div class="toolbar" style="margin-top:12px"><button class="btn" onclick="firebase.auth().signOut().then(()=>location.reload())">خروج</button></div>';render()}};
+  const fail=e=>{console.error(e);lastErr=(e&&(e.code||e.message))||'';if(!(e&&e.code==='permission-denied')){S.lerr={m:werr(e),t:Date.now()};if(S.ready)render()}if(e&&e.code==='permission-denied'){S.error='Firebase رافض القراية — الحساب ده ملوش صلاحية، أو القواعد (Rules) محتاجة تتراجع. <div class="toolbar" style="margin-top:12px"><button class="btn" onclick="firebase.auth().signOut().then(()=>location.reload())">خروج</button></div>';render()}};
   col('items').onSnapshot({includeMetadataChanges:true},snap=>{
     S.offline=snap.metadata.fromCache;const all=snap.docs.map(d=>({id:d.id,...d.data()}));S.items=all.filter(x=>!x.del);S.trash.items=all.filter(x=>x.del);S.loaded.items=1;
     if(!S.ready){S.ready=true;S.error=''}render();
