@@ -898,7 +898,7 @@ const FIREBASE_CONFIG = {
 };
 const SHOP_ID = 'drcorner-pharmacy-7c41';
 const SHOP_NAME = 'Dr. Corner';
-const APP_V = '20-11هـ إخفاء المبيعات';
+const APP_V = '21-11 تصدير الأصناف';
 /* =========================================================================== */
 (function(){
 const TYPES={med:{name:'أدوية',icon:'💊'},cos:{name:'كوزماتكس',icon:'🧴'}};
@@ -1008,7 +1008,7 @@ function grouped(list,keyFn,rowFn){
 }
 function vItems(){
   const list=S.items.filter(mItem).sort(byName);
-  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${can('dx')?'<button class="btn dxbtn" data-act="dx">🩺 تشخيص بالصورة</button>':''}${S.type!=='cos'&&can('ing')?'<button class="btn ghost sm" data-act="ing">💊 مادة فعالة</button>':''}${can('coach')?'<button class="btn ghost sm" data-act="coach">🚀 مساعد البيع</button>':''}</div>`;
+  let h=`<div class="toolbar"><button class="btn primary addbtn" data-act="addmenu">＋ إضافة</button>${can('dx')?'<button class="btn dxbtn" data-act="dx">🩺 تشخيص بالصورة</button>':''}${S.type!=='cos'&&can('ing')?'<button class="btn ghost sm" data-act="ing">💊 مادة فعالة</button>':''}${can('coach')?'<button class="btn ghost sm" data-act="coach">🚀 مساعد البيع</button>':''}${isOwner()?`<button class="btn ghost sm" data-act="exp-items">📥 تصدير ${S.type==='cos'?'الكوزماتكس':'الأدوية'}</button>`:''}</div>`;
   if(!S.items.length)h+=`<div class="empty">لسه مفيش أصناف.<br>دوس «＋ إضافة» وابدأ.</div>`;
   else if(!list.length)h+=`<div class="empty">مفيش نتايج${S.q?` لـ «${esc(S.q)}»`:''}</div>`;
   else if(S.q)h+=`<p class="hint">${list.length} نتيجة</p><div class="rows">${list.map(rowItem).join('')}</div>`;
@@ -3869,6 +3869,14 @@ const FEATURES={
   info:{l:'📋 معلومات المنتج',d:'المشاكل اللي بيحلها، الجرعة ومدة الاستخدام، وسعره في أوروبا',def:'owner'},
 };
 const isOwner=()=>!!(S.member&&S.member.owner);
+/* تصدير الأصناف لملف Excel (CSV) */
+async function exportItems(t){const L=S.items.filter(p=>tOf(p)===t).sort(byName);if(!L.length){toast('مفيش أصناف');return}
+  const cl=k=>{const c=CATS.find(x=>x[0]===k);return c?c[2]:''},q=v=>{v=v==null?'':String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const H=['الاسم','البراند','القسم','المجموعة','الحجم','الباركود','الكمية','الحد الأدنى','الصلاحيات (الشهر/السنة: كمية)','سعر EUR','سعر USD','سعر EGP','المادة الفعالة'];
+  const rows=L.map(p=>[p.name,p.brand||'',cl(p.cat),p.grp||'',p.size||'',(p.codes||[]).join(' | '),fmtQ(p,good(p)),minOf(p),bats(p).map(([k,v])=>bkLabel(k)+': '+fmtQ(p,v)).join(' | '),lastPx(p,'EUR'),lastPx(p,'USD'),lastPx(p,'EGP'),p.ing||'']);
+  const csv='\ufeff'+[H,...rows].map(r=>r.map(q).join(',')).join('\r\n');
+  const f=new File([csv],`${SHOP_NAME} - ${TYPES[t].name} - ${today()}.csv`.replace(/[\\/:*?"<>|]+/g,' '),{type:'text/csv'});
+  await shareFiles([f],'',false);toast(`📥 ${L.length} صنف اتصدّروا`)}
 /* مسح المبيعات القديمة: بيمسح سجلات البيع والفواتير بس — المخزون والكميات مش بتتلمس */
 function purgeOld(){const d0=new Date();const def=dayKey(new Date(d0.getFullYear(),d0.getMonth(),1));
   openSheet(`<h4>🧹 امسح المبيعات القديمة</h4><p class="hint" style="margin-top:0">هيمسح سجلات البيع والفواتير <b>قبل</b> التاريخ ده بس. <b>المخزون والكميات مش هتتغيّر خالص.</b> قبل المسح هينزّلك ملف نسخة احتياطية بيهم.</p>
@@ -4244,6 +4252,7 @@ $app.addEventListener('click',e=>{
   else if(act==='import')importData();
   else if(act==='backups')backupsSheet();
   else if(act==='purge-old'&&isOwner())purgeOld();
+  else if(act==='exp-items'&&isOwner())exportItems(S.type==='cos'?'cos':'med');
   else if(act==='trash')trashSheet();
   else if(act==='note-new')noteSheet();
   else if(act==='note-edit'){const n=S.notes.find(x=>x.id===b.dataset.nid);if(n)noteSheet({},n)}
